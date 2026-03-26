@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HotScan">
+<meta name="theme-color" content="#e63946">
+<meta name="description" content="India's first Hot Wheels scanner. Scan any Hot Wheels car and instantly get its rarity, Indian market price, and collector value.">
+<meta property="og:title" content="HotScan — Hot Wheels Scanner India">
+<meta property="og:description" content="Scan Hot Wheels. Get Indian market prices instantly.">
+<title>HotScan — Hot Wheels Scanner India</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:#080808;color:#fff;overflow-x:hidden}
+:root{
+  --red:#e63946;--red2:#c1121f;
+  --gold:#ffd60a;--gold2:#e6c009;
+  --green:#2dc653;--blue:#4cc9f0;
+  --surface:#141414;--surface2:#1e1e1e;--surface3:#282828;
+  --border:#2a2a2a;--border2:#333;
+  --text:#fff;--text2:#aaa;--text3:#666;
+}
+
+/* ── Header ── */
+.header{
+  background:linear-gradient(135deg,var(--red),var(--red2));
+  padding:env(safe-area-inset-top,16px) 20px 14px;
+  padding-top:max(env(safe-area-inset-top),16px);
+  display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 20px rgba(230,57,70,0.4);
+}
+.logo{width:38px;height:38px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.header-text h1{font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.header-text p{font-size:11px;opacity:0.85;margin-top:1px}
+.beta-badge{margin-left:auto;background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;flex-shrink:0}
+
+/* ── Main ── */
+.main{padding:20px;max-width:500px;margin:0 auto;padding-bottom:40px}
+
+/* ── Key setup ── */
+.key-card{background:var(--surface);border:1px solid rgba(255,214,10,0.25);border-radius:18px;padding:20px;margin-bottom:20px}
+.key-card-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.key-card-sub{font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5}
+.key-card-sub a{color:var(--blue);text-decoration:none}
+.key-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:13px 14px;font-size:14px;color:#fff;font-family:monospace;outline:none}
+.key-input:focus{border-color:var(--gold)}
+.key-input::placeholder{color:var(--text3)}
+.key-save{background:var(--gold);color:#000;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:10px;letter-spacing:0.3px}
+.key-save:active{opacity:0.85}
+.key-change{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline}
+
+/* ── Scan area ── */
+.scan-card{background:var(--surface);border:2px dashed var(--border2);border-radius:20px;padding:28px 20px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.scan-card.has-image{border-style:solid;border-color:var(--red);padding-bottom:20px}
+.scan-card:active{background:var(--surface2)}
+.scan-icon{font-size:52px;margin-bottom:10px;display:block}
+.scan-title{font-size:18px;font-weight:700;margin-bottom:6px}
+.scan-sub{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.5}
+.scan-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-camera{background:var(--red);color:#fff;border:none;padding:13px 24px;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-gallery{background:var(--surface3);color:#fff;border:none;padding:13px 24px;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+#preview-img{width:100%;border-radius:14px;margin-top:18px;display:none;max-height:300px;object-fit:cover}
+#file-input-camera{display:none}
+#file-input-gallery{display:none}
+
+/* ── Analyze ── */
+.analyze-btn{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;padding:17px;border-radius:16px;font-size:17px;font-weight:800;cursor:pointer;width:100%;margin-bottom:16px;display:none;letter-spacing:0.3px;box-shadow:0 4px 20px rgba(230,57,70,0.35)}
+.analyze-btn:active{transform:scale(0.98)}
+.analyze-btn.loading{opacity:0.75;pointer-events:none}
+
+/* ── Loading ── */
+.progress{background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;display:none}
+.progress-label{font-size:13px;color:var(--text2);margin-bottom:10px;text-align:center}
+.progress-bar{height:4px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold));border-radius:4px;animation:fill 2s ease-in-out infinite}
+@keyframes fill{0%{width:5%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:5%;margin-left:95%}}
+.progress-steps{display:flex;justify-content:space-between;margin-top:10px}
+.pstep{font-size:11px;color:var(--text3);text-align:center;flex:1}
+.pstep.active{color:var(--gold);font-weight:600}
+
+/* ── Error ── */
+.error-box{background:#1a0808;border:1px solid #5a2020;border-radius:14px;padding:16px;margin-bottom:16px;display:none;font-size:14px;color:#ff8080;line-height:1.6}
+
+/* ── Result ── */
+.result{display:none;background:var(--surface);border-radius:20px;overflow:hidden;margin-bottom:16px;border:1px solid var(--border)}
+
+.result-hero{background:linear-gradient(135deg,#0d0d1a,#1a0d0d);padding:20px;display:flex;gap:16px;align-items:flex-start}
+.car-thumb{width:96px;height:96px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:44px;border:1px solid var(--border)}
+.car-thumb img{width:100%;height:100%;object-fit:cover}
+.car-info{flex:1;min-width:0}
+.car-name{font-size:19px;font-weight:800;line-height:1.2;margin-bottom:3px}
+.car-series{font-size:12px;color:var(--text2);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rarity{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.3px}
+.r-common{background:#222;color:#888}
+.r-uncommon{background:#0d1f0d;color:#2dc653;border:1px solid #1a3d1a}
+.r-rare{background:#0d0d1f;color:#4cc9f0;border:1px solid #1a1a3d}
+.r-treasure{background:#1f1400;color:#ffd60a;border:1px solid #3d2800}
+.r-super{background:linear-gradient(135deg,#1f1400,#1f0000);color:#ffd60a;border:1px solid #5a3300;animation:superGlow 2s ease-in-out infinite}
+.r-error{background:#1f0d0d;color:#ff6b6b;border:1px solid #5a2020}
+@keyframes superGlow{0%,100%{box-shadow:0 0 8px rgba(255,214,10,0.3)}50%{box-shadow:0 0 20px rgba(255,214,10,0.6)}}
+
+/* Confidence */
+.confidence{font-size:11px;color:var(--text3);margin-top:8px}
+.conf-bar{height:3px;background:var(--surface3);border-radius:3px;margin-top:4px;overflow:hidden}
+.conf-fill{height:100%;background:var(--green);border-radius:3px;transition:width 0.5s ease}
+
+/* Price section */
+.price-section{padding:0}
+.price-header{padding:14px 16px 10px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-weight:600}
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.price-tile{background:var(--surface);padding:16px;text-align:center}
+.price-tile-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
+.price-tile-main{font-size:24px;font-weight:800;margin-bottom:2px}
+.p-inr{color:var(--gold)}
+.p-usd{color:var(--green)}
+.price-tile-sub{font-size:10px;color:var(--text3)}
+
+/* Investment badge */
+.invest-row{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)}
+.invest-label{font-size:13px;color:var(--text2)}
+.invest-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.inv-low{background:#1a1a1a;color:#666}
+.inv-medium{background:#0d1f0d;color:var(--green)}
+.inv-high{background:#1a1500;color:var(--gold)}
+.inv-very-high{background:linear-gradient(135deg,#1a1500,#1a0000);color:var(--gold);animation:superGlow 2s infinite}
+
+/* Details */
+.details-section{border-top:1px solid var(--border)}
+.detail-item{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--border);gap:12px}
+.detail-item:last-child{border-bottom:none}
+.detail-key{font-size:13px;color:var(--text2);flex-shrink:0}
+.detail-val{font-size:13px;font-weight:600;text-align:right;line-height:1.4}
+
+/* Market insight */
+.insight-card{margin:16px;background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 12px 12px 0;padding:14px 16px}
+.insight-label{font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}
+.insight-text{font-size:13px;color:#ccc;line-height:1.6}
+
+/* Where to sell */
+.sell-card{margin:0 16px 16px;background:var(--surface2);border-radius:12px;padding:14px 16px}
+.sell-label{font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px}
+.sell-tags{display:flex;flex-wrap:wrap;gap:6px}
+.sell-tag{background:var(--surface3);color:#ccc;padding:5px 12px;border-radius:20px;font-size:12px}
+
+/* Actions */
+.actions{display:flex;gap:10px;margin:0 16px 16px}
+.action-btn{flex:1;padding:13px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px}
+.action-btn:active{opacity:0.8}
+
+/* Scan again */
+.scan-again{background:var(--surface2);border:1px solid var(--border2);color:#fff;padding:16px;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer;width:100%;margin-bottom:16px;display:none}
+.scan-again:active{background:var(--surface3)}
+
+/* Tips */
+.tips{background:var(--surface);border-radius:16px;padding:16px;margin-bottom:20px}
+.tips-title{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px}
+.tip{display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:var(--text2);line-height:1.5;align-items:flex-start}
+.tip:last-child{margin-bottom:0}
+.tip-icon{font-size:16px;flex-shrink:0;margin-top:0px}
+
+/* Footer */
+.footer{text-align:center;font-size:12px;color:var(--text3);margin-top:10px;line-height:1.8}
+.footer a{color:var(--text3)}
+
+/* Install prompt */
+.install-prompt{background:var(--surface);border-radius:16px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;border:1px solid var(--border)}
+.install-icon{font-size:28px;flex-shrink:0}
+.install-text{font-size:13px;color:var(--text2);line-height:1.5}
+.install-text strong{color:#fff;display:block;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🚗</div>
+  <div class="header-text">
+    <h1>HotScan India</h1>
+    <p>Hot Wheels · Rarity · Indian Prices</p>
+  </div>
+  <div class="beta-badge">BETA</div>
+</div>
+
+<div class="main">
+
+  <!-- Install Prompt -->
+  <div class="install-prompt" id="install-prompt">
+    <div class="install-icon">📲</div>
+    <div class="install-text">
+      <strong>Add to Home Screen</strong>
+      Tap Share → "Add to Home Screen" for the full app experience on iPhone
+    </div>
+  </div>
+
+  <!-- API Key Setup -->
+  <div class="key-card" id="key-card">
+    <div class="key-card-title">🔑 Setup — Free Groq API Key</div>
+    <div class="key-card-sub">
+      HotScan uses AI vision to identify cars. Get your free key at
+      <a href="https://console.groq.com" target="_blank">console.groq.com</a>
+      — takes 2 minutes. Your key stays on your device only.
+    </div>
+    <input class="key-input" type="password" id="groq-key" placeholder="gsk_..." autocomplete="off">
+    <button class="key-save" onclick="saveKey()">Save Key &amp; Start Scanning →</button>
+  </div>
+
+  <div id="key-set-bar" style="display:none;margin-bottom:16px;display:none">
+    <button class="key-change" onclick="showKeyCard()">🔑 Change API key</button>
+  </div>
+
+  <!-- Scan Card -->
+  <div class="scan-card" id="scan-card">
+    <span class="scan-icon">🔍</span>
+    <div class="scan-title">Scan a Hot Wheels Car</div>
+    <div class="scan-sub">Point your camera at any Hot Wheels car to identify it,<br>get its rarity and Indian collector price instantly.</div>
+    <div class="scan-btns">
+      <button class="btn-camera" onclick="openCamera()">📷 Camera</button>
+      <button class="btn-gallery" onclick="openGallery()">🖼 Gallery</button>
+    </div>
+    <img id="preview-img" src="" alt="Preview">
+  </div>
+
+  <input type="file" id="file-input-camera" accept="image/*" capture="environment">
+  <input type="file" id="file-input-gallery" accept="image/*">
+
+  <!-- Analyze -->
+  <button class="analyze-btn" id="analyze-btn" onclick="analyze()">🔎 Identify &amp; Price This Car</button>
+
+  <!-- Progress -->
+  <div class="progress" id="progress">
+    <div class="progress-label" id="progress-label">Scanning image...</div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+    <div class="progress-steps">
+      <div class="pstep active" id="ps1">👁 Scanning</div>
+      <div class="pstep" id="ps2">🔍 Identifying</div>
+      <div class="pstep" id="ps3">💰 Pricing</div>
+      <div class="pstep" id="ps4">📊 Done</div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Result -->
+  <div class="result" id="result">
+    <!-- Hero -->
+    <div class="result-hero">
+      <div class="car-thumb" id="car-thumb">🚗</div>
+      <div class="car-info">
+        <div class="car-name" id="car-name">—</div>
+        <div class="car-series" id="car-series">—</div>
+        <div class="rarity r-common" id="rarity-badge">—</div>
+        <div class="confidence">
+          AI Confidence
+          <div class="conf-bar"><div class="conf-fill" id="conf-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prices -->
+    <div class="price-section">
+      <div class="price-header">Market Prices</div>
+      <div class="price-grid">
+        <div class="price-tile">
+          <div class="price-tile-label">🇮🇳 India Retail</div>
+          <div class="price-tile-main p-inr" id="p-retail-inr">—</div>
+          <div class="price-tile-sub">at Hamleys / Flipkart</div>
+        </div>
+        <div class="price-tile">
+          <div class="price-tile-label">🇮🇳 Collector Price</div>
+          <div class="price-tile-main p-inr" id="p-collector-inr">—</div>
+          <div class="price-tile-sub">OLX / Instagram groups</div>
+        </div>
+        <div class="price-tile">
+          <div class="price-tile-label">🇺🇸 US Retail</div>
+          <div class="price-tile-main p-usd" id="p-retail-usd">—</div>
+          <div class="price-tile-sub">Walmart / Target</div>
+        </div>
+        <div class="price-tile">
+          <div class="price-tile-label">🇺🇸 US Collector</div>
+          <div class="price-tile-main p-usd" id="p-collector-usd">—</div>
+          <div class="price-tile-sub">eBay / HW collectors</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Investment -->
+    <div class="invest-row">
+      <span class="invest-label">Investment Potential</span>
+      <span class="invest-badge inv-medium" id="invest-badge">—</span>
+    </div>
+
+    <!-- Details -->
+    <div class="details-section" id="details-section"></div>
+
+    <!-- Market Insight -->
+    <div class="insight-card" id="insight-card" style="display:none">
+      <div class="insight-label">📊 India Market Insight</div>
+      <div class="insight-text" id="insight-text"></div>
+    </div>
+
+    <!-- Where to sell -->
+    <div class="sell-card" id="sell-card" style="display:none">
+      <div class="sell-label">💸 Where to Sell in India</div>
+      <div class="sell-tags" id="sell-tags"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="action-btn" onclick="shareResult()">📤 Share</button>
+      <button class="action-btn" onclick="resetScan()">🔄 Scan Again</button>
+    </div>
+  </div>
+
+  <button class="scan-again" id="scan-again" onclick="resetScan()">🔄 Scan Another Car</button>
+
+  <!-- Tips -->
+  <div class="tips">
+    <div class="tips-title">📸 Tips for Best Results</div>
+    <div class="tip"><span class="tip-icon">💡</span>Place car on a flat white or light-coloured surface</div>
+    <div class="tip"><span class="tip-icon">🔆</span>Good lighting — avoid shadows on the car body</div>
+    <div class="tip"><span class="tip-icon">🎯</span>Capture the side profile clearly — include any visible text or tampo</div>
+    <div class="tip"><span class="tip-icon">📦</span>Include the blister card packaging if you have it — helps identify the series</div>
+    <div class="tip"><span class="tip-icon">🔢</span>The collector number is usually on the base — include it if visible</div>
+  </div>
+
+  <div class="footer">
+    HotScan India · Beta v1.0<br>
+    Built for Indian Hot Wheels collectors 🇮🇳<br>
+    Prices are estimates based on current market data<br><br>
+    <a href="https://github.com/mahak867/Hotscan">GitHub</a> · Free &amp; Open Source
+  </div>
+
+</div>
+
+<script>
+// ── State ──
+let GROQ_KEY = localStorage.getItem('hotscan_key') || ''
+let imageBase64 = null
+let lastResult = null
+
+// ── Init ──
+function init() {
+  if (GROQ_KEY) {
+    document.getElementById('key-card').style.display = 'none'
+    document.getElementById('key-set-bar').style.display = 'block'
+  }
+  // Hide install prompt on non-iOS
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  if (!isIOS || isStandalone) {
+    document.getElementById('install-prompt').style.display = 'none'
+  }
+}
+init()
+
+// ── Key ──
+function saveKey() {
+  const val = document.getElementById('groq-key').value.trim()
+  if (!val) { alert('Please enter your Groq API key'); return }
+  GROQ_KEY = val
+  localStorage.setItem('hotscan_key', val)
+  document.getElementById('key-card').style.display = 'none'
+  document.getElementById('key-set-bar').style.display = 'block'
+}
+function showKeyCard() {
+  document.getElementById('key-card').style.display = 'block'
+  document.getElementById('groq-key').value = GROQ_KEY
+}
+
+// ── File inputs ──
+function openCamera() {
+  if (!checkKey()) return
+  document.getElementById('file-input-camera').click()
+}
+function openGallery() {
+  if (!checkKey()) return
+  document.getElementById('file-input-gallery').click()
+}
+function checkKey() {
+  if (!GROQ_KEY) {
+    document.getElementById('key-card').style.display = 'block'
+    document.getElementById('key-card').scrollIntoView({ behavior: 'smooth' })
+    return false
+  }
+  return true
+}
+
+function handleFile(file) {
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = ev => {
+    imageBase64 = ev.target.result
+    const img = document.getElementById('preview-img')
+    img.src = imageBase64
+    img.style.display = 'block'
+    document.getElementById('scan-card').classList.add('has-image')
+    document.getElementById('analyze-btn').style.display = 'block'
+    document.getElementById('result').style.display = 'none'
+    document.getElementById('scan-again').style.display = 'none'
+    document.getElementById('error-box').style.display = 'none'
+  }
+  reader.readAsDataURL(file)
+}
+
+document.getElementById('file-input-camera').addEventListener('change', e => handleFile(e.target.files[0]))
+document.getElementById('file-input-gallery').addEventListener('change', e => handleFile(e.target.files[0]))
+
+// ── Progress animation ──
+let progressStep = 0
+let progressTimer = null
+const steps = ['ps1','ps2','ps3','ps4']
+const labels = ['Scanning image...','Identifying model...','Looking up prices...','Almost done...']
+
+function startProgress() {
+  progressStep = 0
+  document.getElementById('progress').style.display = 'block'
+  steps.forEach((s,i) => {
+    document.getElementById(s).className = 'pstep' + (i===0?' active':'')
+  })
+  document.getElementById('progress-label').textContent = labels[0]
+  progressTimer = setInterval(() => {
+    progressStep = Math.min(progressStep + 1, 3)
+    steps.forEach((s,i) => {
+      document.getElementById(s).className = 'pstep' + (i<=progressStep?' active':'')
+    })
+    document.getElementById('progress-label').textContent = labels[progressStep]
+  }, 1800)
+}
+function stopProgress() {
+  clearInterval(progressTimer)
+  document.getElementById('progress').style.display = 'none'
+}
+
+// ── Analyze ──
+async function analyze() {
+  if (!imageBase64 || !GROQ_KEY) return
+  const btn = document.getElementById('analyze-btn')
+  btn.classList.add('loading')
+  btn.textContent = '⏳ Analyzing...'
+  startProgress()
+  document.getElementById('error-box').style.display = 'none'
+  document.getElementById('result').style.display = 'none'
+
+  const prompt = `You are India's leading Hot Wheels expert and die-cast car collector with 20+ years experience. You have deep knowledge of:
+- Every Hot Wheels model, series, casting, and variation ever made
+- Indian toy market prices at retail stores (Hamleys, Crossword, Flipkart, Amazon India, local toy shops)
+- Indian collector/secondary market prices (OLX, Facebook groups, Instagram collector communities, Maido, local meets)
+- Rarity classifications and what drives value in the Indian market
+- Investment potential for Indian collectors
+
+Analyze this Hot Wheels car image carefully.
+
+Return ONLY a valid JSON object with NO markdown, NO explanation:
+{
+  "identified": true,
+  "confidence": 85,
+  "name": "exact Hot Wheels model name",
+  "series": "series name and year e.g. Hot Wheels 2023 Mainline #142",
+  "casting_year": "year this casting was first introduced",
+  "color": "exact color of this specific car",
+  "tampo": "tampo and decoration description",
+  "base_color": "base/wheel color",
+  "wheel_type": "wheel type e.g. Real Riders, Basic, OH5",
+  "rarity": "Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",
+  "rarity_reason": "specific reason for this rarity level",
+  "condition": "Mint on Card|Near Mint|Very Good|Good|Fair",
+  "india_retail_inr": "150-200",
+  "india_collector_inr": "300-600",
+  "us_retail_usd": "1.49-1.99",
+  "us_collector_usd": "3-8",
+  "investment": "Low|Medium|High|Very High",
+  "investment_reason": "why this investment rating",
+  "sell_india": ["OLX", "Instagram collector groups", "Maido"],
+  "fun_fact": "one interesting specific fact about this casting or variant",
+  "india_insight": "specific insight about this car in Indian collector market — demand, availability, price trends",
+  "similar_cars": "2-3 similar valuable castings to look out for"
+}`
+
+  try {
+    const base64Data = imageBase64.split(',')[1]
+    const mimeType = imageBase64.split(';')[0].split(':')[1]
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + GROQ_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + base64Data } },
+            { type: 'text', text: prompt }
+          ]
+        }],
+        temperature: 0.15,
+        max_tokens: 1200
+      })
+    })
+
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}))
+      if (res.status === 401) throw new Error('Invalid API key. Check your Groq key at console.groq.com')
+      if (res.status === 429) throw new Error('Rate limit hit. Wait 30 seconds and try again.')
+      if (res.status === 400) throw new Error('Image too large or unsupported format. Try a smaller photo.')
+      throw new Error(e.error?.message || 'API error ' + res.status)
+    }
+
+    const data = await res.json()
+    let raw = data.choices[0].message.content.trim()
+    raw = raw.replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s = raw.indexOf('{'), e2 = raw.lastIndexOf('}') + 1
+    if (s === -1) throw new Error('AI returned unexpected response. Try again.')
+    const d = JSON.parse(raw.substring(s, e2))
+    if (!d.identified) throw new Error('Could not identify a Hot Wheels car. Try a clearer photo — place car on white background with good lighting.')
+    lastResult = d
+    showResult(d)
+  } catch(err) {
+    document.getElementById('error-box').innerHTML = '⚠️ ' + err.message + '<br><small style="color:#ff6060;margin-top:4px;display:block">If this keeps happening, try: brighter lighting, white background, closer photo</small>'
+    document.getElementById('error-box').style.display = 'block'
+  } finally {
+    btn.classList.remove('loading')
+    btn.textContent = '🔎 Identify & Price This Car'
+    stopProgress()
+  }
+}
+
+// ── Show Result ──
+function showResult(d) {
+  // Car image
+  if (imageBase64) document.getElementById('car-thumb').innerHTML = '<img src="'+imageBase64+'" alt="car">'
+  document.getElementById('car-name').textContent = d.name || 'Unknown Model'
+  document.getElementById('car-series').textContent = d.series || ''
+
+  // Confidence
+  const conf = d.confidence || 75
+  document.getElementById('conf-fill').style.width = conf + '%'
+
+  // Rarity
+  const badge = document.getElementById('rarity-badge')
+  badge.textContent = d.rarity || 'Common'
+  badge.className = 'rarity'
+  const r = (d.rarity||'').toLowerCase()
+  if (r.includes('super')) badge.classList.add('r-super')
+  else if (r.includes('treasure')) badge.classList.add('r-treasure')
+  else if (r.includes('error')) badge.classList.add('r-error')
+  else if (r.includes('rare') || r.includes('premium') || r.includes('vintage')) badge.classList.add('r-rare')
+  else if (r.includes('uncommon')) badge.classList.add('r-uncommon')
+  else badge.classList.add('r-common')
+
+  // Prices
+  document.getElementById('p-retail-inr').textContent = d.india_retail_inr ? '₹'+d.india_retail_inr : '—'
+  document.getElementById('p-collector-inr').textContent = d.india_collector_inr ? '₹'+d.india_collector_inr : '—'
+  document.getElementById('p-retail-usd').textContent = d.us_retail_usd ? '$'+d.us_retail_usd : '—'
+  document.getElementById('p-collector-usd').textContent = d.us_collector_usd ? '$'+d.us_collector_usd : '—'
+
+  // Investment
+  const ib = document.getElementById('invest-badge')
+  ib.textContent = (d.investment||'Medium') + ' Potential'
+  ib.className = 'invest-badge'
+  const inv = (d.investment||'').toLowerCase()
+  if (inv.includes('very')) ib.classList.add('inv-very-high')
+  else if (inv === 'high') ib.classList.add('inv-high')
+  else if (inv === 'medium') ib.classList.add('inv-medium')
+  else ib.classList.add('inv-low')
+
+  // Details
+  const rows = [
+    ['Color', d.color],
+    ['Casting Year', d.casting_year],
+    ['Tampo / Decals', d.tampo],
+    ['Wheel Type', d.wheel_type],
+    ['Base Color', d.base_color],
+    ['Condition', d.condition],
+    ['Rarity Reason', d.rarity_reason],
+    ['Investment Reason', d.investment_reason],
+    ['Similar Cars to Watch', d.similar_cars],
+    ['Fun Fact', d.fun_fact],
+  ]
+  document.getElementById('details-section').innerHTML = rows
+    .filter(r => r[1] && r[1] !== 'undefined')
+    .map(r => `<div class="detail-item"><span class="detail-key">${r[0]}</span><span class="detail-val">${r[1]}</span></div>`)
+    .join('')
+
+  // Insight
+  if (d.india_insight) {
+    document.getElementById('insight-text').textContent = d.india_insight
+    document.getElementById('insight-card').style.display = 'block'
+  }
+
+  // Sell tags
+  if (d.sell_india && d.sell_india.length) {
+    const tags = Array.isArray(d.sell_india) ? d.sell_india : d.sell_india.split(',')
+    document.getElementById('sell-tags').innerHTML = tags.map(t => `<span class="sell-tag">${t.trim()}</span>`).join('')
+    document.getElementById('sell-card').style.display = 'block'
+  }
+
+  document.getElementById('result').style.display = 'block'
+  document.getElementById('scan-again').style.display = 'block'
+  document.getElementById('analyze-btn').style.display = 'none'
+  setTimeout(() => document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+}
+
+// ── Share ──
+async function shareResult() {
+  if (!lastResult) return
+  const text = `🚗 ${lastResult.name}\n` +
+    `📦 ${lastResult.series}\n` +
+    `⭐ Rarity: ${lastResult.rarity}\n` +
+    `🇮🇳 India Price: ₹${lastResult.india_collector_inr}\n` +
+    `🇺🇸 US Price: $${lastResult.us_collector_usd}\n` +
+    `📈 Investment: ${lastResult.investment}\n\n` +
+    `Scanned with HotScan India 🔍`
+  if (navigator.share) {
+    try { await navigator.share({ title: 'HotScan — ' + lastResult.name, text }) } catch(e) {}
+  } else {
+    navigator.clipboard?.writeText(text).then(() => alert('Copied to clipboard!'))
+  }
+}
+
+// ── Reset ──
+function resetScan() {
+  imageBase64 = null; lastResult = null
+  document.getElementById('preview-img').style.display = 'none'
+  document.getElementById('preview-img').src = ''
+  document.getElementById('scan-card').classList.remove('has-image')
+  document.getElementById('analyze-btn').style.display = 'none'
+  document.getElementById('result').style.display = 'none'
+  document.getElementById('scan-again').style.display = 'none'
+  document.getElementById('error-box').style.display = 'none'
+  document.getElementById('file-input-camera').value = ''
+  document.getElementById('file-input-gallery').value = ''
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+</script>
+</body>
+</html>
