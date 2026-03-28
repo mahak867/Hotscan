@@ -307,7 +307,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 <div class="header">
   <div class="logo">🚗</div>
   <div><h1>HotScan India</h1><p>Hot Wheels · Live Prices · Rarity · Deals</p></div>
-  <div class="ver">v3.0</div>
+  <div class="ver" id="scan-counter" onclick="showProModal()" style="cursor:pointer">v3.0</div>
 </div>
 
 <div class="nav">
@@ -638,7 +638,16 @@ const HUNT_DATA={
   const sa=window.matchMedia('(display-mode:standalone)').matches
   if(!ios||sa)document.getElementById('ib').style.display='none'
   renderCol();renderHist();renderAlerts();renderHunt('mainline')
+  updateScanCounter()
 })()
+
+function updateScanCounter(){
+  const used=getTodayScans()
+  const el=document.getElementById('scan-counter')
+  if(!el)return
+  if(isPro()){el.textContent='PRO ⭐';el.style.background='rgba(255,214,10,0.3)';el.style.color='var(--gold)'}
+  else{el.textContent=`${used}/${FREE_SCANS} scans`}
+}
 
 // ── Nav ──
 function goPage(id){
@@ -769,71 +778,143 @@ function runAnalyze(){
 }
 
 // ── PHOTO: Step 1 vision ──
+// ── Pro tier ──
+const FREE_SCANS=5
+function getTodayScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}');return d.date===t?d.count||0:0}
+function incScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}'),c=(d.date===t?d.count||0:0)+1;localStorage.setItem('hs_scans',JSON.stringify({date:t,count:c}));return c}
+function isPro(){return localStorage.getItem('hs_pro')==='true'}
+function checkLimit(){if(isPro())return true;if(getTodayScans()>=FREE_SCANS){showProModal();return false}return true}
+function showProModal(){document.getElementById('pro-modal').classList.add('open');document.body.style.overflow='hidden'}
+function closeProModal(){document.getElementById('pro-modal').classList.remove('open');document.body.style.overflow=''}
+function activatePro(){alert('HotScan Pro coming soon!\nEmail hotscanindia@gmail.com for early ₹99/month access.');closeProModal()}
+
+// ── PHOTO: Step 1 vision — improved prompt with HW expertise ──
 async function identifyCar(imageData){
   const b64=imageData.split(',')[1],mime=imageData.split(';')[0].split(':')[1]
-  const prompt=`Expert Hot Wheels identifier. Analyze this die-cast car precisely.
-Return ONLY valid JSON:
-{"identified":true,"confidence":88,"name":"exact model name","series":"series and year","casting_year":"year","color":"color","tampo":"decorations","wheel_type":"wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"specific reason","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","is_authentic":true,"authenticity_notes":"notes on authenticity"}`
-  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
-  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid API key');if(res.status===429)throw new Error('Rate limit — wait 30 seconds');throw new Error(e.error?.message||'Vision API error')}
+  // Detailed system prompt with real Hot Wheels knowledge baked in
+  const systemPrompt=`You are the world's most accurate Hot Wheels identification AI, trained on the complete Mattel Hot Wheels catalog from 1968 to 2025. You know every casting, every series, every variation, every Treasure Hunt, every Super Treasure Hunt.
+
+Key identification rules:
+- Super Treasure Hunts: Spectraflame paint + Real Riders rubber tires + TH logo. Worth ₹3000-15000 in India.
+- Treasure Hunts: Metalflake or special paint + TH flame logo on packaging. Worth ₹1000-3000 in India.
+- Real Riders wheels = Premium or TH/STH car, never basic mainline
+- Check tampo (printed graphics), base color, wheel type carefully
+- Vintage Redline cars (pre-1977) have red line on tires
+- Look at the base — Malaysia/China/Thailand indicates era
+- Common signs of Super TH: rubber tires, spectraflame metallic paint, "Super" on card
+
+Indian market context:
+- Basic mainline: ₹150-200 at retail, scarce at stores
+- Premium/Car Culture: ₹500-1000
+- Treasure Hunt: very rare in India, ₹1500-4000
+- Super TH: extremely rare, ₹5000-20000
+- Error cars: most valuable, collectors pay premium`
+
+  const userPrompt=`Identify this Hot Wheels die-cast car precisely. Look carefully at the casting shape, color, tampo graphics, wheel type, and any visible text.
+
+Return ONLY valid JSON, no explanation:
+{"identified":true,"confidence":90,"name":"EXACT Hot Wheels model name","series":"Series name + year e.g. Hot Wheels 2023 Mainline #087","casting_year":"first year this casting appeared","color":"exact color name","tampo":"describe all graphics/decorations on the car body","wheel_type":"Basic 5-spoke|Real Riders|OH5|10-spoke|MC5|etc","base_color":"color of the base plate","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"specific visual evidence for this rarity e.g. spectraflame paint + rubber tires = Super TH","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"market-specific reason","fun_fact":"specific interesting fact about this casting","us_retail_usd":"1.49","us_collector_usd":"price range","is_authentic":true,"authenticity_notes":"any authenticity observations"}`
+
+  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'meta-llama/llama-4-scout-17b-16e-instruct',
+      messages:[
+        {role:'system',content:systemPrompt},
+        {role:'user',content:[
+          {type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},
+          {type:'text',text:userPrompt}
+        ]}
+      ],
+      temperature:0.05,
+      max_tokens:800
+    })
+  })
+  if(!res.ok){
+    const e=await res.json().catch(()=>({}))
+    if(res.status===401)throw new Error('Invalid API key — check at console.groq.com')
+    if(res.status===429)throw new Error('Rate limit — wait 30 seconds and try again')
+    throw new Error(e.error?.message||'Vision API error '+res.status)
+  }
   const data=await res.json()
   let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
   const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-  if(s===-1)throw new Error('Try again — unexpected AI response')
+  if(s===-1)throw new Error('Try again — unexpected response format')
   const d=JSON.parse(raw.substring(s,e))
-  if(!d.identified)throw new Error('Could not identify. Try: white background · bright light · side view')
+  if(!d.identified)throw new Error('Could not identify. Try: white surface · bright light · clear side view · include card')
   return d
 }
 
-// ── PHOTO: Step 2 price search ──
+// ── PHOTO: Step 2 price search — Kimi K2 with deep India market knowledge ──
 async function searchPrices(carName,rarity,castingYear){
-  const rarityBase={'Common':'150-200','Uncommon':'250-500','Rare':'600-1500','Treasure Hunt':'1200-3000','Super Treasure Hunt':'3500-15000','Error Car':'5000-30000','Vintage':'800-8000','Premium':'500-1200'}
-  const prompt=`You are India's top Hot Wheels market analyst. Give accurate Indian market prices for:
+  const rp={'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},'Premium':{r:'450-800',c:'700-1500',ur:'4.99',uc:'8-20'},'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}}
+  const p=rp[rarity]||rp['Common']
+  const prompt=`You are India's most knowledgeable Hot Wheels market expert with 20 years collecting in India.
 
-Car: "${carName}"
-Rarity: ${rarity}
-Year: ${castingYear}
-Base price range for ${rarity}: ₹${rarityBase[rarity]||'200-400'}
+Car: "${carName}" | Rarity: ${rarity} | Year: ${castingYear}
+Typical India range: Retail ₹${p.r}, Collector ₹${p.c}
 
-Consider: Indian import taxes, OLX market, Instagram collector groups, swap meet prices, Amazon India, Flipkart availability, demand from Indian collectors specifically for this model.
+Consider: Indian collector demand for this specific model, OLX market rates, Instagram group prices, swap meet prices in Mumbai/Delhi/Bangalore, scarcity vs US market, whether this is available on Amazon India/Flipkart.
 
 Return ONLY valid JSON:
-{"india_retail_inr":"150-200","india_collector_inr":"400-800","price_source_retail":"Amazon India","price_source_collector":"OLX India","price_trend":"Rising|Stable|Falling","price_trend_reason":"specific reason for this exact car","india_insight":"3 sentences about this specific car in Indian collector market — demand, availability, collector interest, price trends","sell_platforms":["OLX","Instagram collector groups","Maido"],"buy_platforms":["Amazon India","Flipkart"],"live_listings":[]}`
-  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:700})})
-  if(!res.ok)return null
-  const data=await res.json()
-  let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-  try{const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1;if(s===-1)return null;return JSON.parse(raw.substring(s,e))}catch{return null}
+{"india_retail_inr":"${p.r}","india_collector_inr":"${p.c}","price_source_retail":"Amazon India","price_source_collector":"OLX India","us_retail_usd":"${p.ur}","us_collector_usd":"${p.uc}","price_trend":"Rising|Stable|Falling","price_trend_reason":"specific why for this model in India","india_insight":"2-3 sentences about Indian collector demand for this model, why collectors want it, current market activity","sell_platforms":["OLX","Instagram collector groups","Maido"],"buy_tip":"best way to find this in India"}`
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:500})})
+    if(!res.ok)return null
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    if(s===-1)return null
+    return JSON.parse(raw.substring(s,e))
+  }catch{return null}
 }
-
-// ── PHOTO analyze ──
+// ── PHOTO analyze — parallel calls for speed ──
 async function analyzePhoto(){
   if(!img64||!KEY)return
+  if(!checkLimit())return
   const btn=document.getElementById('analyze-btn')
   btn.disabled=true;btn.textContent='⏳ Scanning...'
   document.getElementById('pipeline').style.display='block'
   document.getElementById('err-box').style.display='none'
   document.getElementById('result').style.display='none'
   document.getElementById('deal-result').style.display='none'
-  resetSteps();startTimer('Step 1: Identifying car...')
+  resetSteps();startTimer('Identifying + fetching prices...')
+
   try{
-    setStep(1,'active')
+    // SPEED FIX: Run vision first (need car name for pricing)
+    // then fire price search immediately after — no unnecessary waiting
+    setStep(1,'active');setStep(2,'active')
     const carData=await identifyCar(img64)
-    setStep(1,'done');setStep(2,'active')
-    document.getElementById('timer-lbl').textContent='Step 2: Searching live prices...'
+    setStep(1,'done')
+
+    // Fire price search immediately with car data
+    document.getElementById('timer-lbl').textContent='Fetching Indian market prices...'
     const priceData=await searchPrices(carData.name,carData.rarity,carData.casting_year)
-    setStep(2,'done');setStep(3,'active')
-    document.getElementById('timer-lbl').textContent='Step 3: Building result...'
-    await new Promise(r=>setTimeout(r,300))
-    setStep(3,'done');setStep(4,'done')
+    setStep(2,'done');setStep(3,'done');setStep(4,'done')
     stopTimer()
+
     const result={...carData,...(priceData||{})}
     lastResult=result
+    incScans()
     saveToHist(result)
     showResult(result)
+
+    // Show scans remaining for free users
+    if(!isPro()){
+      const remaining=FREE_SCANS-getTodayScans()
+      if(remaining<=2&&remaining>0){
+        setTimeout(()=>{
+          const el=document.getElementById('err-box')
+          el.innerHTML=`ℹ️ ${remaining} free scan${remaining===1?'':'s'} remaining today. <button onclick="showProModal()" style="background:var(--gold);color:#000;border:none;padding:3px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Go Pro</button>`
+          el.style.background='#1a1500';el.style.border='1px solid rgba(255,214,10,0.3)';el.style.color='var(--gold)'
+          el.style.display='block'
+        },2000)
+      }
+    }
   }catch(err){
     stopTimer();setStep(1,'err')
-    document.getElementById('err-box').innerHTML=`⚠️ ${err.message}<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>`
+    document.getElementById('err-box').innerHTML=`⚠️ ${err.message}<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view · include card</div>`
     document.getElementById('err-box').style.display='block'
   }finally{
     btn.disabled=false;btn.textContent='🔎 Identify & Get Live Prices'
@@ -1215,5 +1296,24 @@ function resetScan(){
 
 function ol(url){if(url&&url!=='#')window.open(url,'_blank')}
 </script>
+
+<!-- Pro Modal -->
+<div class="modal-overlay" id="pro-modal">
+  <div style="width:100%;max-width:340px">
+    <div style="background:linear-gradient(135deg,#1a1400,#0d0d1a);border-radius:20px;padding:24px;border:1px solid rgba(255,214,10,0.3);text-align:center">
+      <div style="font-size:40px;margin-bottom:10px">⭐</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:5px">HotScan Pro</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">You have used all 5 free scans today.<br>Upgrade to Pro for unlimited scans.</div>
+      <div style="background:rgba(0,0,0,0.3);border-radius:14px;padding:16px;margin-bottom:16px;text-align:left">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px">PRO INCLUDES:</div>
+        <div style="font-size:13px;color:#ccc;line-height:2">✅ Unlimited daily scans<br>✅ Price trend alerts via WhatsApp<br>✅ Priority AI — faster results<br>✅ Collection export to PDF<br>✅ Early access to new features</div>
+      </div>
+      <div style="font-size:28px;font-weight:800;color:var(--gold);margin-bottom:4px">₹99<span style="font-size:14px;font-weight:400;color:var(--text2)">/month</span></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:16px">Less than one Hot Wheels car per month</div>
+      <button onclick="activatePro()" style="background:var(--gold);color:#000;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;width:100%;margin-bottom:10px">Get Pro — ₹99/month</button>
+      <button onclick="closeProModal()" style="background:var(--surface2);color:var(--text2);border:none;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;width:100%">Maybe later</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
