@@ -774,7 +774,7 @@ async function identifyCar(imageData){
   const prompt=`Expert Hot Wheels identifier. Analyze this die-cast car precisely.
 Return ONLY valid JSON:
 {"identified":true,"confidence":88,"name":"exact model name","series":"series and year","casting_year":"year","color":"color","tampo":"decorations","wheel_type":"wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"specific reason","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","is_authentic":true,"authenticity_notes":"notes on authenticity"}`
-  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-maverick-17b-128e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
+  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
   if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid API key');if(res.status===429)throw new Error('Rate limit — wait 30 seconds');throw new Error(e.error?.message||'Vision API error')}
   const data=await res.json()
   let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
@@ -938,7 +938,7 @@ Return ONLY valid JSON:
 {"identified":true,"car_name":"name if visible","is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":["flag1","flag2"],"good_signs":["sign1","sign2"],"recommendation":"what the buyer should do","fake_indicators_explained":"detailed explanation of what was checked","india_fake_note":"note about fake HW prevalence in Indian market"}`
 
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-maverick-17b-128e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
     if(!res.ok)throw new Error('API error — try again')
     const data=await res.json()
     let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
