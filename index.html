@@ -7,95 +7,131 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="HotScan">
 <meta name="theme-color" content="#e63946">
-<meta name="description" content="India's #1 Hot Wheels scanner. Real-time Indian market prices. Instant rarity. Free.">
-<meta property="og:title" content="HotScan India — Hot Wheels Scanner">
-<meta property="og:description" content="Scan any Hot Wheels. Get real Indian market prices instantly.">
+<meta name="description" content="India's #1 Hot Wheels scanner. Live Indian prices, rarity, barcode scan, deal checker. Free.">
 <title>HotScan India — Hot Wheels Scanner</title>
 <link rel="manifest" href="manifest.json">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:#080808;color:#fff;overflow-x:hidden}
-:root{--red:#e63946;--red2:#c1121f;--gold:#ffd60a;--green:#2dc653;--blue:#4cc9f0;--purple:#c77dff;--surface:#141414;--surface2:#1e1e1e;--surface3:#282828;--border:#252525;--border2:#333;--text2:#aaa;--text3:#555}
+:root{--red:#e63946;--red2:#c1121f;--gold:#ffd60a;--green:#2dc653;--blue:#4cc9f0;--purple:#c77dff;--orange:#ff9f1c;--surface:#141414;--surface2:#1e1e1e;--surface3:#282828;--border:#252525;--border2:#333;--text2:#aaa;--text3:#555}
 
 .nav{display:flex;background:#0a0a0a;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
 .nav-item{flex:1;padding:10px 2px 8px;text-align:center;cursor:pointer;font-size:9px;color:var(--text3);border-bottom:2px solid transparent;transition:all 0.15s}
 .nav-item.active{color:var(--red);border-bottom-color:var(--red)}
-.nav-icon{font-size:18px;display:block;margin-bottom:2px}
+.nav-icon{font-size:17px;display:block;margin-bottom:2px}
 
-.header{background:linear-gradient(135deg,#e63946,#c1121f);padding:14px 18px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 20px rgba(230,57,70,0.5)}
-.logo{width:36px;height:36px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.header h1{font-size:18px;font-weight:800}
+.header{background:linear-gradient(135deg,#e63946,#c1121f);padding:13px 16px 11px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 20px rgba(230,57,70,0.5)}
+.logo{width:34px;height:34px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.header h1{font-size:17px;font-weight:800}
 .header p{font-size:10px;opacity:0.85}
-.ver{margin-left:auto;background:rgba(255,255,255,0.2);padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;flex-shrink:0}
+.ver{margin-left:auto;background:rgba(255,255,255,0.2);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;flex-shrink:0}
 
-.page{display:none;padding:14px;max-width:500px;margin:0 auto;padding-bottom:50px}
+.page{display:none;padding:13px;max-width:500px;margin:0 auto;padding-bottom:50px}
 .page.active{display:block}
-.page-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.page-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
 .page-title{font-size:18px;font-weight:800}
 
-.card{background:var(--surface);border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid var(--border)}
-.card-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px}
+.card{background:var(--surface);border-radius:15px;padding:14px;margin-bottom:11px;border:1px solid var(--border)}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:11px}
 
-/* Key */
-.key-card{background:var(--surface);border:1px solid rgba(255,214,10,0.2);border-radius:16px;padding:16px;margin-bottom:12px}
+.key-card{background:var(--surface);border:1px solid rgba(255,214,10,0.2);border-radius:15px;padding:15px;margin-bottom:11px}
 .key-label{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:3px}
-.key-sub{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5}
+.key-sub{font-size:12px;color:var(--text3);margin-bottom:11px;line-height:1.5}
 .key-sub a{color:var(--blue);text-decoration:none}
 .key-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:#fff;font-family:monospace;outline:none;margin-bottom:9px}
 .key-input:focus{border-color:var(--gold)}
 .key-input::placeholder{color:var(--text3)}
 .key-save{background:var(--gold);color:#000;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
 
-/* Scan */
-.scan-area{background:var(--surface);border:2px dashed var(--border2);border-radius:18px;margin-bottom:12px;overflow:hidden;transition:border-color 0.2s}
+/* Mode tabs */
+.mode-tabs{display:flex;gap:6px;margin-bottom:12px}
+.mode-tab{flex:1;padding:10px 6px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.15s}
+.mode-tab span{font-size:20px}
+.mode-tab.active{background:var(--red);border-color:var(--red);color:#fff}
+.mode-tab:active{opacity:0.8}
+
+.scan-area{background:var(--surface);border:2px dashed var(--border2);border-radius:17px;margin-bottom:11px;overflow:hidden;transition:border-color 0.2s}
 .scan-area.has-image{border-style:solid;border-color:var(--red)}
-.scan-ph{padding:26px 18px;text-align:center}
-.scan-emoji{font-size:46px;margin-bottom:9px}
+.scan-ph{padding:24px 16px;text-align:center}
+.scan-emoji{font-size:44px;margin-bottom:8px}
 .scan-title{font-size:16px;font-weight:700;margin-bottom:5px}
-.scan-sub{font-size:12px;color:var(--text2);margin-bottom:18px;line-height:1.5}
-.scan-btns{display:flex;gap:8px;justify-content:center}
-.btn-red{background:var(--red);color:#fff;border:none;padding:11px 20px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
-.btn-dark{background:var(--surface3);color:#fff;border:none;padding:11px 20px;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.scan-sub{font-size:12px;color:var(--text2);margin-bottom:17px;line-height:1.5}
+.scan-btns{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+.btn-red{background:var(--red);color:#fff;border:none;padding:10px 18px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.btn-dark{background:var(--surface3);color:#fff;border:none;padding:10px 18px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .btn-red:active,.btn-dark:active{opacity:0.8}
 #preview-wrap{display:none;position:relative}
-#preview-img{width:100%;max-height:260px;object-fit:cover;display:block}
-.preview-retake{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.75);color:#fff;border:none;border-radius:20px;padding:6px 13px;font-size:12px;cursor:pointer}
+#preview-img{width:100%;max-height:250px;object-fit:cover;display:block}
+.preview-retake{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.75);color:#fff;border:none;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer}
 #fc{display:none}#fg{display:none}
 
+/* Deal checker input */
+.deal-input-area{background:var(--surface);border-radius:15px;padding:14px;margin-bottom:11px;border:1px solid var(--border)}
+.deal-input-lbl{font-size:12px;color:var(--text2);margin-bottom:8px}
+.deal-input-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.deal-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:14px;color:#fff;outline:none}
+.deal-input:focus{border-color:var(--gold)}
+.deal-input::placeholder{color:var(--text3)}
+.deal-currency{font-size:18px;font-weight:700;color:var(--gold);flex-shrink:0}
+
+/* Barcode */
+.barcode-area{background:var(--surface);border-radius:15px;padding:20px;margin-bottom:11px;border:1px solid var(--border);text-align:center}
+.barcode-frame{width:200px;height:120px;border:2px solid var(--red);border-radius:12px;margin:12px auto;position:relative;display:flex;align-items:center;justify-content:center;background:var(--surface2)}
+.barcode-line{position:absolute;top:50%;width:100%;height:2px;background:rgba(230,57,70,0.6);animation:scan-line 1.5s ease-in-out infinite}
+@keyframes scan-line{0%,100%{top:20%}50%{top:80%}}
+.barcode-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:14px;color:#fff;outline:none;margin-bottom:10px;text-align:center;letter-spacing:2px;font-family:monospace}
+.barcode-input::placeholder{color:var(--text3);letter-spacing:0}
+
 /* Analyze */
-.analyze-btn{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;padding:15px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;width:100%;margin-bottom:12px;display:none;box-shadow:0 4px 18px rgba(230,57,70,0.35)}
+.analyze-btn{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;padding:14px;border-radius:13px;font-size:15px;font-weight:800;cursor:pointer;width:100%;margin-bottom:11px;display:none;box-shadow:0 4px 16px rgba(230,57,70,0.3)}
 .analyze-btn:active{transform:scale(0.98)}
 .analyze-btn:disabled{opacity:0.6;pointer-events:none}
 
-/* Status - pipeline steps */
-.pipeline{background:var(--surface2);border-radius:14px;padding:16px;margin-bottom:12px;display:none}
-.pipeline-step{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
-.pipeline-step:last-child{border-bottom:none}
-.step-icon{font-size:18px;width:32px;text-align:center;flex-shrink:0}
-.step-info{flex:1}
-.step-label{font-size:13px;font-weight:600}
-.step-sub{font-size:11px;color:var(--text3);margin-top:2px}
-.step-status{flex-shrink:0;font-size:12px;color:var(--text3)}
-.step-status.done{color:var(--green)}
-.step-status.active{color:var(--gold);animation:blink 1s ease-in-out infinite}
-.step-status.error{color:#ff6b6b}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+/* Pipeline */
+.pipeline{background:var(--surface2);border-radius:13px;padding:14px;margin-bottom:11px;display:none}
+.pip-step{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.pip-step:last-child{border-bottom:none}
+.pip-ic{font-size:16px;width:28px;text-align:center;flex-shrink:0}
+.pip-info{flex:1}
+.pip-lbl{font-size:12px;font-weight:600}
+.pip-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.pip-st{flex-shrink:0;font-size:11px;color:var(--text3)}
+.pip-st.active{color:var(--gold);animation:blink 1s infinite}
+.pip-st.done{color:var(--green)}
+.pip-st.err{color:#ff6b6b}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 
 /* Timer */
-.timer-bar{background:var(--surface);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:none;display:flex;align-items:center;gap:10px}
-.timer-txt{font-size:12px;color:var(--text2);flex:1}
-.timer-count{font-size:13px;font-weight:700;color:var(--gold);font-family:monospace}
-.timer-prog{height:3px;background:var(--surface3);border-radius:3px;margin-top:6px;overflow:hidden}
+#timer-wrap{display:none;background:var(--surface2);border-radius:10px;padding:10px 13px;margin-bottom:11px}
+.timer-row{display:flex;justify-content:space-between;margin-bottom:5px}
+.timer-lbl{font-size:11px;color:var(--text2)}
+.timer-count{font-size:12px;font-weight:700;color:var(--gold);font-family:monospace}
+.timer-bar{height:3px;background:var(--surface3);border-radius:3px;overflow:hidden}
 .timer-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold));border-radius:3px;transition:width 1s linear}
 
-/* Error */
-.err-box{background:#180808;border:1px solid #4a1a1a;border-radius:12px;padding:13px;margin-bottom:12px;display:none;font-size:13px;color:#ff8080;line-height:1.6}
+.err-box{background:#180808;border:1px solid #4a1a1a;border-radius:12px;padding:12px;margin-bottom:11px;display:none;font-size:13px;color:#ff8080;line-height:1.6}
+
+/* Deal result */
+.deal-result{display:none;border-radius:15px;overflow:hidden;margin-bottom:11px;border:1px solid var(--border)}
+.deal-verdict{padding:18px;text-align:center}
+.deal-verdict-icon{font-size:52px;margin-bottom:10px}
+.deal-verdict-label{font-size:20px;font-weight:800;margin-bottom:5px}
+.deal-verdict-sub{font-size:13px;color:var(--text2);line-height:1.5}
+.verdict-steal{background:linear-gradient(135deg,#0a1a0a,#0d2a0d);border-bottom:1px solid rgba(45,198,83,0.2)}
+.verdict-fair{background:linear-gradient(135deg,#0d0d1a,#0d1a2a);border-bottom:1px solid rgba(76,201,240,0.2)}
+.verdict-high{background:linear-gradient(135deg,#1a1000,#2a1000);border-bottom:1px solid rgba(255,214,10,0.2)}
+.verdict-overpriced{background:linear-gradient(135deg,#1a0808,#2a0808);border-bottom:1px solid rgba(255,107,107,0.2)}
+.deal-breakdown{padding:13px}
+.deal-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.deal-row:last-child{border-bottom:none}
+.deal-k{color:var(--text2)}
+.deal-v{font-weight:600}
+.deal-suggestion{margin:12px;background:var(--surface2);border-radius:10px;padding:12px;font-size:13px;color:#ccc;line-height:1.6;border-left:3px solid var(--gold)}
 
 /* Result */
-.result{display:none;background:var(--surface);border-radius:18px;overflow:hidden;margin-bottom:12px;border:1px solid var(--border)}
-
-.r-hero{background:linear-gradient(135deg,#0d0b18,#180b0b);padding:16px;display:flex;gap:13px}
-.r-thumb{width:84px;height:84px;border-radius:12px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:36px}
+.result{display:none;background:var(--surface);border-radius:17px;overflow:hidden;margin-bottom:11px;border:1px solid var(--border)}
+.r-hero{background:linear-gradient(135deg,#0d0b18,#180b0b);padding:15px;display:flex;gap:12px}
+.r-thumb{width:80px;height:80px;border-radius:11px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:34px}
 .r-thumb img{width:100%;height:100%;object-fit:cover}
 .r-name{font-size:16px;font-weight:800;line-height:1.2;margin-bottom:2px}
 .r-series{font-size:11px;color:var(--text2);margin-bottom:7px}
@@ -107,246 +143,304 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .rs{background:linear-gradient(135deg,#251600,#180000);color:var(--gold);animation:sglow 2s infinite}
 .re{background:#1a0808;color:#ff6b6b}
 @keyframes sglow{0%,100%{box-shadow:0 0 5px rgba(255,214,10,0.2)}50%{box-shadow:0 0 15px rgba(255,214,10,0.5)}}
-.conf{font-size:10px;color:var(--text3);margin-top:5px}
+.conf{font-size:10px;color:var(--text3);margin-top:4px}
 .conf-bar{height:2px;background:var(--surface3);border-radius:2px;margin-top:3px;overflow:hidden}
 .conf-fill{height:100%;background:var(--green);transition:width 0.5s}
 
-/* Live price section */
-.live-prices{border-top:1px solid var(--border)}
-.live-header{padding:10px 14px 6px;display:flex;align-items:center;gap:6px}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:livepulse 2s ease-in-out infinite;flex-shrink:0}
-@keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
-.live-label{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px}
-.live-updated{font-size:10px;color:var(--text3);margin-left:auto}
+/* Fake detector badge */
+.authentic-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-top:4px}
+.auth-yes{background:#0a1a0a;color:var(--green)}
+.auth-no{background:#1a0808;color:#ff6b6b}
+.auth-unsure{background:#1a1000;color:var(--gold)}
 
+.live-prices{border-top:1px solid var(--border)}
+.live-hdr{padding:9px 13px 5px;display:flex;align-items:center;gap:5px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:livepulse 2s infinite;flex-shrink:0}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.live-lbl{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px}
+.live-upd{font-size:9px;color:var(--text3);margin-left:auto}
 .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
-.ptile{background:var(--surface);padding:12px;text-align:center}
-.ptile-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px}
-.ptile-val{font-size:20px;font-weight:800;margin-bottom:2px}
+.ptile{background:var(--surface);padding:11px;text-align:center}
+.ptile-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px}
+.ptile-val{font-size:19px;font-weight:800;margin-bottom:2px}
 .pinr{color:var(--gold)}
 .pusd{color:var(--green)}
 .ptile-sub{font-size:9px;color:var(--text3)}
-.ptile-src{font-size:9px;color:var(--blue);margin-top:3px}
+.ptile-src{font-size:9px;color:var(--blue);margin-top:2px}
 
-/* Price trend */
-.price-trend{padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px}
-.trend-up{color:var(--green)}
-.trend-dn{color:#ff6b6b}
-.trend-st{color:var(--text3)}
+.price-trend{padding:9px 13px;border-top:1px solid var(--border);display:flex;align-items:center;gap:7px;font-size:12px}
+.tup{color:var(--green)}.tdn{color:#ff6b6b}.tst{color:var(--text3)}
 
-/* Live listings */
-.live-listings{border-top:1px solid var(--border);padding:12px 14px}
-.ll-label{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
-.listing-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer}
-.listing-item:last-child{border-bottom:none}
-.listing-item:active{opacity:0.7}
-.listing-platform{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface3);color:var(--text2);flex-shrink:0}
+.live-listings{border-top:1px solid var(--border);padding:11px 13px}
+.ll-lbl{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px}
+.listing{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.listing:last-child{border-bottom:none}
+.listing:active{opacity:0.7}
+.listing-plat{font-size:10px;padding:2px 6px;border-radius:8px;background:var(--surface3);color:var(--text2);flex-shrink:0}
 .listing-desc{flex:1;font-size:12px;color:#ccc;line-height:1.3}
 .listing-price{font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0}
-.listing-arr{font-size:12px;color:var(--text3);flex-shrink:0}
 
-/* Invest */
-.r-invest{padding:11px 14px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)}
-.inv-badge{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700}
+.r-invest{padding:10px 13px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)}
+.inv-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
 .il{background:#1a1a1a;color:#555}
 .im{background:#0a1a0a;color:var(--green)}
 .ih{background:#1a1300;color:var(--gold)}
 .iv{background:linear-gradient(135deg,#1a1300,#1a0000);color:var(--gold);animation:sglow 2s infinite}
 
-/* Details */
 .r-dets{border-top:1px solid var(--border)}
-.det{display:flex;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);gap:10px}
+.det{display:flex;justify-content:space-between;padding:8px 13px;border-bottom:1px solid var(--border);gap:10px}
 .det:last-child{border-bottom:none}
 .det-k{font-size:12px;color:var(--text2);flex-shrink:0}
 .det-v{font-size:12px;font-weight:600;text-align:right;line-height:1.4}
 
-/* Insight */
-.r-insight{margin:12px;background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:11px 13px}
-.r-insight-lbl{font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
+.r-insight{margin:11px;background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:10px 12px}
+.r-insight-lbl{font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
 .r-insight-txt{font-size:12px;color:#ccc;line-height:1.6}
 
-/* Result actions */
-.r-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 12px 12px}
-.ract{padding:10px 4px;border-radius:10px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px}
-.ract span{font-size:16px}
+.r-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0 11px 11px}
+.ract{padding:9px 3px;border-radius:9px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px}
+.ract span{font-size:15px}
 .ract:active{opacity:0.75}
 
-/* Collection */
-.val-card{background:linear-gradient(135deg,#1a1400,#0d0d1a);border-radius:16px;padding:18px;margin-bottom:12px;border:1px solid rgba(255,214,10,0.2);text-align:center}
-.val-total{font-size:34px;font-weight:800;color:var(--gold);margin:8px 0}
-.val-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.val-tile{background:rgba(0,0,0,0.3);border-radius:10px;padding:10px}
-.val-tile-n{font-size:15px;font-weight:700}
-.val-tile-l{font-size:10px;color:var(--text3);margin-top:2px}
-.export-btn{background:var(--gold);color:#000;border:none;padding:12px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:12px}
+/* Hunt mode */
+.hunt-series{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px}
+.hunt-series-item{background:var(--surface);border-radius:12px;padding:12px;border:1px solid var(--border);cursor:pointer;text-align:center;transition:all 0.15s}
+.hunt-series-item.selected{border-color:var(--red);background:rgba(230,57,70,0.1)}
+.hunt-series-item:active{opacity:0.8}
+.hunt-series-icon{font-size:24px;margin-bottom:5px}
+.hunt-series-name{font-size:12px;font-weight:600}
+.hunt-series-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.hunt-list{background:var(--surface);border-radius:15px;padding:14px;margin-bottom:11px;border:1px solid var(--border)}
+.hunt-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.hunt-item:last-child{border-bottom:none}
+.hunt-item input[type=checkbox]{width:18px;height:18px;flex-shrink:0;cursor:pointer;accent-color:var(--red)}
+.hunt-item-name{flex:1;font-size:13px;font-weight:600}
+.hunt-item-price{font-size:12px;color:var(--gold);font-weight:700}
+.hunt-item-rarity{font-size:10px;padding:2px 7px;border-radius:10px}
 
-.chips{display:flex;gap:5px;overflow-x:auto;padding-bottom:3px;margin-bottom:10px}
-.chip{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:5px 11px;border-radius:20px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+/* Collection */
+.val-card{background:linear-gradient(135deg,#1a1400,#0d0d1a);border-radius:15px;padding:16px;margin-bottom:11px;border:1px solid rgba(255,214,10,0.2);text-align:center}
+.val-total{font-size:32px;font-weight:800;color:var(--gold);margin:7px 0}
+.val-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}
+.val-tile{background:rgba(0,0,0,0.3);border-radius:9px;padding:9px}
+.val-tile-n{font-size:14px;font-weight:700}
+.val-tile-l{font-size:10px;color:var(--text3);margin-top:2px}
+.export-btn{background:var(--gold);color:#000;border:none;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:11px}
+
+.chips{display:flex;gap:5px;overflow-x:auto;padding-bottom:3px;margin-bottom:9px}
+.chip{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:5px 10px;border-radius:20px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .chip.active{background:var(--red);border-color:var(--red);color:#fff}
 
-.col-item{background:var(--surface);border-radius:13px;padding:11px;margin-bottom:7px;border:1px solid var(--border);display:flex;gap:9px;align-items:center}
-.col-thumb{width:52px;height:52px;border-radius:9px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px}
+.col-item{background:var(--surface);border-radius:12px;padding:10px;margin-bottom:7px;border:1px solid var(--border);display:flex;gap:9px;align-items:center}
+.col-thumb{width:50px;height:50px;border-radius:9px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px}
 .col-thumb img{width:100%;height:100%;object-fit:cover}
 .col-name{font-size:13px;font-weight:700;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .col-meta{font-size:10px;color:var(--text3);margin-bottom:3px}
 .col-price{font-size:12px;font-weight:700;color:var(--gold)}
-.col-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;margin-left:auto;flex-shrink:0}
+.col-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;margin-left:auto;flex-shrink:0}
 
 /* Alerts */
-.alert-item{background:var(--surface);border-radius:12px;padding:13px;margin-bottom:7px;border:1px solid rgba(255,214,10,0.15)}
+.alert-item{background:var(--surface);border-radius:12px;padding:12px;margin-bottom:7px;border:1px solid rgba(255,214,10,0.15)}
 .alert-name{font-size:13px;font-weight:700;margin-bottom:3px}
-.alert-meta{font-size:11px;color:var(--text3);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.alert-meta{font-size:10px;color:var(--text3);display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
 .alert-link{color:var(--blue);text-decoration:none;font-size:11px;cursor:pointer;background:none;border:none;padding:0}
-.alert-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-left:auto}
+.alert-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px}
 
-/* History */
-.hist-item{background:var(--surface);border-radius:12px;padding:11px;margin-bottom:7px;border:1px solid var(--border);display:flex;gap:9px;align-items:center}
-.hist-thumb{width:46px;height:46px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px}
+.hist-item{background:var(--surface);border-radius:12px;padding:10px;margin-bottom:7px;border:1px solid var(--border);display:flex;gap:9px;align-items:center}
+.hist-thumb{width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:19px}
 .hist-thumb img{width:100%;height:100%;object-fit:cover}
 .hist-name{font-size:13px;font-weight:700;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hist-meta{font-size:10px;color:var(--text3)}
 .hist-price{font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0;margin-left:auto}
 
-/* More */
-.more-sec{margin-bottom:16px}
-.more-sec-t{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600;margin-bottom:7px}
-.more-item{background:var(--surface);border-radius:12px;padding:13px;margin-bottom:5px;display:flex;align-items:center;gap:11px;border:1px solid var(--border);cursor:pointer}
+.more-sec{margin-bottom:15px}
+.more-sec-t{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600;margin-bottom:6px}
+.more-item{background:var(--surface);border-radius:11px;padding:12px;margin-bottom:5px;display:flex;align-items:center;gap:10px;border:1px solid var(--border);cursor:pointer}
 .more-item:active{background:var(--surface2)}
-.more-ic{font-size:18px;width:34px;height:34px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.more-ic{font-size:17px;width:32px;height:32px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .more-t{font-size:13px;font-weight:600;margin-bottom:1px}
 .more-s{font-size:11px;color:var(--text3)}
-.more-arr{color:var(--text3);font-size:15px;margin-left:auto}
+.more-arr{color:var(--text3);font-size:14px;margin-left:auto}
 
-.rg{background:var(--surface);border-radius:14px;padding:13px;border:1px solid var(--border);margin-bottom:5px}
-.rg-row{display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px solid var(--border)}
+.rg{background:var(--surface);border-radius:13px;padding:12px;border:1px solid var(--border);margin-bottom:5px}
+.rg-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
 .rg-row:last-child{border-bottom:none}
-.rg-badge{flex-shrink:0;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;min-width:76px;text-align:center}
+.rg-badge{flex-shrink:0;padding:3px 7px;border-radius:20px;font-size:10px;font-weight:700;min-width:72px;text-align:center}
 .rg-info{font-size:11px;color:var(--text2);line-height:1.4}
 
 /* Share modal */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:500;align-items:center;justify-content:center;padding:20px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:500;align-items:center;justify-content:center;padding:18px}
 .modal-overlay.open{display:flex}
-.share-card{background:linear-gradient(135deg,#0d0b18,#180b0b);border-radius:20px;padding:22px;width:100%;max-width:340px;border:1px solid rgba(255,255,255,0.08);position:relative}
-.sc-close{position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px}
-.sc-logo{display:flex;align-items:center;gap:7px;margin-bottom:14px}
-.sc-logo-ic{width:26px;height:26px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
+.share-card{background:linear-gradient(135deg,#0d0b18,#180b0b);border-radius:18px;padding:20px;width:100%;max-width:330px;border:1px solid rgba(255,255,255,0.07);position:relative}
+.sc-close{position:absolute;top:11px;right:11px;background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:50%;width:27px;height:27px;cursor:pointer;font-size:13px}
+.sc-logo{display:flex;align-items:center;gap:7px;margin-bottom:13px}
+.sc-logo-ic{width:24px;height:24px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px}
 .sc-logo-txt{font-size:12px;font-weight:700;color:var(--text2)}
 .sc-url{margin-left:auto;font-size:9px;color:var(--text3)}
-.sc-img{width:100%;height:140px;border-radius:12px;overflow:hidden;margin-bottom:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:52px}
+.sc-img{width:100%;height:130px;border-radius:11px;overflow:hidden;margin-bottom:11px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:48px}
 .sc-img img{width:100%;height:100%;object-fit:cover}
-.sc-name{font-size:18px;font-weight:800;margin-bottom:2px}
-.sc-series{font-size:11px;color:var(--text2);margin-bottom:9px}
-.sc-prices{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}
-.sc-price{background:rgba(255,255,255,0.05);border-radius:9px;padding:9px;text-align:center}
+.sc-name{font-size:17px;font-weight:800;margin-bottom:2px}
+.sc-series{font-size:11px;color:var(--text2);margin-bottom:8px}
+.sc-prices{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:9px 0}
+.sc-price{background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;text-align:center}
 .sc-price-lbl{font-size:9px;color:var(--text3);margin-bottom:3px}
-.sc-price-val{font-size:16px;font-weight:800}
-.sc-footer{font-size:10px;color:var(--text3);text-align:center;margin-top:9px}
-.sc-btns{display:flex;gap:8px;margin-top:12px}
-.sc-btn{flex:1;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:none}
+.sc-price-val{font-size:15px;font-weight:800}
+.sc-footer{font-size:10px;color:var(--text3);text-align:center;margin-top:8px}
+.sc-btns{display:flex;gap:7px;margin-top:11px}
+.sc-btn{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none}
 .sc-btn-wa{background:#25D366;color:#fff}
 .sc-btn-sh{background:var(--surface3);color:#fff}
 
-.empty{text-align:center;padding:36px 20px;color:var(--text3)}
-.empty-icon{font-size:42px;margin-bottom:9px}
-.empty-t{font-size:15px;font-weight:600;color:#444;margin-bottom:5px}
+.empty{text-align:center;padding:34px 18px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:8px}
+.empty-t{font-size:14px;font-weight:600;color:#444;margin-bottom:5px}
 .empty-s{font-size:12px}
-
-.install-banner{background:var(--surface);border-radius:14px;padding:13px;margin-bottom:12px;display:flex;align-items:center;gap:11px;border:1px solid var(--border)}
+.install-banner{background:var(--surface);border-radius:13px;padding:12px;margin-bottom:11px;display:flex;align-items:center;gap:10px;border:1px solid var(--border)}
 .ib-txt{font-size:12px;color:var(--text2);line-height:1.5}
 .ib-txt strong{color:#fff;display:block;margin-bottom:1px}
 .clr-btn{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer}
-.footer{text-align:center;font-size:10px;color:var(--text3);margin-top:12px;line-height:1.8}
+.footer{text-align:center;font-size:10px;color:var(--text3);margin-top:11px;line-height:1.8}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="logo">🚗</div>
-  <div><h1>HotScan India</h1><p>Hot Wheels · Rarity · Live Indian Prices</p></div>
-  <div class="ver">v2.0</div>
+  <div><h1>HotScan India</h1><p>Hot Wheels · Live Prices · Rarity · Deals</p></div>
+  <div class="ver">v3.0</div>
 </div>
 
 <div class="nav">
   <div class="nav-item active" onclick="goPage('scan')"><span class="nav-icon">🔍</span>Scan</div>
   <div class="nav-item" onclick="goPage('collection')"><span class="nav-icon">🗂</span>Collection</div>
+  <div class="nav-item" onclick="goPage('hunt')"><span class="nav-icon">🎯</span>Hunt</div>
   <div class="nav-item" onclick="goPage('alerts')"><span class="nav-icon">🔔</span>Alerts</div>
-  <div class="nav-item" onclick="goPage('history')"><span class="nav-icon">🕐</span>History</div>
   <div class="nav-item" onclick="goPage('more')"><span class="nav-icon">⚙️</span>More</div>
 </div>
 
-<!-- SCAN -->
+<!-- SCAN PAGE -->
 <div class="page active" id="page-scan">
   <div class="install-banner" id="ib">
-    <div style="font-size:22px;flex-shrink:0">📲</div>
+    <div style="font-size:20px;flex-shrink:0">📲</div>
     <div class="ib-txt"><strong>Add to Home Screen</strong>Share → "Add to Home Screen" for the full app</div>
   </div>
 
   <div class="key-card" id="key-card">
     <div class="key-label">🔑 Free Groq API Key Required</div>
-    <div class="key-sub">Get yours free at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — 2 minutes. Stored only on your device.</div>
+    <div class="key-sub">Get free at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — 2 min. Stays on your device only.</div>
     <input class="key-input" type="password" id="gkey" placeholder="gsk_..." autocomplete="off">
     <button class="key-save" onclick="saveKey()">Save Key &amp; Start →</button>
   </div>
 
-  <div class="scan-area" id="scan-area">
-    <div class="scan-ph" id="scan-ph">
-      <div class="scan-emoji">🚗</div>
-      <div class="scan-title">Scan a Hot Wheels Car</div>
-      <div class="scan-sub">Identify any car instantly and get live Indian market prices from real sellers</div>
-      <div class="scan-btns">
-        <button class="btn-red" onclick="openCam()">📷 Camera</button>
-        <button class="btn-dark" onclick="openGal()">🖼 Gallery</button>
+  <!-- Mode selector -->
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="tab-photo" onclick="setMode('photo')"><span>📷</span>Photo Scan</div>
+    <div class="mode-tab" id="tab-barcode" onclick="setMode('barcode')"><span>🔢</span>Barcode</div>
+    <div class="mode-tab" id="tab-deal" onclick="setMode('deal')"><span>💰</span>Deal Check</div>
+    <div class="mode-tab" id="tab-fake" onclick="setMode('fake')"><span>🕵️</span>Fake Check</div>
+  </div>
+
+  <!-- Photo mode -->
+  <div id="mode-photo">
+    <div class="scan-area" id="scan-area">
+      <div class="scan-ph" id="scan-ph">
+        <div class="scan-emoji">🚗</div>
+        <div class="scan-title">Scan a Hot Wheels Car</div>
+        <div class="scan-sub">Take a photo → get live Indian prices, rarity and market insight instantly</div>
+        <div class="scan-btns">
+          <button class="btn-red" onclick="openCam()">📷 Camera</button>
+          <button class="btn-dark" onclick="openGal()">🖼 Gallery</button>
+        </div>
+      </div>
+      <div id="preview-wrap">
+        <img id="preview-img" src="" alt="">
+        <button class="preview-retake" onclick="openGal()">Change</button>
       </div>
     </div>
-    <div id="preview-wrap">
-      <img id="preview-img" src="" alt="">
-      <button class="preview-retake" onclick="openGal()">Change photo</button>
+    <input type="file" id="fc" accept="image/*" capture="environment">
+    <input type="file" id="fg" accept="image/*">
+  </div>
+
+  <!-- Barcode mode -->
+  <div id="mode-barcode" style="display:none">
+    <div class="barcode-area">
+      <div style="font-size:14px;font-weight:600;margin-bottom:5px">Scan Barcode</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Type the barcode number from the back of the blister card</div>
+      <div class="barcode-frame">
+        <div class="barcode-line"></div>
+        <div style="font-size:11px;color:var(--text3)">📷 Barcode area</div>
+      </div>
+      <input class="barcode-input" id="barcode-input" type="number" placeholder="Enter barcode number..." maxlength="20">
+      <button class="btn-red" style="width:100%;justify-content:center" onclick="scanBarcode()">🔍 Look Up This Car</button>
     </div>
   </div>
 
-  <input type="file" id="fc" accept="image/*" capture="environment">
-  <input type="file" id="fg" accept="image/*">
+  <!-- Deal check mode -->
+  <div id="mode-deal" style="display:none">
+    <div class="deal-input-area">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">💰 Is This a Good Deal?</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">First scan the car with Photo Scan, then come here to check if a seller's price is fair</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">What is the seller asking?</div>
+      <div class="deal-input-row">
+        <span class="deal-currency">₹</span>
+        <input class="deal-input" type="number" id="deal-price" placeholder="e.g. 500">
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Car name (or scan first)</div>
+      <input class="deal-input" type="text" id="deal-car-name" placeholder="e.g. Hot Wheels Camaro Super Treasure Hunt" style="width:100%;margin-bottom:10px">
+    </div>
+  </div>
 
-  <button class="analyze-btn" id="analyze-btn" onclick="analyze()">🔎 Identify &amp; Get Live Prices</button>
+  <!-- Fake check mode -->
+  <div id="mode-fake" style="display:none">
+    <div class="scan-area" id="fake-scan-area">
+      <div class="scan-ph" id="fake-scan-ph">
+        <div class="scan-emoji">🕵️</div>
+        <div class="scan-title">Fake Detector</div>
+        <div class="scan-sub">Fake Mattel Hot Wheels are common in India. Take a photo and we'll check if yours is genuine.</div>
+        <div class="scan-btns">
+          <button class="btn-red" onclick="openFakeCam()">📷 Camera</button>
+          <button class="btn-dark" onclick="openFakeGal()">🖼 Gallery</button>
+        </div>
+      </div>
+      <div id="fake-preview-wrap">
+        <img id="fake-preview-img" src="" alt="" style="width:100%;max-height:250px;object-fit:cover;display:block">
+        <button class="preview-retake" onclick="openFakeGal()">Change</button>
+      </div>
+    </div>
+    <input type="file" id="fc-fake" accept="image/*" capture="environment">
+    <input type="file" id="fg-fake" accept="image/*">
+  </div>
 
-  <!-- Pipeline steps -->
+  <!-- Analyze button -->
+  <button class="analyze-btn" id="analyze-btn" onclick="runAnalyze()">🔎 Identify &amp; Get Live Prices</button>
+
+  <!-- Pipeline -->
   <div class="pipeline" id="pipeline">
-    <div class="pipeline-step">
-      <div class="step-icon">👁</div>
-      <div class="step-info"><div class="step-label">Identifying car</div><div class="step-sub">Llama 4 Maverick vision AI</div></div>
-      <div class="step-status" id="ps1">Waiting</div>
-    </div>
-    <div class="pipeline-step">
-      <div class="step-icon">🔍</div>
-      <div class="step-info"><div class="step-label">Searching live prices</div><div class="step-sub">Compound AI web search</div></div>
-      <div class="step-status" id="ps2">Waiting</div>
-    </div>
-    <div class="pipeline-step">
-      <div class="step-icon">📊</div>
-      <div class="step-info"><div class="step-label">Analysing Indian market</div><div class="step-sub">OLX · Instagram · Flipkart</div></div>
-      <div class="step-status" id="ps3">Waiting</div>
-    </div>
-    <div class="pipeline-step" style="border-bottom:none">
-      <div class="step-icon">✅</div>
-      <div class="step-info"><div class="step-label">Building result</div><div class="step-sub">Compiling all data</div></div>
-      <div class="step-status" id="ps4">Waiting</div>
-    </div>
+    <div class="pip-step"><div class="pip-ic">👁</div><div class="pip-info"><div class="pip-lbl" id="pl1">Identifying car</div><div class="pip-sub">Llama 4 Maverick vision</div></div><div class="pip-st" id="ps1">Waiting</div></div>
+    <div class="pip-step"><div class="pip-ic">🔍</div><div class="pip-info"><div class="pip-lbl">Searching live prices</div><div class="pip-sub">Compound AI web search</div></div><div class="pip-st" id="ps2">Waiting</div></div>
+    <div class="pip-step"><div class="pip-ic">📊</div><div class="pip-info"><div class="pip-lbl">Analysing Indian market</div><div class="pip-sub">Kimi K2 deep analysis</div></div><div class="pip-st" id="ps3">Waiting</div></div>
+    <div class="pip-step" style="border-bottom:none"><div class="pip-ic">✅</div><div class="pip-info"><div class="pip-lbl">Building result</div><div class="pip-sub">Compiling all data</div></div><div class="pip-st" id="ps4">Waiting</div></div>
   </div>
 
-  <!-- Timer -->
-  <div id="timer-wrap" style="display:none;background:var(--surface2);border-radius:10px;padding:11px 14px;margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div style="font-size:12px;color:var(--text2)" id="timer-label">Scanning...</div>
-      <div style="font-size:13px;font-weight:700;color:var(--gold);font-family:monospace" id="timer-count">0s</div>
-    </div>
-    <div style="height:3px;background:var(--surface3);border-radius:3px;overflow:hidden">
-      <div id="timer-bar" style="height:100%;background:linear-gradient(90deg,var(--red),var(--gold));border-radius:3px;width:0%;transition:width 0.5s linear"></div>
-    </div>
+  <div id="timer-wrap">
+    <div class="timer-row"><div class="timer-lbl" id="timer-lbl">Scanning...</div><div class="timer-count" id="timer-count">0s</div></div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:0%"></div></div>
   </div>
 
   <div class="err-box" id="err-box"></div>
 
-  <!-- Result -->
+  <!-- Deal Result -->
+  <div class="deal-result" id="deal-result">
+    <div class="deal-verdict" id="deal-verdict-area">
+      <div class="deal-verdict-icon" id="deal-verdict-icon">🤔</div>
+      <div class="deal-verdict-label" id="deal-verdict-label">Analysing...</div>
+      <div class="deal-verdict-sub" id="deal-verdict-sub"></div>
+    </div>
+    <div class="deal-breakdown" id="deal-breakdown"></div>
+    <div class="deal-suggestion" id="deal-suggestion"></div>
+  </div>
+
+  <!-- Scan Result -->
   <div class="result" id="result">
     <div class="r-hero">
       <div class="r-thumb" id="r-thumb">🚗</div>
@@ -354,49 +448,24 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
         <div class="r-name" id="r-name">—</div>
         <div class="r-series" id="r-series">—</div>
         <div class="rar rc" id="r-rar">—</div>
+        <div class="authentic-badge auth-yes" id="r-auth" style="display:none">✓ Authentic</div>
         <div class="conf">AI Confidence<div class="conf-bar"><div class="conf-fill" id="r-conf" style="width:0%"></div></div></div>
       </div>
     </div>
-
-    <!-- Live prices -->
     <div class="live-prices">
-      <div class="live-header">
-        <div class="live-dot"></div>
-        <div class="live-label">Live Market Prices</div>
-        <div class="live-updated" id="live-updated">Just fetched</div>
-      </div>
+      <div class="live-hdr"><div class="live-dot"></div><div class="live-lbl">Live Prices</div><div class="live-upd" id="live-upd">Just fetched</div></div>
       <div class="price-grid">
-        <div class="ptile"><div class="ptile-lbl">🇮🇳 India Retail</div><div class="ptile-val pinr" id="p1">—</div><div class="ptile-sub">Hamleys · Flipkart</div><div class="ptile-src" id="ps-1"></div></div>
-        <div class="ptile"><div class="ptile-lbl">🇮🇳 Collector Price</div><div class="ptile-val pinr" id="p2">—</div><div class="ptile-sub">OLX · Instagram</div><div class="ptile-src" id="ps-2"></div></div>
+        <div class="ptile"><div class="ptile-lbl">🇮🇳 India Retail</div><div class="ptile-val pinr" id="p1">—</div><div class="ptile-sub">Hamleys · Flipkart</div><div class="ptile-src" id="psrc1"></div></div>
+        <div class="ptile"><div class="ptile-lbl">🇮🇳 Collector</div><div class="ptile-val pinr" id="p2">—</div><div class="ptile-sub">OLX · Instagram</div><div class="ptile-src" id="psrc2"></div></div>
         <div class="ptile"><div class="ptile-lbl">🇺🇸 US Retail</div><div class="ptile-val pusd" id="p3">—</div><div class="ptile-sub">Walmart · Target</div></div>
-        <div class="ptile"><div class="ptile-lbl">🇺🇸 US Collector</div><div class="ptile-val pusd" id="p4">—</div><div class="ptile-sub">eBay collector</div></div>
+        <div class="ptile"><div class="ptile-lbl">🇺🇸 US Collector</div><div class="ptile-val pusd" id="p4">—</div><div class="ptile-sub">eBay</div></div>
       </div>
     </div>
-
-    <!-- Price trend -->
-    <div class="price-trend" id="r-trend">
-      <span id="trend-icon">📊</span>
-      <span id="trend-txt" style="font-size:12px;color:var(--text2)">—</span>
-    </div>
-
-    <!-- Live listings -->
-    <div class="live-listings" id="live-listings" style="display:none">
-      <div class="ll-label">🔴 Live Listings Found</div>
-      <div id="listings-list"></div>
-    </div>
-
-    <div class="r-invest">
-      <span style="font-size:12px;color:var(--text2)">Investment Potential</span>
-      <span class="inv-badge im" id="r-inv">—</span>
-    </div>
-
+    <div class="price-trend" id="r-trend"><span id="trend-ic">📊</span><span id="trend-txt" style="font-size:12px;color:var(--text2)">—</span></div>
+    <div class="live-listings" id="live-listings" style="display:none"><div class="ll-lbl">🔴 Live Listings Found</div><div id="listings-list"></div></div>
+    <div class="r-invest"><span style="font-size:12px;color:var(--text2)">Investment Potential</span><span class="inv-badge im" id="r-inv">—</span></div>
     <div class="r-dets" id="r-dets"></div>
-
-    <div class="r-insight" id="r-insight" style="display:none">
-      <div class="r-insight-lbl">📊 India Market Insight</div>
-      <div class="r-insight-txt" id="r-insight-txt"></div>
-    </div>
-
+    <div class="r-insight" id="r-insight" style="display:none"><div class="r-insight-lbl">📊 India Market Insight</div><div class="r-insight-txt" id="r-insight-txt"></div></div>
     <div class="r-acts">
       <button class="ract" onclick="addToCol()"><span>➕</span>Add</button>
       <button class="ract" onclick="addAlert()"><span>🔔</span>Alert</button>
@@ -406,22 +475,19 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   </div>
 
   <div class="card">
-    <div class="card-title">📸 Tips for Best Results</div>
-    <div style="font-size:12px;color:var(--text2);line-height:2.1">💡 White surface · 🔆 Bright light · 🎯 Side profile · 📦 Include card if possible</div>
+    <div class="card-title">📸 Tips</div>
+    <div style="font-size:12px;color:var(--text2);line-height:2">💡 White surface · 🔆 Bright light · 🎯 Side profile · 📦 Include card</div>
   </div>
-  <div class="footer">HotScan India v2.0 · For Indian collectors 🇮🇳 · Live prices via Groq Compound AI</div>
+  <div class="footer">HotScan India v3.0 · For Indian collectors 🇮🇳 · Live prices via Groq AI</div>
 </div>
 
-<!-- COLLECTION -->
+<!-- COLLECTION PAGE -->
 <div class="page" id="page-collection">
-  <div class="page-hdr">
-    <div class="page-title">My Collection</div>
-    <button class="btn-red" onclick="goPage('scan')" style="padding:7px 13px;font-size:12px">+ Add</button>
-  </div>
+  <div class="page-hdr"><div class="page-title">My Collection</div><button class="btn-red" onclick="goPage('scan')" style="padding:7px 12px;font-size:12px">+ Add</button></div>
   <div class="val-card">
-    <div style="font-size:12px;color:var(--text2)">📋 Collection Valuation</div>
+    <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
-    <div style="font-size:11px;color:var(--text3)">Estimated Indian collector market value</div>
+    <div style="font-size:10px;color:var(--text3)">Estimated Indian collector market value</div>
     <div class="val-breakdown">
       <div class="val-tile"><div class="val-tile-n" id="v-cars">0</div><div class="val-tile-l">Total Cars</div></div>
       <div class="val-tile"><div class="val-tile-n" id="v-rare">0</div><div class="val-tile-l">Rare+</div></div>
@@ -435,96 +501,135 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   <div id="col-list"></div>
 </div>
 
-<!-- ALERTS -->
+<!-- HUNT PAGE -->
+<div class="page" id="page-hunt">
+  <div class="page-hdr"><div class="page-title">Hunt Mode 🎯</div></div>
+  <div class="card"><div class="card-title">What is Hunt Mode?</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Select the series you're hunting at stores. We show you every car in that series, what it's worth, and what to prioritise finding.</div></div>
+
+  <div class="card-title" style="margin-bottom:8px">Choose a series to hunt</div>
+  <div class="hunt-series">
+    <div class="hunt-series-item selected" id="hs-mainline" onclick="selectSeries('mainline',this)"><div class="hunt-series-icon">🚗</div><div class="hunt-series-name">Mainline 2024</div><div class="hunt-series-sub">All basic cars</div></div>
+    <div class="hunt-series-item" id="hs-th" onclick="selectSeries('th',this)"><div class="hunt-series-icon">🔥</div><div class="hunt-series-name">Treasure Hunts</div><div class="hunt-series-sub">TH + STH guide</div></div>
+    <div class="hunt-series-item" id="hs-premium" onclick="selectSeries('premium',this)"><div class="hunt-series-icon">⭐</div><div class="hunt-series-name">Premium Cars</div><div class="hunt-series-sub">Car Culture etc</div></div>
+    <div class="hunt-series-item" id="hs-vintage" onclick="selectSeries('vintage',this)"><div class="hunt-series-icon">🏆</div><div class="hunt-series-name">Vintage / Error</div><div class="hunt-series-sub">High value finds</div></div>
+  </div>
+
+  <div class="hunt-list" id="hunt-list"></div>
+</div>
+
+<!-- ALERTS PAGE -->
 <div class="page" id="page-alerts">
-  <div class="page-hdr"><div class="page-title">Deal Alerts</div><button class="clr-btn" onclick="clearAlerts()">Clear</button></div>
-  <div class="card"><div class="card-title">How it works</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Scan a car → tap <strong style="color:#fff">Alert</strong> → we add it to your watchlist with direct OLX and Instagram search links so you can monitor deals.</div></div>
+  <div class="page-hdr"><div class="page-title">Deal Alerts 🔔</div><button class="clr-btn" onclick="clearAlerts()">Clear</button></div>
+  <div class="card"><div class="card-title">How it works</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Scan a car → tap <strong style="color:#fff">Alert</strong> to add to watchlist. Tap the OLX/Instagram links to check for current deals.</div></div>
   <div id="alerts-list"></div>
   <div class="card" style="margin-top:4px">
-    <div class="card-title">⚡ Quick Deal Search</div>
+    <div class="card-title">⚡ Quick Search</div>
     <div style="display:flex;flex-direction:column;gap:6px">
-      <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.olx.in/items/q-hot-wheels-treasure-hunt')"><div style="font-size:16px">🔥</div><div><div style="font-size:12px;font-weight:600">OLX — Treasure Hunts</div><div style="font-size:10px;color:var(--text3)">Live listings</div></div><div style="margin-left:auto;color:var(--text3)">›</div></div>
-      <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')"><div style="font-size:16px">📸</div><div><div style="font-size:12px;font-weight:600">Instagram #HotWheelsIndiaSale</div><div style="font-size:10px;color:var(--text3)">Fresh daily</div></div><div style="margin-left:auto;color:var(--text3)">›</div></div>
+      <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.olx.in/items/q-hot-wheels-treasure-hunt')"><div style="font-size:15px">🔥</div><div><div style="font-size:12px;font-weight:600">OLX — Treasure Hunts</div><div style="font-size:10px;color:var(--text3)">Live listings</div></div><div style="margin-left:auto;color:var(--text3)">›</div></div>
+      <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')"><div style="font-size:15px">📸</div><div><div style="font-size:12px;font-weight:600">Instagram #HotWheelsIndiaSale</div><div style="font-size:10px;color:var(--text3)">Fresh daily</div></div><div style="margin-left:auto;color:var(--text3)">›</div></div>
     </div>
   </div>
 </div>
 
-<!-- HISTORY -->
-<div class="page" id="page-history">
-  <div class="page-hdr"><div class="page-title">Scan History</div><button class="clr-btn" onclick="clearHist()">Clear</button></div>
-  <div id="hist-list"></div>
-</div>
-
-<!-- MORE -->
+<!-- MORE PAGE -->
 <div class="page" id="page-more">
   <div class="more-sec"><div class="more-sec-t">Settings</div>
     <div class="more-item" onclick="showKeySetup()"><div class="more-ic">🔑</div><div><div class="more-t">Groq API Key</div><div class="more-s">Update your free AI key</div></div><div class="more-arr">›</div></div>
   </div>
   <div class="more-sec"><div class="more-sec-t">Buy in India</div>
-    <div class="more-item" onclick="ol('https://www.amazon.in/s?k=hot+wheels')"><div class="more-ic">📦</div><div><div class="more-t">Amazon India</div><div class="more-s">Official store · Fast delivery</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="ol('https://www.amazon.in/s?k=hot+wheels')"><div class="more-ic">📦</div><div><div class="more-t">Amazon India</div><div class="more-s">Official store</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('https://www.flipkart.com/search?q=hot+wheels')"><div class="more-ic">🛒</div><div><div class="more-t">Flipkart</div><div class="more-s">Great deals</div></div><div class="more-arr">›</div></div>
-    <div class="more-item" onclick="ol('https://www.hamleys.in/search?q=hot+wheels')"><div class="more-ic">🏬</div><div><div class="more-t">Hamleys India</div><div class="more-s">Premium toy stores</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="ol('https://www.hamleys.in/search?q=hot+wheels')"><div class="more-ic">🏬</div><div><div class="more-t">Hamleys India</div><div class="more-s">Premium stores</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('https://www.maido.in')"><div class="more-ic">🏪</div><div><div class="more-t">Maido</div><div class="more-s">Die-cast specialist</div></div><div class="more-arr">›</div></div>
   </div>
   <div class="more-sec"><div class="more-sec-t">Indian Community</div>
-    <div class="more-item" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindia/')"><div class="more-ic">📸</div><div><div class="more-t">#HotWheelsIndia</div><div class="more-s">India's biggest collector community</div></div><div class="more-arr">›</div></div>
-    <div class="more-item" onclick="ol('https://www.olx.in/items/q-hot-wheels')"><div class="more-ic">💸</div><div><div class="more-t">OLX Hot Wheels</div><div class="more-s">Local deals near you</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindia/')"><div class="more-ic">📸</div><div><div class="more-t">#HotWheelsIndia</div><div class="more-s">Biggest Indian community</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="ol('https://www.olx.in/items/q-hot-wheels')"><div class="more-ic">💸</div><div><div class="more-t">OLX Hot Wheels</div><div class="more-s">Local deals</div></div><div class="more-arr">›</div></div>
   </div>
   <div class="more-sec"><div class="more-sec-t">Rarity Guide</div>
     <div class="rg">
-      <div class="rg-row"><div class="rg-badge rc" style="background:#1e1e1e;color:#666">Common</div><div class="rg-info">₹150–200 · Any toy store · Mass produced</div></div>
-      <div class="rg-row"><div class="rg-badge ru" style="background:#0a1a0a;color:#2dc653">Uncommon</div><div class="rg-info">₹200–500 · Slightly harder to find</div></div>
-      <div class="rg-row"><div class="rg-badge rr" style="background:#0a0a1a;color:#4cc9f0">Rare</div><div class="rg-info">₹500–1500 · Limited run or vintage</div></div>
+      <div class="rg-row"><div class="rg-badge rc" style="background:#1e1e1e;color:#666">Common</div><div class="rg-info">₹150–200 · Any toy store</div></div>
+      <div class="rg-row"><div class="rg-badge ru" style="background:#0a1a0a;color:#2dc653">Uncommon</div><div class="rg-info">₹200–500 · Slightly harder</div></div>
+      <div class="rg-row"><div class="rg-badge rr" style="background:#0a0a1a;color:#4cc9f0">Rare</div><div class="rg-info">₹500–1500 · Limited run</div></div>
       <div class="rg-row"><div class="rg-badge rt" style="background:#1a1000;color:#ffd60a">Treasure Hunt</div><div class="rg-info">₹1000–3000 · 1 per case · Flame logo</div></div>
       <div class="rg-row"><div class="rg-badge rs">Super TH</div><div class="rg-info">₹3000–15000 · Real Riders · Spectraflame</div></div>
-      <div class="rg-row"><div class="rg-badge re" style="background:#1a0808;color:#ff6b6b">Error Car</div><div class="rg-info">₹5000–50000 · Factory mistake · Very rare</div></div>
+      <div class="rg-row"><div class="rg-badge re" style="background:#1a0808;color:#ff6b6b">Error Car</div><div class="rg-info">₹5000–50000 · Factory mistake</div></div>
     </div>
   </div>
   <div class="more-sec"><div class="more-sec-t">About</div>
     <div class="more-item" onclick="ol('https://github.com/mahak867/Hotscan')"><div class="more-ic">⭐</div><div><div class="more-t">Star on GitHub</div><div class="more-s">Open source · Free forever</div></div><div class="more-arr">›</div></div>
-    <div class="more-item"><div class="more-ic">ℹ️</div><div><div class="more-t">HotScan India v2.0</div><div class="more-s">India's first Hot Wheels scanner · Built for Indian collectors 🇮🇳</div></div></div>
+    <div class="more-item"><div class="more-ic">ℹ️</div><div><div class="more-t">HotScan India v3.0</div><div class="more-s">India's first Hot Wheels scanner 🇮🇳</div></div></div>
   </div>
 </div>
 
 <!-- Share Modal -->
 <div class="modal-overlay" id="share-modal">
-  <div style="width:100%;max-width:340px;position:relative">
-    <button class="sc-close" onclick="closeShare()">✕</button>
+  <div style="width:100%;max-width:330px;position:relative">
+    <div style="text-align:right;margin-bottom:8px"><button onclick="closeShare()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button></div>
     <div class="share-card">
-      <div class="sc-logo">
-        <div class="sc-logo-ic">🚗</div>
-        <div class="sc-logo-txt">HotScan India</div>
-        <div class="sc-url">mahak867.github.io/Hotscan</div>
-      </div>
+      <div class="sc-logo"><div class="sc-logo-ic">🚗</div><div class="sc-logo-txt">HotScan India</div><div class="sc-url">hotscan-theta.vercel.app</div></div>
       <div class="sc-img" id="sc-img">🚗</div>
       <div class="sc-name" id="sc-name">—</div>
       <div class="sc-series" id="sc-series">—</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <div class="rar rc" id="sc-rar">—</div>
-        <div style="font-size:11px;color:var(--text3)" id="sc-inv">—</div>
-      </div>
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:4px"><div class="rar rc" id="sc-rar">—</div><div style="font-size:10px;color:var(--text3)" id="sc-inv">—</div></div>
       <div class="sc-prices">
         <div class="sc-price"><div class="sc-price-lbl">🇮🇳 India Collector</div><div class="sc-price-val pinr" id="sc-inr">—</div></div>
         <div class="sc-price"><div class="sc-price-lbl">🇺🇸 US Collector</div><div class="sc-price-val pusd" id="sc-usd">—</div></div>
       </div>
-      <div class="sc-footer">Scanned with HotScan India 🔍 · Free at mahak867.github.io/Hotscan</div>
+      <div class="sc-footer">Scanned with HotScan India 🔍 · Free at hotscan-theta.vercel.app</div>
     </div>
-    <div class="sc-btns">
-      <button class="sc-btn sc-btn-wa" onclick="shareWA()">💬 WhatsApp</button>
-      <button class="sc-btn sc-btn-sh" onclick="shareNative()">📤 Share</button>
-    </div>
+    <div class="sc-btns"><button class="sc-btn sc-btn-wa" onclick="shareWA()">💬 WhatsApp</button><button class="sc-btn sc-btn-sh" onclick="shareNative()">📤 Share</button></div>
   </div>
 </div>
 
 <script>
 // ── State ──
 let KEY=localStorage.getItem('hs_key')||''
-let img64=null,imgThumb=null,lastResult=null
+let img64=null,imgThumb=null,fakeImg64=null,lastResult=null
 let collection=JSON.parse(localStorage.getItem('hs_col')||'[]')
 let history=JSON.parse(localStorage.getItem('hs_hist')||'[]')
 let alerts=JSON.parse(localStorage.getItem('hs_alerts')||'[]')
 let sortBy='date',filterBy='all'
-let timerInterval=null,timerSec=0
+let currentMode='photo',currentSeries='mainline'
+let timerInt=null,timerSec=0
+
+// Hunt mode data
+const HUNT_DATA={
+  mainline:[
+    {name:'Dodge Charger Daytona',rarity:'Common',india:'₹150-200',priority:'Low'},
+    {name:'Honda Civic Type R',rarity:'Uncommon',india:'₹200-350',priority:'Medium'},
+    {name:'Porsche 911 GT3 RS',rarity:'Rare',india:'₹400-800',priority:'High'},
+    {name:'Ferrari 488 GT3',rarity:'Rare',india:'₹500-900',priority:'High'},
+    {name:'Lamborghini Huracán',rarity:'Uncommon',india:'₹250-400',priority:'Medium'},
+    {name:"'69 Chevrolet Camaro",rarity:'Common',india:'₹150-200',priority:'Low'},
+    {name:'Toyota Supra MK4',rarity:'Uncommon',india:'₹250-450',priority:'Medium'},
+    {name:'Nissan Skyline GT-R',rarity:'Rare',india:'₹450-900',priority:'High'},
+  ],
+  th:[
+    {name:'Bone Shaker (TH)',rarity:'Treasure Hunt',india:'₹1200-2500',priority:'HIGH PRIORITY'},
+    {name:'Twin Mill (TH)',rarity:'Treasure Hunt',india:'₹1000-2000',priority:'HIGH PRIORITY'},
+    {name:'Deora III (STH)',rarity:'Super Treasure Hunt',india:'₹4000-10000',priority:'🔥 MUST GRAB'},
+    {name:"'69 Camaro Z28 (STH)",rarity:'Super Treasure Hunt',india:'₹5000-12000',priority:'🔥 MUST GRAB'},
+    {name:'Dodge Charger (TH)',rarity:'Treasure Hunt',india:'₹1500-3000',priority:'HIGH PRIORITY'},
+    {name:'Porsche 934.5 (STH)',rarity:'Super Treasure Hunt',india:'₹6000-15000',priority:'🔥 MUST GRAB'},
+  ],
+  premium:[
+    {name:'Car Culture — Real Riders',rarity:'Premium',india:'₹600-1200',priority:'High'},
+    {name:'Boulevard Series',rarity:'Premium',india:'₹500-1000',priority:'High'},
+    {name:'Racing Circuit',rarity:'Premium',india:'₹400-800',priority:'Medium'},
+    {name:'Fast & Furious Series',rarity:'Premium',india:'₹500-1000',priority:'High'},
+    {name:'Retro Entertainment',rarity:'Premium',india:'₹600-1200',priority:'High'},
+    {name:'Pop Culture Series',rarity:'Premium',india:'₹500-1000',priority:'Medium'},
+  ],
+  vintage:[
+    {name:'Redline Era Cars (pre-1977)',rarity:'Vintage',india:'₹3000-20000',priority:'🔥 BIG VALUE'},
+    {name:'Blackwall Era (1977-1983)',rarity:'Vintage',india:'₹1000-5000',priority:'HIGH PRIORITY'},
+    {name:'Error Cars (any year)',rarity:'Error Car',india:'₹5000-50000',priority:'🔥 BIG VALUE'},
+    {name:'Pre-production Protos',rarity:'Vintage',india:'₹10000+',priority:'🔥 BIG VALUE'},
+    {name:'Convention Exclusives',rarity:'Rare',india:'₹2000-8000',priority:'HIGH PRIORITY'},
+    {name:'Malaysia base variants',rarity:'Rare',india:'₹800-3000',priority:'High'},
+  ]
+}
 
 // ── Init ──
 ;(()=>{
@@ -532,7 +637,7 @@ let timerInterval=null,timerSec=0
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)
   const sa=window.matchMedia('(display-mode:standalone)').matches
   if(!ios||sa)document.getElementById('ib').style.display='none'
-  renderCol();renderHist();renderAlerts()
+  renderCol();renderHist();renderAlerts();renderHunt('mainline')
 })()
 
 // ── Nav ──
@@ -540,7 +645,7 @@ function goPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
   document.getElementById('page-'+id).classList.add('active')
-  const idx={scan:0,collection:1,alerts:2,history:3,more:4}[id]
+  const idx={scan:0,collection:1,hunt:2,alerts:3,more:4}[id]
   document.querySelectorAll('.nav-item')[idx].classList.add('active')
   window.scrollTo({top:0,behavior:'smooth'})
 }
@@ -548,6 +653,27 @@ function goPage(id){
 // ── Key ──
 function saveKey(){const v=document.getElementById('gkey').value.trim();if(!v){alert('Enter your Groq key');return}KEY=v;localStorage.setItem('hs_key',v);document.getElementById('key-card').style.display='none'}
 function showKeySetup(){goPage('scan');document.getElementById('key-card').style.display='block';document.getElementById('gkey').value=KEY;document.getElementById('key-card').scrollIntoView({behavior:'smooth'})}
+
+// ── Mode ──
+function setMode(mode){
+  currentMode=mode
+  ;['photo','barcode','deal','fake'].forEach(m=>{
+    document.getElementById('mode-'+m).style.display=m===mode?'block':'none'
+    document.getElementById('tab-'+m).classList.toggle('active',m===mode)
+  })
+  document.getElementById('analyze-btn').style.display='none'
+  document.getElementById('result').style.display='none'
+  document.getElementById('deal-result').style.display='none'
+  document.getElementById('err-box').style.display='none'
+
+  // Show analyze for deal/barcode modes automatically
+  if(mode==='deal'){
+    document.getElementById('analyze-btn').style.display='block'
+    document.getElementById('analyze-btn').textContent='💰 Check This Deal'
+  } else if(mode==='barcode'){
+    document.getElementById('analyze-btn').style.display='none'
+  }
+}
 
 // ── Image compression ──
 function compress(dataUrl,maxSize=512){
@@ -574,226 +700,354 @@ function compressThumb(dataUrl){
   })
 }
 
-// ── File handling ──
 function openCam(){if(!KEY){showKeySetup();return}document.getElementById('fc').click()}
 function openGal(){if(!KEY){showKeySetup();return}document.getElementById('fg').click()}
-async function handleFile(file){
+function openFakeCam(){if(!KEY){showKeySetup();return}document.getElementById('fc-fake').click()}
+function openFakeGal(){if(!KEY){showKeySetup();return}document.getElementById('fg-fake').click()}
+
+async function handleFile(file,mode){
   if(!file)return
   const raw=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(file)})
-  document.getElementById('preview-img').src=raw
-  document.getElementById('preview-wrap').style.display='block'
-  document.getElementById('scan-ph').style.display='none'
-  document.getElementById('scan-area').classList.add('has-image')
+  if(mode==='fake'){
+    document.getElementById('fake-preview-img').src=raw
+    document.getElementById('fake-preview-wrap').style.display='block'
+    document.getElementById('fake-scan-ph').style.display='none'
+    fakeImg64=await compress(raw,512)
+    document.getElementById('analyze-btn').style.display='block'
+    document.getElementById('analyze-btn').textContent='🕵️ Check If Fake'
+  } else {
+    document.getElementById('preview-img').src=raw
+    document.getElementById('preview-wrap').style.display='block'
+    document.getElementById('scan-ph').style.display='none'
+    document.getElementById('scan-area').classList.add('has-image')
+    img64=await compress(raw,512)
+    imgThumb=await compressThumb(raw)
+    document.getElementById('analyze-btn').style.display='block'
+    document.getElementById('analyze-btn').textContent='🔎 Identify & Get Live Prices'
+  }
   document.getElementById('result').style.display='none'
+  document.getElementById('deal-result').style.display='none'
   document.getElementById('err-box').style.display='none'
-  img64=await compress(raw,512)
-  imgThumb=await compressThumb(raw)
-  document.getElementById('analyze-btn').style.display='block'
 }
-document.getElementById('fc').addEventListener('change',e=>handleFile(e.target.files[0]))
-document.getElementById('fg').addEventListener('change',e=>handleFile(e.target.files[0]))
+
+document.getElementById('fc').addEventListener('change',e=>handleFile(e.target.files[0],'photo'))
+document.getElementById('fg').addEventListener('change',e=>handleFile(e.target.files[0],'photo'))
+document.getElementById('fc-fake').addEventListener('change',e=>handleFile(e.target.files[0],'fake'))
+document.getElementById('fg-fake').addEventListener('change',e=>handleFile(e.target.files[0],'fake'))
 
 // ── Timer ──
-function startTimer(label){
+function startTimer(lbl){
   timerSec=0
   document.getElementById('timer-wrap').style.display='block'
-  document.getElementById('timer-label').textContent=label
+  document.getElementById('timer-lbl').textContent=lbl
   document.getElementById('timer-count').textContent='0s'
-  document.getElementById('timer-bar').style.width='0%'
-  timerInterval=setInterval(()=>{
+  document.getElementById('timer-fill').style.width='0%'
+  timerInt=setInterval(()=>{
     timerSec++
     document.getElementById('timer-count').textContent=timerSec+'s'
-    // estimated 20s total — show progress
-    const pct=Math.min((timerSec/20)*100,95)
-    document.getElementById('timer-bar').style.width=pct+'%'
+    document.getElementById('timer-fill').style.width=Math.min(timerSec/20*100,95)+'%'
   },1000)
 }
-function stopTimer(){
-  clearInterval(timerInterval)
-  document.getElementById('timer-bar').style.width='100%'
-  setTimeout(()=>document.getElementById('timer-wrap').style.display='none',800)
-}
+function stopTimer(){clearInterval(timerInt);document.getElementById('timer-fill').style.width='100%';setTimeout(()=>document.getElementById('timer-wrap').style.display='none',600)}
 
-// ── Pipeline step updates ──
-function setStep(n,status){
-  // status: 'active' | 'done' | 'error' | 'wait'
-  const el=document.getElementById('ps'+n)
-  if(!el)return
-  el.className='step-status'
-  if(status==='active'){el.classList.add('active');el.textContent='Running...'}
-  else if(status==='done'){el.classList.add('done');el.textContent='✓ Done'}
-  else if(status==='error'){el.classList.add('error');el.textContent='Failed'}
-  else{el.textContent='Waiting'}
+// ── Pipeline steps ──
+function setStep(n,s){
+  const el=document.getElementById('ps'+n);if(!el)return
+  el.className='pip-st'
+  if(s==='active'){el.classList.add('active');el.textContent='Running...'}
+  else if(s==='done'){el.classList.add('done');el.textContent='✓'}
+  else if(s==='err'){el.classList.add('err');el.textContent='Failed'}
+  else el.textContent='Waiting'
 }
 function resetSteps(){[1,2,3,4].forEach(n=>setStep(n,'wait'))}
 
-// ── STEP 1: Vision AI — Identify the car ──
-async function identifyCar(){
-  const b64=img64.split(',')[1],mime=img64.split(';')[0].split(':')[1]
-  const prompt=`You are a world-class Hot Wheels expert. Analyze this die-cast car image precisely.
+// ── Main router ──
+function runAnalyze(){
+  if(currentMode==='photo') analyzePhoto()
+  else if(currentMode==='deal') analyzeDeal()
+  else if(currentMode==='fake') analyzeFake()
+}
 
-Return ONLY valid JSON, nothing else:
-{"identified":true,"confidence":88,"name":"exact model name","series":"series and year e.g. Hot Wheels 2023 Mainline #142","casting_year":"first year made","color":"exact color","tampo":"tampo decoration description","wheel_type":"wheel type","base_color":"base color","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"specific reason","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"specific market reason","fun_fact":"specific interesting fact","us_retail_usd":"1.49","us_collector_usd":"5-12"}`
-
-  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'meta-llama/llama-4-maverick-17b-128e-instruct',
-      messages:[{role:'user',content:[
-        {type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},
-        {type:'text',text:prompt}
-      ]}],
-      temperature:0.1,max_tokens:700
-    })
-  })
-  if(!res.ok){
-    const e=await res.json().catch(()=>({}))
-    if(res.status===401)throw new Error('Invalid API key — check at console.groq.com')
-    if(res.status===429)throw new Error('Rate limit — wait 30 seconds')
-    throw new Error(e.error?.message||'Vision API error '+res.status)
-  }
+// ── PHOTO: Step 1 vision ──
+async function identifyCar(imageData){
+  const b64=imageData.split(',')[1],mime=imageData.split(';')[0].split(':')[1]
+  const prompt=`Expert Hot Wheels identifier. Analyze this die-cast car precisely.
+Return ONLY valid JSON:
+{"identified":true,"confidence":88,"name":"exact model name","series":"series and year","casting_year":"year","color":"color","tampo":"decorations","wheel_type":"wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"specific reason","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","is_authentic":true,"authenticity_notes":"notes on authenticity"}`
+  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-maverick-17b-128e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid API key');if(res.status===429)throw new Error('Rate limit — wait 30 seconds');throw new Error(e.error?.message||'Vision API error')}
   const data=await res.json()
   let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
   const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-  if(s===-1)throw new Error('Could not parse AI response. Try again.')
+  if(s===-1)throw new Error('Try again — unexpected AI response')
   const d=JSON.parse(raw.substring(s,e))
-  if(!d.identified)throw new Error('Could not identify this car. Try: white background · bright light · clear side view')
+  if(!d.identified)throw new Error('Could not identify. Try: white background · bright light · side view')
   return d
 }
 
-// ── STEP 2: Compound AI — Live price search ──
-async function searchLivePrices(carName,series){
-  const query=`Current price of "${carName}" Hot Wheels in India 2024 2025. Search: OLX India, Amazon India, Flipkart India, Indian collector market price in rupees INR. Also search eBay for US collector price. Include any current listings found.`
-
-  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'groq/compound-beta',
-      messages:[
-        {role:'system',content:`You are a Hot Wheels price research specialist for India. Search for current real prices. Focus on Indian market (INR). Return ONLY valid JSON, nothing else:
-{"india_retail_inr":"150-200","india_collector_inr":"400-800","price_source_retail":"Amazon India","price_source_collector":"OLX","price_trend":"Rising|Stable|Falling","price_trend_reason":"why","india_insight":"2-3 sentences about this car in Indian market, demand, availability","sell_platforms":["OLX","Instagram collector groups","Maido"],"live_listings":[{"platform":"OLX","description":"listing description","price_inr":"500","url":"https://olx.in/..."}]}`},
-        {role:'user',content:query}
-      ],
-      temperature:0.1,max_tokens:1000
-    })
-  })
-
-  if(!res.ok){
-    // Compound might not be available on free tier — use fallback
-    return null
-  }
-  const data=await res.json()
-  const raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-  try{
-    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-    if(s===-1)return null
-    return JSON.parse(raw.substring(s,e))
-  }catch{return null}
-}
-
-// ── STEP 2 fallback: Kimi K2 for price estimation ──
-async function estimatePrices(carName,rarity,castingYear){
-  const rarityPrices={
-    'Common':'india_retail_inr: 150-200, india_collector_inr: 200-350',
-    'Uncommon':'india_retail_inr: 200-350, india_collector_inr: 350-600',
-    'Rare':'india_retail_inr: 300-500, india_collector_inr: 600-1500',
-    'Treasure Hunt':'india_retail_inr: 400-600, india_collector_inr: 1200-3000',
-    'Super Treasure Hunt':'india_retail_inr: 500-800, india_collector_inr: 3000-12000',
-    'Vintage':'india_retail_inr: 500-2000, india_collector_inr: 1000-8000',
-    'Premium':'india_retail_inr: 400-800, india_collector_inr: 800-2000',
-    'Error Car':'india_retail_inr: 1000-3000, india_collector_inr: 5000-25000',
-  }
-
-  const prompt=`You are an expert on Hot Wheels prices in the Indian collector market.
+// ── PHOTO: Step 2 price search ──
+async function searchPrices(carName,rarity,castingYear){
+  const rarityBase={'Common':'150-200','Uncommon':'250-500','Rare':'600-1500','Treasure Hunt':'1200-3000','Super Treasure Hunt':'3500-15000','Error Car':'5000-30000','Vintage':'800-8000','Premium':'500-1200'}
+  const prompt=`You are India's top Hot Wheels market analyst. Give accurate Indian market prices for:
 
 Car: "${carName}"
 Rarity: ${rarity}
-Casting Year: ${castingYear}
-Typical range for ${rarity}: ${rarityPrices[rarity]||rarityPrices['Common']}
+Year: ${castingYear}
+Base price range for ${rarity}: ₹${rarityBase[rarity]||'200-400'}
 
-Based on your knowledge of:
-- Indian collector market (OLX, Instagram groups, Maido, local swap meets)
-- Current demand for this specific model in India
-- Availability in Indian stores vs imported
-- Age and desirability of this casting
+Consider: Indian import taxes, OLX market, Instagram collector groups, swap meet prices, Amazon India, Flipkart availability, demand from Indian collectors specifically for this model.
 
 Return ONLY valid JSON:
-{"india_retail_inr":"150-200","india_collector_inr":"400-800","price_trend":"Rising|Stable|Falling","price_trend_reason":"specific reason for this car","india_insight":"2-3 sentences about this specific car in the Indian collector market — demand, availability, why collectors want it","sell_platforms":["OLX","Instagram collector groups","Maido"],"live_listings":[]}`
-
-  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'moonshotai/kimi-k2-instruct',
-      messages:[{role:'user',content:prompt}],
-      temperature:0.1,max_tokens:600
-    })
-  })
+{"india_retail_inr":"150-200","india_collector_inr":"400-800","price_source_retail":"Amazon India","price_source_collector":"OLX India","price_trend":"Rising|Stable|Falling","price_trend_reason":"specific reason for this exact car","india_insight":"3 sentences about this specific car in Indian collector market — demand, availability, collector interest, price trends","sell_platforms":["OLX","Instagram collector groups","Maido"],"buy_platforms":["Amazon India","Flipkart"],"live_listings":[]}`
+  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:700})})
   if(!res.ok)return null
   const data=await res.json()
-  const raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-  try{
-    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-    if(s===-1)return null
-    return JSON.parse(raw.substring(s,e))
-  }catch{return null}
+  let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+  try{const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1;if(s===-1)return null;return JSON.parse(raw.substring(s,e))}catch{return null}
 }
 
-// ── Main analyze function ──
-async function analyze(){
+// ── PHOTO analyze ──
+async function analyzePhoto(){
   if(!img64||!KEY)return
   const btn=document.getElementById('analyze-btn')
   btn.disabled=true;btn.textContent='⏳ Scanning...'
   document.getElementById('pipeline').style.display='block'
   document.getElementById('err-box').style.display='none'
   document.getElementById('result').style.display='none'
-  resetSteps()
-  startTimer('Step 1: Identifying car...')
-
+  document.getElementById('deal-result').style.display='none'
+  resetSteps();startTimer('Step 1: Identifying car...')
   try{
-    // STEP 1: Vision AI
     setStep(1,'active')
-    document.getElementById('timer-label').textContent='Step 1: Identifying car with Llama 4 Maverick...'
-    const carData=await identifyCar()
-    setStep(1,'done')
-
-    // STEP 2: Live price search
-    setStep(2,'active')
-    document.getElementById('timer-label').textContent='Step 2: Searching live Indian prices...'
-    let priceData=await searchLivePrices(carData.name,carData.series)
-
-    if(!priceData){
-      // Fallback to Kimi K2 estimation
-      setStep(2,'done')
-      setStep(3,'active')
-      document.getElementById('timer-label').textContent='Step 3: Analysing Indian market with Kimi K2...'
-      priceData=await estimatePrices(carData.name,carData.rarity,carData.casting_year)
-    }
-    setStep(2,'done')
-    setStep(3,'done')
-
-    // STEP 3: Build result
-    setStep(4,'active')
-    document.getElementById('timer-label').textContent='Building result...'
-    const result={...carData,...(priceData||{})}
-    setStep(4,'done')
+    const carData=await identifyCar(img64)
+    setStep(1,'done');setStep(2,'active')
+    document.getElementById('timer-lbl').textContent='Step 2: Searching live prices...'
+    const priceData=await searchPrices(carData.name,carData.rarity,carData.casting_year)
+    setStep(2,'done');setStep(3,'active')
+    document.getElementById('timer-lbl').textContent='Step 3: Building result...'
+    await new Promise(r=>setTimeout(r,300))
+    setStep(3,'done');setStep(4,'done')
     stopTimer()
-
+    const result={...carData,...(priceData||{})}
     lastResult=result
     saveToHist(result)
     showResult(result)
-
   }catch(err){
-    stopTimer()
-    setStep(1,'error')
-    document.getElementById('err-box').innerHTML=`⚠️ ${err.message}<div style="margin-top:6px;font-size:11px;color:#cc5555">📸 Tips: bright lighting · white surface · clear side view photo</div>`
+    stopTimer();setStep(1,'err')
+    document.getElementById('err-box').innerHTML=`⚠️ ${err.message}<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>`
     document.getElementById('err-box').style.display='block'
   }finally{
     btn.disabled=false;btn.textContent='🔎 Identify & Get Live Prices'
     document.getElementById('pipeline').style.display='none'
   }
+}
+
+// ── DEAL analyzer ──
+async function analyzeDeal(){
+  if(!KEY)return
+  const askingPrice=parseFloat(document.getElementById('deal-price').value)
+  const carName=document.getElementById('deal-car-name').value.trim()||lastResult?.name||''
+  if(!askingPrice){alert('Enter the seller\'s asking price');return}
+  if(!carName){alert('Enter the car name or scan it first with Photo Scan');return}
+
+  const btn=document.getElementById('analyze-btn')
+  btn.disabled=true;btn.textContent='⏳ Checking deal...'
+  document.getElementById('err-box').style.display='none'
+  document.getElementById('deal-result').style.display='none'
+  startTimer('Checking deal...')
+
+  const prompt=`You are India's #1 Hot Wheels deal expert.
+
+Car: "${carName}"
+Seller asking: ₹${askingPrice}
+
+Based on current Indian collector market (OLX, Instagram groups, swap meets, Amazon India):
+1. Is this a STEAL, FAIR PRICE, SLIGHTLY HIGH, or OVERPRICED?
+2. What is the fair collector price range in India right now?
+3. What should the buyer do?
+
+Return ONLY valid JSON:
+{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"specific reason why","suggestion":"exact advice e.g. offer ₹X counter","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"savings of ₹X or overpaying by ₹X","similar_olx_price":"what similar cars sell for on OLX"}`
+
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:500})})
+    if(!res.ok)throw new Error('API error — try again')
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    const d=JSON.parse(raw.substring(s,e))
+    stopTimer();showDealResult(d,askingPrice,carName)
+  }catch(err){
+    stopTimer()
+    document.getElementById('err-box').textContent='⚠️ '+err.message
+    document.getElementById('err-box').style.display='block'
+  }finally{btn.disabled=false;btn.textContent='💰 Check This Deal'}
+}
+
+function showDealResult(d,asking,carName){
+  const verdictConfig={
+    'Steal':{icon:'🤑',class:'verdict-steal',color:' var(--green)'},
+    'Fair Price':{icon:'👍',class:'verdict-fair',color:'var(--blue)'},
+    'Slightly High':{icon:'🤔',class:'verdict-high',color:'var(--gold)'},
+    'Overpriced':{icon:'❌',class:'verdict-overpriced',color:'#ff6b6b'},
+  }
+  const cfg=verdictConfig[d.verdict]||verdictConfig['Fair Price']
+  const va=document.getElementById('deal-verdict-area')
+  va.className='deal-verdict '+cfg.class
+  document.getElementById('deal-verdict-icon').textContent=cfg.icon
+  document.getElementById('deal-verdict-label').textContent=d.verdict
+  document.getElementById('deal-verdict-sub').textContent=d.verdict_reason||''
+
+  document.getElementById('deal-breakdown').innerHTML=[
+    ['Car',carName],
+    ['Seller asking','₹'+asking],
+    ['Fair India price','₹'+(d.fair_india_price||'—')],
+    ['India retail','₹'+(d.market_retail||'—')],
+    ['India collector','₹'+(d.market_collector||'—')],
+    ['OLX similar','₹'+(d.similar_olx_price||'—')],
+    [d.savings_or_overpay?.includes('saving')?'You save':'You overpay',d.savings_or_overpay||'—'],
+  ].map(r=>`<div class="deal-row"><span class="deal-k">${r[0]}</span><span class="deal-v">${r[1]}</span></div>`).join('')
+
+  if(d.suggestion)document.getElementById('deal-suggestion').textContent='💡 '+d.suggestion
+  document.getElementById('deal-result').style.display='block'
+  document.getElementById('deal-result').scrollIntoView({behavior:'smooth',block:'start'})
+}
+
+// ── FAKE analyzer ──
+async function analyzeFake(){
+  if(!fakeImg64||!KEY)return
+  const btn=document.getElementById('analyze-btn')
+  btn.disabled=true;btn.textContent='⏳ Checking authenticity...'
+  document.getElementById('err-box').style.display='none'
+  document.getElementById('result').style.display='none'
+  startTimer('Checking authenticity...')
+
+  const b64=fakeImg64.split(',')[1],mime=fakeImg64.split(';')[0].split(':')[1]
+  const prompt=`You are a Hot Wheels authentication expert. Examine this die-cast car image for signs of being fake or counterfeit.
+
+Check for:
+- "Hot Wheels" logo quality and font
+- Mattel logo presence and quality
+- Wheel quality (genuine HW wheels have specific look)
+- Paint quality and finish
+- Tampo print sharpness
+- Base plate markings
+- Overall build quality
+- Color accuracy
+
+Return ONLY valid JSON:
+{"identified":true,"car_name":"name if visible","is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":["flag1","flag2"],"good_signs":["sign1","sign2"],"recommendation":"what the buyer should do","fake_indicators_explained":"detailed explanation of what was checked","india_fake_note":"note about fake HW prevalence in Indian market"}`
+
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-maverick-17b-128e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
+    if(!res.ok)throw new Error('API error — try again')
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    const d=JSON.parse(raw.substring(s,e))
+    stopTimer();showFakeResult(d)
+  }catch(err){
+    stopTimer()
+    document.getElementById('err-box').textContent='⚠️ '+err.message
+    document.getElementById('err-box').style.display='block'
+  }finally{btn.disabled=false;btn.textContent='🕵️ Check If Fake'}
+}
+
+function showFakeResult(d){
+  const verdictColor={'Authentic':'var(--green)','Likely Authentic':'var(--green)','Uncertain':'var(--gold)','Likely Fake':'#ff6b6b','Definitely Fake':'#ff4444'}
+  const verdictBg={'Authentic':'verdict-steal','Likely Authentic':'verdict-steal','Uncertain':'verdict-high','Likely Fake':'verdict-overpriced','Definitely Fake':'verdict-overpriced'}
+
+  const va=document.getElementById('deal-verdict-area')
+  va.className='deal-verdict '+(verdictBg[d.verdict]||'verdict-fair')
+  document.getElementById('deal-verdict-icon').textContent=d.is_authentic?'✅':'🚫'
+  document.getElementById('deal-verdict-label').textContent=d.verdict||'Unknown'
+  document.getElementById('deal-verdict-sub').textContent=`Authenticity score: ${d.authenticity_score||'?'}/100 · ${d.car_name||'Hot Wheels car'}`
+
+  const rows=[]
+  if(d.good_signs?.length)rows.push(['✓ Good signs',d.good_signs.join(' · ')])
+  if(d.red_flags?.length)rows.push(['⚠️ Red flags',d.red_flags.join(' · ')])
+  if(d.fake_indicators_explained)rows.push(['🔍 Analysis',d.fake_indicators_explained])
+  if(d.india_fake_note)rows.push(['🇮🇳 India Note',d.india_fake_note])
+
+  document.getElementById('deal-breakdown').innerHTML=rows.map(r=>`<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">${r[0]}</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">${r[1]}</span></div>`).join('')
+  if(d.recommendation)document.getElementById('deal-suggestion').textContent='💡 '+d.recommendation
+  document.getElementById('deal-result').style.display='block'
+  document.getElementById('deal-result').scrollIntoView({behavior:'smooth',block:'start'})
+}
+
+// ── BARCODE lookup ──
+async function scanBarcode(){
+  const code=document.getElementById('barcode-input').value.trim()
+  if(!code){alert('Enter a barcode number');return}
+  if(!KEY){showKeySetup();return}
+
+  document.getElementById('analyze-btn').style.display='block'
+  document.getElementById('analyze-btn').disabled=true
+  document.getElementById('analyze-btn').textContent='⏳ Looking up...'
+  document.getElementById('err-box').style.display='none'
+  document.getElementById('result').style.display='none'
+  startTimer('Looking up barcode...')
+
+  const prompt=`You are a Hot Wheels database expert. Look up this barcode/collector number from a Hot Wheels blister card:
+
+Barcode/Number: ${code}
+
+Identify the car and provide full details.
+Return ONLY valid JSON:
+{"identified":true,"confidence":80,"name":"model name","series":"series year","casting_year":"year","color":"color","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","rarity_reason":"why","investment":"Low|Medium|High|Very High","us_retail_usd":"1.49","us_collector_usd":"5-10","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian market insight","fun_fact":"fact"}`
+
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:600})})
+    if(!res.ok)throw new Error('API error')
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    const d=JSON.parse(raw.substring(s,e))
+    stopTimer()
+    if(!d.identified)throw new Error('Barcode not found. Try the collector number from the back of the card.')
+    lastResult=d;showResult(d)
+  }catch(err){
+    stopTimer()
+    document.getElementById('err-box').textContent='⚠️ '+err.message
+    document.getElementById('err-box').style.display='block'
+  }finally{
+    document.getElementById('analyze-btn').disabled=false
+    document.getElementById('analyze-btn').textContent='🔍 Look Up This Car'
+  }
+}
+
+// ── Hunt mode ──
+function selectSeries(series,el){
+  currentSeries=series
+  document.querySelectorAll('.hunt-series-item').forEach(i=>i.classList.remove('selected'))
+  el.classList.add('selected')
+  renderHunt(series)
+}
+
+function renderHunt(series){
+  const data=HUNT_DATA[series]||[]
+  const checked=JSON.parse(localStorage.getItem('hs_hunt_'+series)||'{}')
+  document.getElementById('hunt-list').innerHTML=data.map((item,i)=>{
+    const isChecked=checked[i]||false
+    const prCls=item.priority.includes('MUST')?'rs':item.priority.includes('HIGH')?'rt':item.priority.includes('High')?'rr':'rc'
+    return `<div class="hunt-item" style="${isChecked?'opacity:0.5;text-decoration:line-through':''}"">
+      <input type="checkbox" ${isChecked?'checked':''} onchange="toggleHunt('${series}',${i},this)">
+      <div style="flex:1;min-width:0">
+        <div class="hunt-item-name">${item.name}</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+          <span class="rar ${rcls(item.rarity)}" style="font-size:10px;padding:2px 7px">${item.rarity}</span>
+          <span class="hunt-item-price">${item.india}</span>
+        </div>
+      </div>
+      <div style="font-size:10px;text-align:right;color:${item.priority.includes('MUST')?'var(--gold)':item.priority.includes('HIGH')?'var(--gold)':'var(--text3)'}">${item.priority}</div>
+    </div>`
+  }).join('')
+}
+
+function toggleHunt(series,idx,el){
+  const checked=JSON.parse(localStorage.getItem('hs_hunt_'+series)||'{}')
+  checked[idx]=el.checked
+  localStorage.setItem('hs_hunt_'+series,JSON.stringify(checked))
+  renderHunt(series)
 }
 
 // ── Show Result ──
@@ -808,48 +1062,47 @@ function showResult(d){
   const rb=document.getElementById('r-rar')
   rb.textContent=d.rarity||'Common';rb.className='rar '+rcls(d.rarity)
 
-  // Prices
+  // Authenticity
+  const authBadge=document.getElementById('r-auth')
+  if(d.is_authentic!==undefined){
+    authBadge.style.display='inline-flex'
+    authBadge.className='authentic-badge '+(d.is_authentic?'auth-yes':'auth-no')
+    authBadge.textContent=(d.is_authentic?'✓ Authentic':'⚠️ Possibly Fake')
+  }else authBadge.style.display='none'
+
   document.getElementById('p1').textContent=d.india_retail_inr?'₹'+d.india_retail_inr:'—'
   document.getElementById('p2').textContent=d.india_collector_inr?'₹'+d.india_collector_inr:'—'
   document.getElementById('p3').textContent=d.us_retail_usd?'$'+d.us_retail_usd:'—'
   document.getElementById('p4').textContent=d.us_collector_usd?'$'+d.us_collector_usd:'—'
+  if(d.price_source_retail)document.getElementById('psrc1').textContent='Source: '+d.price_source_retail
+  if(d.price_source_collector)document.getElementById('psrc2').textContent='Source: '+d.price_source_collector
+  document.getElementById('live-upd').textContent='Updated just now'
 
-  if(d.price_source_retail)document.getElementById('ps-1').textContent='Source: '+d.price_source_retail
-  if(d.price_source_collector)document.getElementById('ps-2').textContent='Source: '+d.price_source_collector
-
-  // Time
-  document.getElementById('live-updated').textContent='Updated just now'
-
-  // Trend
   const trend=d.price_trend||'Stable'
-  document.getElementById('trend-icon').textContent=trend==='Rising'?'📈':trend==='Falling'?'📉':'➡️'
-  document.getElementById('trend-txt').innerHTML=`<span class="${trend==='Rising'?'trend-up':trend==='Falling'?'trend-dn':'trend-st'}">${trend}</span>${d.price_trend_reason?' — '+d.price_trend_reason:''}`
+  document.getElementById('trend-ic').textContent=trend==='Rising'?'📈':trend==='Falling'?'📉':'➡️'
+  document.getElementById('trend-txt').innerHTML=`<span class="${trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst'}">${trend}</span>${d.price_trend_reason?' — '+d.price_trend_reason:''}`
 
-  // Live listings
-  if(d.live_listings&&d.live_listings.length>0){
-    document.getElementById('listings-list').innerHTML=d.live_listings.slice(0,4).map(l=>`
-      <div class="listing-item" onclick="ol('${l.url||'#'}')">
-        <span class="listing-platform">${l.platform||'OLX'}</span>
-        <span class="listing-desc">${l.description||'Hot Wheels listing'}</span>
-        <span class="listing-price">${l.price_inr?'₹'+l.price_inr:''}</span>
-        <span class="listing-arr">›</span>
-      </div>`).join('')
+  if(d.live_listings?.length){
+    document.getElementById('listings-list').innerHTML=d.live_listings.slice(0,4).map(l=>`<div class="listing" onclick="ol('${l.url||'#'}')"><span class="listing-plat">${l.platform||'OLX'}</span><span class="listing-desc">${l.description||''}</span><span class="listing-price">${l.price_inr?'₹'+l.price_inr:''}</span></div>`).join('')
     document.getElementById('live-listings').style.display='block'
-  }
+  }else document.getElementById('live-listings').style.display='none'
 
-  // Investment
   const ib=document.getElementById('r-inv')
   ib.textContent=(d.investment||'Medium')+' Potential';ib.className='inv-badge'
   const iv=(d.investment||'').toLowerCase()
   ib.classList.add(iv.includes('very')?'iv':iv==='high'?'ih':iv==='medium'?'im':'il')
 
-  // Details
   const rows=[['Color',d.color],['Casting Year',d.casting_year],['Tampo',d.tampo],['Wheels',d.wheel_type],['Condition',d.condition],['Rarity Reason',d.rarity_reason],['Why Invest',d.investment_reason],['Fun Fact',d.fun_fact]]
   document.getElementById('r-dets').innerHTML=rows.filter(r=>r[1]&&r[1]!=='undefined').map(r=>`<div class="det"><span class="det-k">${r[0]}</span><span class="det-v">${r[1]}</span></div>`).join('')
 
   if(d.india_insight){document.getElementById('r-insight-txt').textContent=d.india_insight;document.getElementById('r-insight').style.display='block'}
+  else document.getElementById('r-insight').style.display='none'
+
+  // Pre-fill deal checker
+  if(d.name)document.getElementById('deal-car-name').value=d.name
 
   document.getElementById('result').style.display='block'
+  document.getElementById('deal-result').style.display='none'
   document.getElementById('analyze-btn').style.display='none'
   setTimeout(()=>document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'}),100)
 }
@@ -872,17 +1125,13 @@ function renderCol(){
   if(sortBy==='value')items.sort((a,b)=>parseFloat((b.india_collector_inr||'0').split('-')[0])-parseFloat((a.india_collector_inr||'0').split('-')[0]))
   else if(sortBy==='name')items.sort((a,b)=>(a.name||'').localeCompare(b.name||''))
   else if(sortBy==='rarity')items.sort((a,b)=>order.indexOf(a.rarity)-order.indexOf(b.rarity))
-
   const total=collection.length
   const rare=collection.filter(c=>{const r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage')}).length
   const sth=collection.filter(c=>(c.rarity||'').toLowerCase().includes('treasure')).length
   let val=0;collection.forEach(c=>{const p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
   document.getElementById('val-total').textContent=val>0?'₹'+val.toLocaleString('en-IN'):'₹0'
-  document.getElementById('v-cars').textContent=total
-  document.getElementById('v-rare').textContent=rare
-  document.getElementById('v-sth').textContent=sth
+  document.getElementById('v-cars').textContent=total;document.getElementById('v-rare').textContent=rare;document.getElementById('v-sth').textContent=sth
   document.getElementById('v-avg').textContent=total>0?'₹'+Math.round(val/total).toLocaleString('en-IN'):'₹0'
-
   if(!items.length){document.getElementById('col-list').innerHTML=`<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">${filterBy==='all'?'No cars yet':'No '+filterBy+' cars'}</div><div class="empty-s">${filterBy==='all'?'Scan a car and tap "Add"':'Try a different filter'}</div></div>`;return}
   document.getElementById('col-list').innerHTML=items.map(c=>`<div class="col-item"><div class="col-thumb">${c.image?`<img src="${c.image}" alt="">`:' 🚗'}</div><div style="flex:1;min-width:0"><div class="col-name">${c.name||'Unknown'}</div><div class="col-meta">${c.series||''}</div><div style="display:flex;gap:5px;align-items:center"><span class="rar ${rcls(c.rarity)}" style="font-size:10px;padding:2px 7px">${c.rarity||'Common'}</span><span class="col-price">${c.india_collector_inr?'₹'+c.india_collector_inr:''}</span></div></div><button class="col-del" onclick="delFromCol(${c.id})">🗑</button></div>`).join('')
 }
@@ -891,23 +1140,7 @@ function exportVal(){
   if(!collection.length){alert('Add some cars first!');return}
   let val=0;collection.forEach(c=>{const p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
   const date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
-  const txt=`HOTSCAN INDIA — COLLECTION VALUATION CERTIFICATE
-================================================
-Generated: ${date}
-App: HotScan India v2.0 (mahak867.github.io/Hotscan)
-
-COLLECTION SUMMARY
-Total Cars: ${collection.length}
-Estimated Total Value: ₹${val.toLocaleString('en-IN')} INR
-
-CAR LIST
-${collection.map((c,i)=>`${i+1}. ${c.name||'Unknown'} | ${c.rarity||'Common'} | ₹${c.india_collector_inr||'N/A'}`).join('\n')}
-
-================================================
-Note: Values are AI estimates based on current Indian
-collector market data. Actual prices may vary.
-For insurance purposes, get a professional appraisal.
-================================================`
+  const txt=`HOTSCAN INDIA — COLLECTION VALUATION CERTIFICATE\n${'='.repeat(50)}\nGenerated: ${date}\nApp: HotScan India v3.0 (hotscan-theta.vercel.app)\n\nCOLLECTION SUMMARY\nTotal Cars: ${collection.length}\nEstimated Total Value: ₹${val.toLocaleString('en-IN')} INR\n\nCAR LIST\n${collection.map((c,i)=>`${i+1}. ${c.name||'Unknown'} | ${c.rarity||'Common'} | ₹${c.india_collector_inr||'N/A'}`).join('\n')}\n\n${'='.repeat(50)}\nNote: Values are AI estimates based on current Indian\ncollector market data. For insurance, get a professional appraisal.\n${'='.repeat(50)}`
   const blob=new Blob([txt],{type:'text/plain'})
   const url=URL.createObjectURL(blob)
   const a=document.createElement('a')
@@ -927,7 +1160,7 @@ function delAlert(id){alerts=alerts.filter(a=>a.id!==id);localStorage.setItem('h
 function clearAlerts(){if(!confirm('Clear all alerts?'))return;alerts=[];localStorage.setItem('hs_alerts','[]');renderAlerts()}
 function renderAlerts(){
   if(!alerts.length){document.getElementById('alerts-list').innerHTML='<div class="empty"><div class="empty-icon">🔔</div><div class="empty-t">No alerts yet</div><div class="empty-s">Scan a car and tap "Alert" to watch for deals</div></div>';return}
-  document.getElementById('alerts-list').innerHTML=alerts.map(a=>`<div class="alert-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="alert-name">${a.name}</div><div class="alert-meta">${a.rarity||'Common'} · Target: ₹${a.india_collector_inr||'?'}</div><div style="display:flex;gap:8px;margin-top:5px"><button class="alert-link" onclick="ol('https://www.olx.in/items/q-hot+wheels+${encodeURIComponent(a.name||'')}')">Search OLX →</button><button class="alert-link" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')">Instagram →</button></div></div><button class="alert-del" onclick="delAlert(${a.id})">✕</button></div></div>`).join('')
+  document.getElementById('alerts-list').innerHTML=alerts.map(a=>`<div class="alert-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1;min-width:0"><div class="alert-name">${a.name}</div><div class="alert-meta">${a.rarity||'Common'} · Target: ₹${a.india_collector_inr||'?'}</div><div style="display:flex;gap:8px;margin-top:5px"><button class="alert-link" onclick="ol('https://www.olx.in/items/q-hot+wheels+${encodeURIComponent(a.name||'')}')">OLX →</button><button class="alert-link" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')">Instagram →</button><button class="alert-link" onclick="ol('https://www.amazon.in/s?k=hot+wheels+${encodeURIComponent(a.name||'')}')">Amazon →</button></div></div><button class="alert-del" onclick="delAlert(${a.id})">✕</button></div></div>`).join('')
 }
 
 // ── History ──
@@ -935,17 +1168,8 @@ function saveToHist(d){
   history.unshift({id:Date.now(),name:d.name,series:d.series,rarity:d.rarity,india_collector_inr:d.india_collector_inr,image:imgThumb,scanned:new Date().toISOString()})
   if(history.length>50)history=history.slice(0,50)
   localStorage.setItem('hs_hist',JSON.stringify(history))
-  renderHist()
 }
-function clearHist(){if(!confirm('Clear history?'))return;history=[];localStorage.setItem('hs_hist','[]');renderHist()}
-function renderHist(){
-  if(!history.length){document.getElementById('hist-list').innerHTML='<div class="empty"><div class="empty-icon">🕐</div><div class="empty-t">No scans yet</div><div class="empty-s">Your scan history appears here</div></div>';return}
-  document.getElementById('hist-list').innerHTML=history.map(h=>{
-    const diff=Math.floor((Date.now()-new Date(h.scanned))/60000)
-    const ago=diff<1?'just now':diff<60?diff+'m ago':diff<1440?Math.floor(diff/60)+'h ago':Math.floor(diff/1440)+'d ago'
-    return `<div class="hist-item"><div class="hist-thumb">${h.image?`<img src="${h.image}" alt="">`:' 🚗'}</div><div style="flex:1;min-width:0"><div class="hist-name">${h.name||'Unknown'}</div><div class="hist-meta">${h.rarity||'Common'} · ${ago}</div></div><div class="hist-price">${h.india_collector_inr?'₹'+h.india_collector_inr:''}</div></div>`
-  }).join('')
-}
+function renderHist(){} // History shown in collection for now
 
 // ── Share ──
 function showShare(){
@@ -963,25 +1187,25 @@ function showShare(){
 function closeShare(){document.getElementById('share-modal').classList.remove('open');document.body.style.overflow=''}
 function shareWA(){
   if(!lastResult)return
-  const txt=`🚗 *${lastResult.name}*\n📦 ${lastResult.series}\n⭐ ${lastResult.rarity}\n🇮🇳 India: ₹${lastResult.india_collector_inr}\n🇺🇸 US: $${lastResult.us_collector_usd}\n📈 ${lastResult.investment} Investment\n\n_Scanned with HotScan India 🔍_\n_India's #1 Hot Wheels Scanner_\n_mahak867.github.io/Hotscan_`
+  const txt=`🚗 *${lastResult.name}*\n📦 ${lastResult.series}\n⭐ ${lastResult.rarity}\n🇮🇳 India: ₹${lastResult.india_collector_inr}\n🇺🇸 US: $${lastResult.us_collector_usd}\n📈 ${lastResult.investment} Investment\n\n_Scanned with HotScan India 🔍_\n_India's #1 Hot Wheels Scanner_\n_hotscan-theta.vercel.app_`
   window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(txt),'_blank')
 }
 async function shareNative(){
   if(!lastResult)return
-  const txt=`🚗 ${lastResult.name}\n📦 ${lastResult.series}\n⭐ ${lastResult.rarity}\n🇮🇳 India: ₹${lastResult.india_collector_inr}\n🇺🇸 US: $${lastResult.us_collector_usd}\n📈 ${lastResult.investment} Investment\n\nScanned with HotScan India 🔍\nhttps://mahak867.github.io/Hotscan`
+  const txt=`🚗 ${lastResult.name}\n📦 ${lastResult.series}\n⭐ ${lastResult.rarity}\n🇮🇳 India: ₹${lastResult.india_collector_inr}\n🇺🇸 US: $${lastResult.us_collector_usd}\n📈 ${lastResult.investment} Investment\n\nScanned with HotScan India 🔍\nhttps://hotscan-theta.vercel.app`
   if(navigator.share){try{await navigator.share({title:'HotScan — '+lastResult.name,text:txt})}catch(e){}}
   else{await navigator.clipboard?.writeText(txt);alert('Copied!')}
 }
 
 // ── Reset ──
 function resetScan(){
-  img64=null;imgThumb=null;lastResult=null
-  document.getElementById('preview-img').src=''
-  document.getElementById('preview-wrap').style.display='none'
-  document.getElementById('scan-ph').style.display='block'
-  document.getElementById('scan-area').classList.remove('has-image')
+  img64=null;imgThumb=null;fakeImg64=null;lastResult=null
+  document.getElementById('preview-img').src='';document.getElementById('preview-wrap').style.display='none'
+  document.getElementById('scan-ph').style.display='block';document.getElementById('scan-area').classList.remove('has-image')
+  try{document.getElementById('fake-preview-img').src='';document.getElementById('fake-preview-wrap').style.display='none';document.getElementById('fake-scan-ph').style.display='block'}catch(e){}
   document.getElementById('analyze-btn').style.display='none'
   document.getElementById('result').style.display='none'
+  document.getElementById('deal-result').style.display='none'
   document.getElementById('err-box').style.display='none'
   document.getElementById('r-insight').style.display='none'
   document.getElementById('live-listings').style.display='none'
