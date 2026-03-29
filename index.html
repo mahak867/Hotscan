@@ -585,6 +585,16 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 <script>
 // ── State ──
 let KEY=localStorage.getItem('hs_key')||''
+
+// ── Pro tier — must be defined before init ──
+const FREE_SCANS=5
+function getTodayScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}');return d.date===t?d.count||0:0}
+function incScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}'),c=(d.date===t?d.count||0:0)+1;localStorage.setItem('hs_scans',JSON.stringify({date:t,count:c}));return c}
+function isPro(){return localStorage.getItem('hs_pro')==='true'}
+function checkLimit(){if(isPro())return true;if(getTodayScans()>=FREE_SCANS){showProModal();return false}return true}
+function showProModal(){document.getElementById('pro-modal').classList.add('open');document.body.style.overflow='hidden'}
+function closeProModal(){document.getElementById('pro-modal').classList.remove('open');document.body.style.overflow=''}
+function activatePro(){alert('HotScan Pro coming soon!\nEmail hotscanindia@gmail.com for early ₹99/month access.');closeProModal()}
 let img64=null,imgThumb=null,fakeImg64=null,lastResult=null
 let collection=JSON.parse(localStorage.getItem('hs_col')||'[]')
 let history=JSON.parse(localStorage.getItem('hs_hist')||'[]')
@@ -794,15 +804,7 @@ function runAnalyze(){
 }
 
 // ── PHOTO: Step 1 vision ──
-// ── Pro tier ──
-const FREE_SCANS=5
-function getTodayScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}');return d.date===t?d.count||0:0}
-function incScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}'),c=(d.date===t?d.count||0:0)+1;localStorage.setItem('hs_scans',JSON.stringify({date:t,count:c}));return c}
-function isPro(){return localStorage.getItem('hs_pro')==='true'}
-function checkLimit(){if(isPro())return true;if(getTodayScans()>=FREE_SCANS){showProModal();return false}return true}
-function showProModal(){document.getElementById('pro-modal').classList.add('open');document.body.style.overflow='hidden'}
-function closeProModal(){document.getElementById('pro-modal').classList.remove('open');document.body.style.overflow=''}
-function activatePro(){alert('HotScan Pro coming soon!\nEmail hotscanindia@gmail.com for early ₹99/month access.');closeProModal()}
+
 
 // ── PHOTO: Step 1 vision — improved prompt with HW expertise ──
 async function identifyCar(imageData){
