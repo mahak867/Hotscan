@@ -1379,12 +1379,18 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const RZP_KEY  = 'rzp_live_SX0GLL6DXzycgo'
 const DEV_EMAIL = 'mahak867@gmail.com'
 
-const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY)
+let supabase = null
 let currentUser = null
 let userProfile = null
+try {
+  if (window.supabase) {
+    supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY)
+  }
+} catch(e) { console.log('Supabase init error:', e) }
 
 // ── Auth init ──
 async function initAuth() {
+  if (!supabase) { updateHeaderUI(); return }
   const { data: { session } } = await supabase.auth.getSession()
   if (session?.user) {
     currentUser = session.user
@@ -1475,6 +1481,7 @@ async function signIn() {
   const err   = document.getElementById('auth-err')
   err.style.display = 'none'
   if (!email || !pass) { err.textContent = 'Enter email and password'; err.style.display = 'block'; return }
+  if(!supabase){err.textContent='Auth not available';err.style.display='block';return}
   const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
   if (error) { err.textContent = error.message; err.style.display = 'block' }
   else { closeAuth(); await syncCollectionFromCloud() }
@@ -1487,7 +1494,7 @@ async function signUp() {
   err.style.display = 'none'
   if (!email || !pass) { err.textContent = 'Enter email and password'; err.style.display = 'block'; return }
   if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters'; err.style.display = 'block'; return }
-  const { error } = await supabase.auth.signUp({ email, password: pass, options: { emailRedirectTo: "https://hotscan-theta.vercel.app" } })
+  const { error } = await supabase.auth.signUp({ email, password: pass })
   if (error) { err.textContent = error.message; err.style.display = 'block' }
   else { document.getElementById('auth-login-view').style.display='none'; document.getElementById('auth-signup-view').style.display='none'; document.getElementById('auth-verify-view').style.display='block' }
 }
@@ -1640,8 +1647,15 @@ async function deleteFromCloud(id) {
   }
 }
 
-// ── Init auth on load ──
-initAuth()
+// ── Init auth on load — wait for all scripts ──
+window.addEventListener('load', function() {
+  try {
+    if (window.supabase) {
+      supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY)
+    }
+  } catch(e) {}
+  initAuth()
+})
 </script>
 
 <!-- Pro Modal -->
@@ -1717,4 +1731,3 @@ initAuth()
 
 </body>
 </html>
-
