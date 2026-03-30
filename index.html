@@ -1487,7 +1487,7 @@ async function signUp() {
   err.style.display = 'none'
   if (!email || !pass) { err.textContent = 'Enter email and password'; err.style.display = 'block'; return }
   if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters'; err.style.display = 'block'; return }
-  const { error } = await supabase.auth.signUp({ email, password: pass })
+  const { error } = await supabase.auth.signUp({ email, password: pass, options: { emailRedirectTo: "https://hotscan-theta.vercel.app" } })
   if (error) { err.textContent = error.message; err.style.display = 'block' }
   else { document.getElementById('auth-login-view').style.display='none'; document.getElementById('auth-signup-view').style.display='none'; document.getElementById('auth-verify-view').style.display='block' }
 }
@@ -1717,3 +1717,4 @@ initAuth()
 
 </body>
 </html>
+
