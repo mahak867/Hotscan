@@ -1,7 +1,7 @@
 {
   "name": "HotScan India",
   "short_name": "HotScan",
-  "description": "India's first Hot Wheels scanner. Scan any car and get live Indian market prices instantly.",
+  "description": "India's #1 Hot Wheels scanner. Live Indian prices, rarity, collection tracker.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#080808",

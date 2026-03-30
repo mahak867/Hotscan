@@ -10,6 +10,8 @@
 <meta name="description" content="India's #1 Hot Wheels scanner. Live Indian prices, rarity, barcode scan, deal checker. Free.">
 <title>HotScan India — Hot Wheels Scanner</title>
 <link rel="manifest" href="manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:#080808;color:#fff;overflow-x:hidden}
@@ -300,6 +302,38 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .ib-txt strong{color:#fff;display:block;margin-bottom:1px}
 .clr-btn{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer}
 .footer{text-align:center;font-size:10px;color:var(--text3);margin-top:11px;line-height:1.8}
+
+/* Auth modal */
+.auth-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;align-items:center;justify-content:center;padding:20px}
+.auth-modal.open{display:flex}
+.auth-box{background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:360px;border:1px solid var(--border2)}
+.auth-title{font-size:20px;font-weight:800;margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--text2);margin-bottom:20px}
+.auth-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;font-size:14px;color:#fff;outline:none;margin-bottom:10px}
+.auth-input:focus{border-color:var(--blue)}
+.auth-input::placeholder{color:var(--text3)}
+.auth-btn{width:100%;padding:13px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;border:none;margin-bottom:8px}
+.auth-btn-primary{background:var(--red);color:#fff}
+.auth-btn-secondary{background:var(--surface2);color:var(--text2)}
+.auth-switch{text-align:center;font-size:12px;color:var(--text3);margin-top:6px}
+.auth-switch button{background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px}
+.auth-err{font-size:12px;color:#ff6b6b;margin-bottom:8px;display:none}
+
+/* User badge in header */
+.user-badge{margin-left:auto;display:flex;align-items:center;gap:6px;cursor:pointer}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.user-name{font-size:11px;font-weight:600;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Account page */
+.account-card{background:linear-gradient(135deg,#1a0d00,#0d001a);border-radius:16px;padding:20px;margin-bottom:12px;border:1px solid rgba(255,214,10,0.2);text-align:center}
+.account-avatar{width:64px;height:64px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:0 auto 12px}
+.account-email{font-size:14px;color:var(--text2);margin-bottom:6px}
+.account-plan{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:16px}
+.plan-pro{background:rgba(255,214,10,0.15);color:var(--gold);border:1px solid rgba(255,214,10,0.3)}
+.plan-free{background:var(--surface2);color:var(--text2)}
+.plan-dev{background:rgba(197,119,255,0.15);color:var(--purple);border:1px solid rgba(197,119,255,0.3)}
+.sign-out-btn{background:var(--surface2);color:var(--text2);border:none;padding:11px;border-radius:11px;font-size:13px;cursor:pointer;width:100%}
+
 </style>
 </head>
 <body>
@@ -466,6 +500,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <div class="r-invest"><span style="font-size:12px;color:var(--text2)">Investment Potential</span><span class="inv-badge im" id="r-inv">—</span></div>
     <div class="r-dets" id="r-dets"></div>
     <div class="r-insight" id="r-insight" style="display:none"><div class="r-insight-lbl">📊 India Market Insight</div><div class="r-insight-txt" id="r-insight-txt"></div></div>
+
+    <!-- Buy links -->
+    <div id="r-buy-links" style="display:none;margin:0 11px 11px">
+      <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px">🛒 Buy This Car in India</div>
+      <div id="r-buy-list" class="tags"></div>
+    </div>
     <div class="r-acts">
       <button class="ract" onclick="addToCol()"><span>➕</span>Add</button>
       <button class="ract" onclick="addAlert()"><span>🔔</span>Alert</button>
@@ -1198,6 +1238,20 @@ function showResult(d){
   if(d.india_insight){document.getElementById('r-insight-txt').textContent=d.india_insight;document.getElementById('r-insight').style.display='block'}
   else document.getElementById('r-insight').style.display='none'
 
+  // Buy links
+  const buyLinks=[
+    {label:'Amazon India',url:'https://www.amazon.in/s?k=hot+wheels+'+encodeURIComponent(d.name||'')},
+    {label:'Flipkart',url:'https://www.flipkart.com/search?q=hot+wheels+'+encodeURIComponent(d.name||'')},
+    {label:'OLX',url:'https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(d.name||'')},
+    {label:'Maido',url:'https://www.maido.in/search?q='+encodeURIComponent(d.name||'')},
+  ]
+  const buyEl=document.getElementById('r-buy-list')
+  const buySection=document.getElementById('r-buy-links')
+  if(buyEl){
+    buyEl.innerHTML=buyLinks.map(l=>`<span class="tag" onclick="ol('${l.url}')" style="cursor:pointer;color:var(--blue)">${l.label} →</span>`).join('')
+    buySection.style.display='block'
+  }
+
   // Pre-fill deal checker
   if(d.name)document.getElementById('deal-car-name').value=d.name
 
@@ -1210,11 +1264,13 @@ function showResult(d){
 // ── Collection ──
 function addToCol(){
   if(!lastResult)return
-  collection.unshift({id:Date.now(),name:lastResult.name,series:lastResult.series,rarity:lastResult.rarity,color:lastResult.color,india_collector_inr:lastResult.india_collector_inr,investment:lastResult.investment,image:imgThumb,added:new Date().toISOString()})
+  const item={id:Date.now(),name:lastResult.name,series:lastResult.series,rarity:lastResult.rarity,color:lastResult.color,india_collector_inr:lastResult.india_collector_inr,investment:lastResult.investment,image:imgThumb,added:new Date().toISOString()}
+  collection.unshift(item)
   localStorage.setItem('hs_col',JSON.stringify(collection))
+  saveToCloud(item).catch(()=>{}) // save to cloud if logged in
   renderCol();goPage('collection')
 }
-function delFromCol(id){collection=collection.filter(c=>c.id!==id);localStorage.setItem('hs_col',JSON.stringify(collection));renderCol()}
+function delFromCol(id){deleteFromCloud(id).catch(()=>{});collection=collection.filter(c=>c.id!==id);localStorage.setItem('hs_col',JSON.stringify(collection));renderCol()}
 function sCol(by,el){sortBy=by;document.querySelectorAll('#sc .chip').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderCol()}
 function fCol(f,el){filterBy=f;document.querySelectorAll('#fc2 .chip').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderCol()}
 
@@ -1232,7 +1288,7 @@ function renderCol(){
   document.getElementById('val-total').textContent=val>0?'₹'+val.toLocaleString('en-IN'):'₹0'
   document.getElementById('v-cars').textContent=total;document.getElementById('v-rare').textContent=rare;document.getElementById('v-sth').textContent=sth
   document.getElementById('v-avg').textContent=total>0?'₹'+Math.round(val/total).toLocaleString('en-IN'):'₹0'
-  if(!items.length){document.getElementById('col-list').innerHTML=`<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">${filterBy==='all'?'No cars yet':'No '+filterBy+' cars'}</div><div class="empty-s">${filterBy==='all'?'Scan a car and tap "Add"':'Try a different filter'}</div></div>`;return}
+  if(!items.length){document.getElementById('col-list').innerHTML=`<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">${filterBy==='all'?'No cars yet':'No '+filterBy+' cars'}</div><div class="empty-s">${filterBy==='all'?currentUser?'Scan a car and tap "Add"':'Scan a car and tap "Add" (Sign in to save to cloud)':'Try a different filter'}</div></div>`;return}
   document.getElementById('col-list').innerHTML=items.map(c=>`<div class="col-item"><div class="col-thumb">${c.image?`<img src="${c.image}" alt="">`:' 🚗'}</div><div style="flex:1;min-width:0"><div class="col-name">${c.name||'Unknown'}</div><div class="col-meta">${c.series||''}</div><div style="display:flex;gap:5px;align-items:center"><span class="rar ${rcls(c.rarity)}" style="font-size:10px;padding:2px 7px">${c.rarity||'Common'}</span><span class="col-price">${c.india_collector_inr?'₹'+c.india_collector_inr:''}</span></div></div><button class="col-del" onclick="delFromCol(${c.id})">🗑</button></div>`).join('')
 }
 
@@ -1314,6 +1370,278 @@ function resetScan(){
 }
 
 function ol(url){if(url&&url!=='#')window.open(url,'_blank')}
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE + AUTH + PAYMENTS
+// ═══════════════════════════════════════════════════════
+const SUPA_URL = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
+const RZP_KEY  = 'rzp_live_SX0GLL6DXzycgo'
+const DEV_EMAIL = 'mahak867@gmail.com'
+
+const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY)
+let currentUser = null
+let userProfile = null
+
+// ── Auth init ──
+async function initAuth() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user) {
+    currentUser = session.user
+    await loadProfile()
+  }
+  updateHeaderUI()
+
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    currentUser = session?.user || null
+    if (currentUser) {
+      await loadProfile()
+      await syncCollectionFromCloud()
+    } else {
+      userProfile = null
+    }
+    updateHeaderUI()
+  })
+}
+
+// ── Load profile ──
+async function loadProfile() {
+  if (!currentUser) return
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single()
+
+  userProfile = data
+
+  // Auto-grant developer account
+  if (currentUser.email === DEV_EMAIL && !data?.is_developer) {
+    await supabase.from('profiles').update({
+      is_pro: true,
+      is_developer: true,
+      pro_since: new Date().toISOString()
+    }).eq('id', currentUser.id)
+    userProfile = { ...userProfile, is_pro: true, is_developer: true }
+  }
+}
+
+// ── Check if user is Pro ──
+function isPro() {
+  if (userProfile?.is_pro || userProfile?.is_developer) return true
+  return localStorage.getItem('hs_pro') === 'true'
+}
+
+// ── Header UI ──
+function updateHeaderUI() {
+  const header = document.querySelector('.header')
+  const oldBadge = document.getElementById('user-hdr-btn')
+  if (oldBadge) oldBadge.remove()
+
+  const btn = document.createElement('div')
+  btn.id = 'user-hdr-btn'
+  btn.className = 'user-badge'
+  btn.onclick = currentUser ? openAccountModal : openAuth
+
+  if (currentUser) {
+    const initials = (currentUser.email || '?')[0].toUpperCase()
+    const planIcon = userProfile?.is_developer ? '👑' : userProfile?.is_pro ? '⭐' : ''
+    btn.innerHTML = `<div class="user-avatar">${initials}</div><div class="user-name">${planIcon} ${currentUser.email.split('@')[0]}</div>`
+  } else {
+    btn.innerHTML = '<div style="background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600">Sign In</div>'
+  }
+
+  // Remove old ver badge, replace with user btn
+  const verEl = document.getElementById('scan-counter')
+  if (verEl) verEl.style.display = 'none'
+  header.appendChild(btn)
+
+  updateScanCounter()
+}
+
+// ── Auth modal ──
+function openAuth() {
+  document.getElementById('auth-modal').classList.add('open')
+  document.body.style.overflow = 'hidden'
+  showLogin()
+}
+function closeAuth() { document.getElementById('auth-modal').classList.remove('open'); document.body.style.overflow = '' }
+function showLogin() { document.getElementById('auth-login-view').style.display='block'; document.getElementById('auth-signup-view').style.display='none'; document.getElementById('auth-verify-view').style.display='none' }
+function showSignup() { document.getElementById('auth-login-view').style.display='none'; document.getElementById('auth-signup-view').style.display='block'; document.getElementById('auth-verify-view').style.display='none' }
+
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim()
+  const pass  = document.getElementById('auth-pass').value
+  const err   = document.getElementById('auth-err')
+  err.style.display = 'none'
+  if (!email || !pass) { err.textContent = 'Enter email and password'; err.style.display = 'block'; return }
+  const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
+  if (error) { err.textContent = error.message; err.style.display = 'block' }
+  else { closeAuth(); await syncCollectionFromCloud() }
+}
+
+async function signUp() {
+  const email = document.getElementById('su-email').value.trim()
+  const pass  = document.getElementById('su-pass').value
+  const err   = document.getElementById('auth-err-signup')
+  err.style.display = 'none'
+  if (!email || !pass) { err.textContent = 'Enter email and password'; err.style.display = 'block'; return }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters'; err.style.display = 'block'; return }
+  const { error } = await supabase.auth.signUp({ email, password: pass })
+  if (error) { err.textContent = error.message; err.style.display = 'block' }
+  else { document.getElementById('auth-login-view').style.display='none'; document.getElementById('auth-signup-view').style.display='none'; document.getElementById('auth-verify-view').style.display='block' }
+}
+
+async function signOutUser() {
+  await supabase.auth.signOut()
+  currentUser = null; userProfile = null
+  closeAccountModal()
+  updateHeaderUI()
+}
+
+// ── Account modal ──
+function openAccountModal() {
+  const el = document.getElementById('account-modal')
+  el.classList.add('open')
+  document.body.style.overflow = 'hidden'
+
+  if (currentUser) {
+    const initials = (currentUser.email || '?')[0].toUpperCase()
+    document.getElementById('acc-avatar').textContent = initials
+    document.getElementById('acc-email').textContent = currentUser.email
+
+    const planEl = document.getElementById('acc-plan')
+    const upgradeSection = document.getElementById('acc-upgrade-section')
+    const sinceEl = document.getElementById('acc-since')
+
+    if (userProfile?.is_developer) {
+      planEl.textContent = '👑 Developer — Lifetime Pro'
+      planEl.className = 'account-plan plan-dev'
+      upgradeSection.style.display = 'none'
+      sinceEl.textContent = 'You built this app 🚗'
+    } else if (userProfile?.is_pro) {
+      planEl.textContent = '⭐ Pro Member'
+      planEl.className = 'account-plan plan-pro'
+      upgradeSection.style.display = 'none'
+      if (userProfile.pro_since) sinceEl.textContent = 'Pro since ' + new Date(userProfile.pro_since).toLocaleDateString('en-IN')
+    } else {
+      planEl.textContent = 'Free Plan'
+      planEl.className = 'account-plan plan-free'
+      upgradeSection.style.display = 'block'
+      const used = getTodayScans()
+      document.getElementById('acc-scans').textContent = `${used}/${FREE_SCANS} scans used today`
+    }
+  }
+}
+function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); document.body.style.overflow = '' }
+
+// ── Razorpay payment ──
+async function startPayment() {
+  if (!currentUser) { closeAccountModal(); openAuth(); return }
+
+  const options = {
+    key: RZP_KEY,
+    amount: 9900, // ₹99 in paise
+    currency: 'INR',
+    name: 'HotScan India',
+    description: 'Pro Subscription — Unlimited Scans',
+    image: 'https://hotscan-theta.vercel.app/icon-192.png',
+    prefill: {
+      email: currentUser.email,
+    },
+    notes: {
+      user_id: currentUser.id,
+    },
+    theme: { color: '#e63946' },
+    handler: async function(response) {
+      // Payment successful — activate Pro
+      await supabase.from('profiles').update({
+        is_pro: true,
+        pro_since: new Date().toISOString(),
+        razorpay_subscription_id: response.razorpay_payment_id
+      }).eq('id', currentUser.id)
+
+      await loadProfile()
+      localStorage.setItem('hs_pro', 'true')
+      closeAccountModal()
+      updateHeaderUI()
+
+      // Show success
+      setTimeout(() => {
+        alert('🎉 Welcome to HotScan Pro!\nUnlimited scans activated. Enjoy!')
+      }, 500)
+    }
+  }
+
+  const rzp = new Razorpay(options)
+  rzp.on('payment.failed', function(response) {
+    alert('Payment failed: ' + response.error.description)
+  })
+  closeAccountModal()
+  rzp.open()
+}
+
+// ── Cloud collection sync ──
+async function syncCollectionFromCloud() {
+  if (!currentUser) return
+  try {
+    const { data } = await supabase
+      .from('collection')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('added_at', { ascending: false })
+
+    if (data && data.length > 0) {
+      // Merge cloud with local — cloud wins for logged in users
+      collection = data.map(d => ({
+        id: d.id,
+        name: d.name,
+        series: d.series,
+        rarity: d.rarity,
+        color: d.color,
+        india_collector_inr: d.india_collector_inr,
+        investment: d.investment,
+        image: d.image_thumb,
+        added: d.added_at
+      }))
+      localStorage.setItem('hs_col', JSON.stringify(collection))
+      renderCol()
+    }
+  } catch(e) {
+    console.log('Cloud sync error:', e)
+  }
+}
+
+async function saveToCloud(item) {
+  if (!currentUser) return
+  try {
+    await supabase.from('collection').insert({
+      user_id: currentUser.id,
+      name: item.name,
+      series: item.series,
+      rarity: item.rarity,
+      color: item.color,
+      india_collector_inr: item.india_collector_inr,
+      investment: item.investment,
+      image_thumb: item.image ? item.image.substring(0, 5000) : null, // limit size
+      added_at: item.added
+    })
+  } catch(e) {
+    console.log('Cloud save error:', e)
+  }
+}
+
+async function deleteFromCloud(id) {
+  if (!currentUser) return
+  try {
+    await supabase.from('collection').delete().eq('id', id).eq('user_id', currentUser.id)
+  } catch(e) {
+    console.log('Cloud delete error:', e)
+  }
+}
+
+// ── Init auth on load ──
+initAuth()
 </script>
 
 <!-- Pro Modal -->
@@ -1329,10 +1657,63 @@ function ol(url){if(url&&url!=='#')window.open(url,'_blank')}
       </div>
       <div style="font-size:28px;font-weight:800;color:var(--gold);margin-bottom:4px">₹99<span style="font-size:14px;font-weight:400;color:var(--text2)">/month</span></div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:16px">Less than one Hot Wheels car per month</div>
-      <button onclick="activatePro()" style="background:var(--gold);color:#000;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;width:100%;margin-bottom:10px">Get Pro — ₹99/month</button>
+      <button onclick="currentUser?startPayment():openAuth()" style="background:var(--gold);color:#000;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;width:100%;margin-bottom:10px">Get Pro — ₹99/month</button>
       <button onclick="closeProModal()" style="background:var(--surface2);color:var(--text2);border:none;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;width:100%">Maybe later</button>
     </div>
   </div>
 </div>
+
+<!-- Auth Modal -->
+<div class="auth-modal" id="auth-modal">
+  <div class="auth-box">
+    <div id="auth-login-view">
+      <div class="auth-title">Sign in to HotScan</div>
+      <div class="auth-sub">Save your collection across devices</div>
+      <div class="auth-err" id="auth-err"></div>
+      <input class="auth-input" type="email" id="auth-email" placeholder="Email address" autocomplete="email">
+      <input class="auth-input" type="password" id="auth-pass" placeholder="Password" autocomplete="current-password">
+      <button class="auth-btn auth-btn-primary" onclick="signIn()">Sign In</button>
+      <button class="auth-btn auth-btn-secondary" onclick="closeAuth()">Maybe later</button>
+      <div class="auth-switch">No account? <button onclick="showSignup()">Create one free</button></div>
+    </div>
+    <div id="auth-signup-view" style="display:none">
+      <div class="auth-title">Create Account</div>
+      <div class="auth-sub">Free — save your collection to the cloud</div>
+      <div class="auth-err" id="auth-err-signup"></div>
+      <input class="auth-input" type="email" id="su-email" placeholder="Email address" autocomplete="email">
+      <input class="auth-input" type="password" id="su-pass" placeholder="Password (min 6 chars)" autocomplete="new-password">
+      <button class="auth-btn auth-btn-primary" onclick="signUp()">Create Account</button>
+      <button class="auth-btn auth-btn-secondary" onclick="closeAuth()">Maybe later</button>
+      <div class="auth-switch">Have an account? <button onclick="showLogin()">Sign in</button></div>
+    </div>
+    <div id="auth-verify-view" style="display:none">
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">📧</div>
+        <div class="auth-title">Check your email</div>
+        <div class="auth-sub">We sent a verification link to your email. Click it to activate your account.</div>
+        <button class="auth-btn auth-btn-secondary" style="margin-top:16px" onclick="closeAuth()">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Account Menu Modal -->
+<div class="auth-modal" id="account-modal">
+  <div class="auth-box">
+    <div class="account-card">
+      <div class="account-avatar" id="acc-avatar">?</div>
+      <div class="account-email" id="acc-email">Not signed in</div>
+      <div class="account-plan plan-free" id="acc-plan">Free Plan</div>
+      <div style="font-size:11px;color:var(--text3)" id="acc-scans">5 free scans/day</div>
+    </div>
+    <div id="acc-upgrade-section">
+      <button onclick="startPayment()" style="background:var(--gold);color:#000;border:none;padding:13px;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;width:100%;margin-bottom:8px">⭐ Upgrade to Pro — ₹99/month</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px" id="acc-since"></div>
+    <button class="sign-out-btn" onclick="signOutUser()">Sign Out</button>
+    <button class="auth-btn auth-btn-secondary" style="margin-top:8px" onclick="closeAccountModal()">Close</button>
+  </div>
+</div>
+
 </body>
 </html>
