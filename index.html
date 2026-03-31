@@ -623,136 +623,83 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 </div>
 
 <script>
-// ════════════════════════════════════════════════
-// HOTSCAN INDIA — Complete JS (no duplicates)
-// ════════════════════════════════════════════════
-
-// ── Config ──
-const SUPA_URL  = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
-const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
-const RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
-const DEV_EMAIL = 'mahak867@gmail.com'
-const FREE_SCANS = 5
-
 // ── State ──
-let KEY        = localStorage.getItem('hs_key') || ''
-let img64      = null
-let imgThumb   = null
-let fakeImg64  = null
-let lastResult = null
-let collection = JSON.parse(localStorage.getItem('hs_col')  || '[]')
-let history    = JSON.parse(localStorage.getItem('hs_hist') || '[]')
-let alerts     = JSON.parse(localStorage.getItem('hs_alerts')|| '[]')
-let sortBy     = 'date'
-let filterBy   = 'all'
-let currentMode   = 'photo'
-let currentSeries = 'mainline'
-let timerInt   = null
-let timerSec   = 0
+let KEY=localStorage.getItem('hs_key')||''
 
-// ── Supabase (initialised after window load) ──
-let _sb         = null
-let currentUser = null
-let userProfile = null
+// ── Pro tier — must be defined before init ──
+const FREE_SCANS=5
+function getTodayScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}');return d.date===t?d.count||0:0}
+function incScans(){const t=new Date().toDateString(),d=JSON.parse(localStorage.getItem('hs_scans')||'{}'),c=(d.date===t?d.count||0:0)+1;localStorage.setItem('hs_scans',JSON.stringify({date:t,count:c}));return c}
+function isPro(){return localStorage.getItem('hs_pro')==='true'}
+function checkLimit(){if(isPro())return true;if(getTodayScans()>=FREE_SCANS){showProModal();return false}return true}
+function showProModal(){document.getElementById('pro-modal').classList.add('open');document.body.style.overflow='hidden'}
+function closeProModal(){document.getElementById('pro-modal').classList.remove('open');document.body.style.overflow=''}
+function activatePro(){alert('HotScan Pro coming soon!\nEmail hotscanindia@gmail.com for early ₹99/month access.');closeProModal()}
+let img64=null,imgThumb=null,fakeImg64=null,lastResult=null
+let collection=JSON.parse(localStorage.getItem('hs_col')||'[]')
+let history=JSON.parse(localStorage.getItem('hs_hist')||'[]')
+let alerts=JSON.parse(localStorage.getItem('hs_alerts')||'[]')
+let sortBy='date',filterBy='all'
+let currentMode='photo',currentSeries='mainline'
+let timerInt=null,timerSec=0
 
-// ── Pro helpers ──
-function getTodayScans(){
-  const t=new Date().toDateString()
-  const d=JSON.parse(localStorage.getItem('hs_scans')||'{}')
-  return d.date===t ? d.count||0 : 0
-}
-function incScans(){
-  const t=new Date().toDateString()
-  const d=JSON.parse(localStorage.getItem('hs_scans')||'{}')
-  const c=(d.date===t?d.count||0:0)+1
-  localStorage.setItem('hs_scans',JSON.stringify({date:t,count:c}))
-  return c
-}
-function isPro(){
-  if(userProfile?.is_pro||userProfile?.is_developer)return true
-  return localStorage.getItem('hs_pro')==='true'
-}
-function checkLimit(){
-  if(isPro())return true
-  if(getTodayScans()>=FREE_SCANS){showProModal();return false}
-  return true
-}
-function showProModal(){
-  document.getElementById('pro-modal').classList.add('open')
-  document.body.style.overflow='hidden'
-}
-function closeProModal(){
-  document.getElementById('pro-modal').classList.remove('open')
-  document.body.style.overflow=''
-}
-
-// ── Hunt data ──
+// Hunt mode data
 const HUNT_DATA={
   mainline:[
     {name:'Dodge Charger Daytona',rarity:'Common',india:'₹150-200',priority:'Low'},
     {name:'Honda Civic Type R',rarity:'Uncommon',india:'₹200-350',priority:'Medium'},
     {name:'Porsche 911 GT3 RS',rarity:'Rare',india:'₹400-800',priority:'High'},
     {name:'Ferrari 488 GT3',rarity:'Rare',india:'₹500-900',priority:'High'},
+    {name:'Lamborghini Huracán',rarity:'Uncommon',india:'₹250-400',priority:'Medium'},
+    {name:"'69 Chevrolet Camaro",rarity:'Common',india:'₹150-200',priority:'Low'},
     {name:'Toyota Supra MK4',rarity:'Uncommon',india:'₹250-450',priority:'Medium'},
     {name:'Nissan Skyline GT-R',rarity:'Rare',india:'₹450-900',priority:'High'},
-    {name:"'69 Chevrolet Camaro",rarity:'Common',india:'₹150-200',priority:'Low'},
-    {name:'Lamborghini Huracán',rarity:'Uncommon',india:'₹250-400',priority:'Medium'},
   ],
   th:[
     {name:'Bone Shaker (TH)',rarity:'Treasure Hunt',india:'₹1200-2500',priority:'HIGH PRIORITY'},
     {name:'Twin Mill (TH)',rarity:'Treasure Hunt',india:'₹1000-2000',priority:'HIGH PRIORITY'},
     {name:'Deora III (STH)',rarity:'Super Treasure Hunt',india:'₹4000-10000',priority:'🔥 MUST GRAB'},
     {name:"'69 Camaro Z28 (STH)",rarity:'Super Treasure Hunt',india:'₹5000-12000',priority:'🔥 MUST GRAB'},
+    {name:'Dodge Charger (TH)',rarity:'Treasure Hunt',india:'₹1500-3000',priority:'HIGH PRIORITY'},
     {name:'Porsche 934.5 (STH)',rarity:'Super Treasure Hunt',india:'₹6000-15000',priority:'🔥 MUST GRAB'},
   ],
   premium:[
     {name:'Car Culture — Real Riders',rarity:'Premium',india:'₹600-1200',priority:'High'},
     {name:'Boulevard Series',rarity:'Premium',india:'₹500-1000',priority:'High'},
+    {name:'Racing Circuit',rarity:'Premium',india:'₹400-800',priority:'Medium'},
     {name:'Fast & Furious Series',rarity:'Premium',india:'₹500-1000',priority:'High'},
     {name:'Retro Entertainment',rarity:'Premium',india:'₹600-1200',priority:'High'},
+    {name:'Pop Culture Series',rarity:'Premium',india:'₹500-1000',priority:'Medium'},
   ],
   vintage:[
     {name:'Redline Era Cars (pre-1977)',rarity:'Vintage',india:'₹3000-20000',priority:'🔥 BIG VALUE'},
     {name:'Blackwall Era (1977-1983)',rarity:'Vintage',india:'₹1000-5000',priority:'HIGH PRIORITY'},
     {name:'Error Cars (any year)',rarity:'Error Car',india:'₹5000-50000',priority:'🔥 BIG VALUE'},
+    {name:'Pre-production Protos',rarity:'Vintage',india:'₹10000+',priority:'🔥 BIG VALUE'},
     {name:'Convention Exclusives',rarity:'Rare',india:'₹2000-8000',priority:'HIGH PRIORITY'},
+    {name:'Malaysia base variants',rarity:'Rare',india:'₹800-3000',priority:'High'},
   ]
 }
 
-// ════════════════════════════════
-// INIT — runs after all scripts load
-// ════════════════════════════════
-window.addEventListener('load', function(){
-  // Init Supabase safely
-  try{
-    if(window.supabase){
-      _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY)
-    }
-  }catch(e){ console.warn('Supabase init failed:', e) }
-
-  // Init app
-  if(KEY) document.getElementById('key-card').style.display='none'
+// ── Init ──
+;(()=>{
+  if(KEY)document.getElementById('key-card').style.display='none'
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)
   const sa=window.matchMedia('(display-mode:standalone)').matches
-  if(!ios||sa) document.getElementById('ib').style.display='none'
-
-  renderCol()
-  renderAlerts()
-  renderHunt('mainline')
-  initAuth()
+  if(!ios||sa)document.getElementById('ib').style.display='none'
+  renderCol();renderHist();renderAlerts();renderHunt('mainline')
   updateScanCounter()
-})
+})()
 
 function updateScanCounter(){
+  const used=getTodayScans()
   const el=document.getElementById('scan-counter')
   if(!el)return
   if(isPro()){el.textContent='PRO ⭐';el.style.background='rgba(255,214,10,0.3)';el.style.color='var(--gold)'}
-  else{el.textContent=getTodayScans()+'/'+FREE_SCANS+' scans'}
+  else{el.textContent=`${used}/${FREE_SCANS} scans`}
 }
 
-// ════════════════════════════════
-// NAV
-// ════════════════════════════════
+// ── Nav ──
 function goPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
@@ -762,25 +709,11 @@ function goPage(id){
   window.scrollTo({top:0,behavior:'smooth'})
 }
 
-// ════════════════════════════════
-// KEY
-// ════════════════════════════════
-function saveKey(){
-  const v=document.getElementById('gkey').value.trim()
-  if(!v){alert('Enter your Groq key');return}
-  KEY=v;localStorage.setItem('hs_key',v)
-  document.getElementById('key-card').style.display='none'
-}
-function showKeySetup(){
-  goPage('scan')
-  document.getElementById('key-card').style.display='block'
-  document.getElementById('gkey').value=KEY
-  document.getElementById('key-card').scrollIntoView({behavior:'smooth'})
-}
+// ── Key ──
+function saveKey(){const v=document.getElementById('gkey').value.trim();if(!v){alert('Enter your Groq key');return}KEY=v;localStorage.setItem('hs_key',v);document.getElementById('key-card').style.display='none'}
+function showKeySetup(){goPage('scan');document.getElementById('key-card').style.display='block';document.getElementById('gkey').value=KEY;document.getElementById('key-card').scrollIntoView({behavior:'smooth'})}
 
-// ════════════════════════════════
-// MODE TABS
-// ════════════════════════════════
+// ── Mode ──
 function setMode(mode){
   currentMode=mode
   ;['photo','barcode','deal','fake'].forEach(m=>{
@@ -791,76 +724,69 @@ function setMode(mode){
   document.getElementById('result').style.display='none'
   document.getElementById('deal-result').style.display='none'
   document.getElementById('err-box').style.display='none'
+
+  // Show analyze for deal/barcode modes automatically
   if(mode==='deal'){
     document.getElementById('analyze-btn').style.display='block'
     document.getElementById('analyze-btn').textContent='💰 Check This Deal'
+  } else if(mode==='barcode'){
+    document.getElementById('analyze-btn').style.display='none'
   }
 }
 
-// ════════════════════════════════
-// IMAGE COMPRESSION
-// ════════════════════════════════
-function compress(dataUrl, maxSize){
-  maxSize = maxSize || 512
-  return new Promise(function(resolve){
-    var img=new Image()
-    img.onload=function(){
+// ── Image compression ──
+function compress(dataUrl,maxSize=512){
+  return new Promise((resolve,reject)=>{
+    const img=new Image()
+    img.onload=()=>{
       try{
-        var c=document.createElement('canvas')
-        var w=img.width, h=img.height
-        if(w>h){if(w>maxSize){h=Math.round(h*maxSize/w);w=maxSize}}
-        else{if(h>maxSize){w=Math.round(w*maxSize/h);h=maxSize}}
+        const c=document.createElement('canvas')
+        let w=img.width,h=img.height
+        if(w>h){if(w>maxSize){h=Math.round(h*maxSize/w);w=maxSize}}else{if(h>maxSize){w=Math.round(w*maxSize/h);h=maxSize}}
         c.width=w;c.height=h
         c.getContext('2d').drawImage(img,0,0,w,h)
         resolve(c.toDataURL('image/jpeg',0.82))
-      }catch(e){resolve(dataUrl)}
+      }catch(e){resolve(dataUrl)} // fallback: use original if compression fails
     }
-    img.onerror=function(){resolve(dataUrl)}
+    img.onerror=()=>resolve(dataUrl) // fallback: use original if image fails to load
     img.src=dataUrl
   })
 }
 function compressThumb(dataUrl){
-  return new Promise(function(resolve){
-    var img=new Image()
-    img.onload=function(){
-      try{
-        var c=document.createElement('canvas')
-        var s=Math.min(img.width,img.height)
-        c.width=120;c.height=120
-        c.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,120,120)
-        resolve(c.toDataURL('image/jpeg',0.7))
-      }catch(e){resolve(dataUrl)}
-    }
-    img.onerror=function(){resolve(dataUrl)}
-    img.src=dataUrl
+  return new Promise(r=>{
+    const img=new Image()
+    img.onload=()=>{
+      const c=document.createElement('canvas'),s=Math.min(img.width,img.height)
+      c.width=120;c.height=120
+      c.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,120,120)
+      r(c.toDataURL('image/jpeg',0.7))
+    };img.src=dataUrl
   })
 }
 
-// ════════════════════════════════
-// FILE HANDLING
-// ════════════════════════════════
-function openCam(){if(!KEY){showKeySetup();return};var f=document.getElementById('fc');f.value='';f.click()}
-function openGal(){if(!KEY){showKeySetup();return};var f=document.getElementById('fg');f.value='';f.click()}
-function openFakeCam(){if(!KEY){showKeySetup();return};var f=document.getElementById('fc-fake');f.value='';f.click()}
-function openFakeGal(){if(!KEY){showKeySetup();return};var f=document.getElementById('fg-fake');f.value='';f.click()}
+function openCam(){if(!KEY){showKeySetup();return}const f=document.getElementById('fc');f.value='';f.click()}
+function openGal(){if(!KEY){showKeySetup();return}const f=document.getElementById('fg');f.value='';f.click()}
+function openFakeCam(){if(!KEY){showKeySetup();return}const f=document.getElementById('fc-fake');f.value='';f.click()}
+function openFakeGal(){if(!KEY){showKeySetup();return}const f=document.getElementById('fg-fake');f.value='';f.click()}
 
-async function handleFile(file, mode){
+async function handleFile(file,mode){
   if(!file)return
   try{
-    var raw=await new Promise(function(resolve,reject){
-      var rd=new FileReader()
-      rd.onload=function(e){resolve(e.target.result)}
-      rd.onerror=function(){reject(new Error('Failed to read file'))}
+    const raw=await new Promise((resolve,reject)=>{
+      const rd=new FileReader()
+      rd.onload=e=>resolve(e.target.result)
+      rd.onerror=()=>reject(new Error('Failed to read file'))
       rd.readAsDataURL(file)
     })
     if(mode==='fake'){
-      var pi=document.getElementById('fake-preview-img')
+      const pi=document.getElementById('fake-preview-img')
       if(pi){pi.src=raw;document.getElementById('fake-preview-wrap').style.display='block';document.getElementById('fake-scan-ph').style.display='none'}
       fakeImg64=await compress(raw,512)
       document.getElementById('analyze-btn').style.display='block'
       document.getElementById('analyze-btn').textContent='🕵️ Check If Fake'
     }else{
-      document.getElementById('preview-img').src=raw
+      const pi=document.getElementById('preview-img')
+      if(pi)pi.src=raw
       document.getElementById('preview-wrap').style.display='block'
       document.getElementById('scan-ph').style.display='none'
       document.getElementById('scan-area').classList.add('has-image')
@@ -873,160 +799,173 @@ async function handleFile(file, mode){
     document.getElementById('deal-result').style.display='none'
     document.getElementById('err-box').style.display='none'
   }catch(err){
+    console.error('handleFile error:',err)
     document.getElementById('err-box').textContent='⚠️ Could not load image. Try again.'
     document.getElementById('err-box').style.display='block'
   }
 }
 
-document.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('fc').addEventListener('change',function(e){handleFile(e.target.files[0],'photo')})
-  document.getElementById('fg').addEventListener('change',function(e){handleFile(e.target.files[0],'photo')})
-  document.getElementById('fc-fake').addEventListener('change',function(e){handleFile(e.target.files[0],'fake')})
-  document.getElementById('fg-fake').addEventListener('change',function(e){handleFile(e.target.files[0],'fake')})
-})
+document.getElementById('fc').addEventListener('change',e=>handleFile(e.target.files[0],'photo'))
+document.getElementById('fg').addEventListener('change',e=>handleFile(e.target.files[0],'photo'))
+document.getElementById('fc-fake').addEventListener('change',e=>handleFile(e.target.files[0],'fake'))
+document.getElementById('fg-fake').addEventListener('change',e=>handleFile(e.target.files[0],'fake'))
 
-// ════════════════════════════════
-// TIMER + PIPELINE
-// ════════════════════════════════
+// ── Timer ──
 function startTimer(lbl){
   timerSec=0
   document.getElementById('timer-wrap').style.display='block'
   document.getElementById('timer-lbl').textContent=lbl
   document.getElementById('timer-count').textContent='0s'
   document.getElementById('timer-fill').style.width='0%'
-  timerInt=setInterval(function(){
+  timerInt=setInterval(()=>{
     timerSec++
     document.getElementById('timer-count').textContent=timerSec+'s'
     document.getElementById('timer-fill').style.width=Math.min(timerSec/20*100,95)+'%'
   },1000)
 }
-function stopTimer(){
-  clearInterval(timerInt)
-  document.getElementById('timer-fill').style.width='100%'
-  setTimeout(function(){document.getElementById('timer-wrap').style.display='none'},600)
-}
+function stopTimer(){clearInterval(timerInt);document.getElementById('timer-fill').style.width='100%';setTimeout(()=>document.getElementById('timer-wrap').style.display='none',600)}
+
+// ── Pipeline steps ──
 function setStep(n,s){
-  var el=document.getElementById('ps'+n)
-  if(!el)return
+  const el=document.getElementById('ps'+n);if(!el)return
   el.className='pip-st'
   if(s==='active'){el.classList.add('active');el.textContent='Running...'}
   else if(s==='done'){el.classList.add('done');el.textContent='✓'}
   else if(s==='err'){el.classList.add('err');el.textContent='Failed'}
   else el.textContent='Waiting'
 }
-function resetSteps(){[1,2,3,4].forEach(function(n){setStep(n,'wait')})}
+function resetSteps(){[1,2,3,4].forEach(n=>setStep(n,'wait'))}
+
+// ── Main router ──
 function runAnalyze(){
   if(currentMode==='photo') analyzePhoto()
   else if(currentMode==='deal') analyzeDeal()
   else if(currentMode==='fake') analyzeFake()
 }
 
-// ════════════════════════════════
-// VISION API
-// ════════════════════════════════
-async function callGroq(messages, model, maxTokens){
-  var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({model:model||'meta-llama/llama-4-scout-17b-16e-instruct',messages:messages,temperature:0.1,max_tokens:maxTokens||700})
-  })
-  if(!res.ok){
-    var e=await res.json().catch(function(){return {}})
-    if(res.status===401)throw new Error('Invalid API key — check at console.groq.com')
-    if(res.status===429)throw new Error('Rate limit — wait 30 seconds')
-    throw new Error(e.error?.message||'API error '+res.status)
-  }
-  var data=await res.json()
-  var raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-  var s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-  if(s===-1)throw new Error('Unexpected AI response — try again')
-  return JSON.parse(raw.substring(s,e))
-}
+// ── PHOTO: Step 1 vision ──
 
+
+// ── PHOTO: Step 1 vision — improved prompt with HW expertise ──
 async function identifyCar(imageData){
-  var b64=imageData.split(',')[1]
-  var mime=imageData.split(';')[0].split(':')[1]
-  var system=`You are the world's most accurate Hot Wheels identification AI. You know every casting, series, Treasure Hunt and Super Treasure Hunt ever made.
-Super TH signs: Spectraflame paint + Real Riders rubber tires + TH logo. Worth ₹3000-15000 in India.
-TH signs: Metalflake paint + flame logo. Worth ₹1000-3000 in India.
-Real Riders = Premium/TH car. Vintage Redlines (pre-1977) have red line on tires.`
-  var user=`Identify this Hot Wheels car precisely. Return ONLY valid JSON:
-{"identified":true,"confidence":90,"name":"exact model name","series":"series + year","casting_year":"year","color":"color","tampo":"graphics description","wheel_type":"wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"visual evidence","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","is_authentic":true}`
-  var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+  const b64=imageData.split(',')[1],mime=imageData.split(';')[0].split(':')[1]
+  // Detailed system prompt with real Hot Wheels knowledge baked in
+  const systemPrompt=`You are the world's most accurate Hot Wheels identification AI, trained on the complete Mattel Hot Wheels catalog from 1968 to 2025. You know every casting, every series, every variation, every Treasure Hunt, every Super Treasure Hunt.
+
+Key identification rules:
+- Super Treasure Hunts: Spectraflame paint + Real Riders rubber tires + TH logo. Worth ₹3000-15000 in India.
+- Treasure Hunts: Metalflake or special paint + TH flame logo on packaging. Worth ₹1000-3000 in India.
+- Real Riders wheels = Premium or TH/STH car, never basic mainline
+- Check tampo (printed graphics), base color, wheel type carefully
+- Vintage Redline cars (pre-1977) have red line on tires
+- Look at the base — Malaysia/China/Thailand indicates era
+- Common signs of Super TH: rubber tires, spectraflame metallic paint, "Super" on card
+
+Indian market context:
+- Basic mainline: ₹150-200 at retail, scarce at stores
+- Premium/Car Culture: ₹500-1000
+- Treasure Hunt: very rare in India, ₹1500-4000
+- Super TH: extremely rare, ₹5000-20000
+- Error cars: most valuable, collectors pay premium`
+
+  const userPrompt=`Identify this Hot Wheels die-cast car precisely. Look carefully at the casting shape, color, tampo graphics, wheel type, and any visible text.
+
+Return ONLY valid JSON, no explanation:
+{"identified":true,"confidence":90,"name":"EXACT Hot Wheels model name","series":"Series name + year e.g. Hot Wheels 2023 Mainline #087","casting_year":"first year this casting appeared","color":"exact color name","tampo":"describe all graphics/decorations on the car body","wheel_type":"Basic 5-spoke|Real Riders|OH5|10-spoke|MC5|etc","base_color":"color of the base plate","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"specific visual evidence for this rarity e.g. spectraflame paint + rubber tires = Super TH","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"market-specific reason","fun_fact":"specific interesting fact about this casting","us_retail_usd":"1.49","us_collector_usd":"price range","is_authentic":true,"authenticity_notes":"any authenticity observations"}`
+
+  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
     body:JSON.stringify({
       model:'meta-llama/llama-4-scout-17b-16e-instruct',
       messages:[
-        {role:'system',content:system},
-        {role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:user}]}
+        {role:'system',content:systemPrompt},
+        {role:'user',content:[
+          {type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},
+          {type:'text',text:userPrompt}
+        ]}
       ],
-      temperature:0.05,max_tokens:800
+      temperature:0.05,
+      max_tokens:800
     })
   })
   if(!res.ok){
-    var e=await res.json().catch(function(){return {}})
-    if(res.status===401)throw new Error('Invalid API key')
-    if(res.status===429)throw new Error('Rate limit — wait 30 seconds')
-    throw new Error(e.error?.message||'Vision API error')
+    const e=await res.json().catch(()=>({}))
+    if(res.status===401)throw new Error('Invalid API key — check at console.groq.com')
+    if(res.status===429)throw new Error('Rate limit — wait 30 seconds and try again')
+    throw new Error(e.error?.message||'Vision API error '+res.status)
   }
-  var data=await res.json()
-  var raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-  var s=raw.indexOf('{'),e2=raw.lastIndexOf('}')+1
-  if(s===-1)throw new Error('Try again — unexpected response')
-  var d=JSON.parse(raw.substring(s,e2))
-  if(!d.identified)throw new Error('Could not identify. Try: white surface · bright light · side view')
+  const data=await res.json()
+  let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+  const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+  if(s===-1)throw new Error('Try again — unexpected response format')
+  const d=JSON.parse(raw.substring(s,e))
+  if(!d.identified)throw new Error('Could not identify. Try: white surface · bright light · clear side view · include card')
   return d
 }
 
+// ── PHOTO: Step 2 price search — Kimi K2 with deep India market knowledge ──
 async function searchPrices(carName,rarity,castingYear){
-  var rp={'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},'Premium':{r:'450-800',c:'700-1500',ur:'4.99',uc:'8-20'},'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}}
-  var p=rp[rarity]||rp['Common']
-  var prompt=`India Hot Wheels market expert. Price this car for Indian collectors:\nCar: "${carName}" | Rarity: ${rarity} | Year: ${castingYear}\nBase India range: Retail ₹${p.r}, Collector ₹${p.c}\nReturn ONLY valid JSON:\n{"india_retail_inr":"${p.r}","india_collector_inr":"${p.c}","us_retail_usd":"${p.ur}","us_collector_usd":"${p.uc}","price_trend":"Rising|Stable|Falling","price_trend_reason":"why","india_insight":"2-3 sentences about Indian demand for this car","sell_platforms":["OLX","Instagram collector groups","Maido"]}`
+  const rp={'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},'Premium':{r:'450-800',c:'700-1500',ur:'4.99',uc:'8-20'},'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}}
+  const p=rp[rarity]||rp['Common']
+  const prompt=`You are India's most knowledgeable Hot Wheels market expert with 20 years collecting in India.
+
+Car: "${carName}" | Rarity: ${rarity} | Year: ${castingYear}
+Typical India range: Retail ₹${p.r}, Collector ₹${p.c}
+
+Consider: Indian collector demand for this specific model, OLX market rates, Instagram group prices, swap meet prices in Mumbai/Delhi/Bangalore, scarcity vs US market, whether this is available on Amazon India/Flipkart.
+
+Return ONLY valid JSON:
+{"india_retail_inr":"${p.r}","india_collector_inr":"${p.c}","price_source_retail":"Amazon India","price_source_collector":"OLX India","us_retail_usd":"${p.ur}","us_collector_usd":"${p.uc}","price_trend":"Rising|Stable|Falling","price_trend_reason":"specific why for this model in India","india_insight":"2-3 sentences about Indian collector demand for this model, why collectors want it, current market activity","sell_platforms":["OLX","Instagram collector groups","Maido"],"buy_tip":"best way to find this in India"}`
   try{
-    var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:400})})
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:500})})
     if(!res.ok)return null
-    var data=await res.json()
-    var raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-    var s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
     if(s===-1)return null
     return JSON.parse(raw.substring(s,e))
-  }catch(e){return null}
+  }catch{return null}
 }
-
-// ════════════════════════════════
-// ANALYZE PHOTO
-// ════════════════════════════════
+// ── PHOTO analyze — parallel calls for speed ──
 async function analyzePhoto(){
   if(!img64||!KEY)return
+  if(!KEY){showKeySetup();return}
   if(!checkLimit())return
-  var btn=document.getElementById('analyze-btn')
+  const btn=document.getElementById('analyze-btn')
   btn.disabled=true;btn.textContent='⏳ Scanning...'
   document.getElementById('pipeline').style.display='block'
   document.getElementById('err-box').style.display='none'
   document.getElementById('result').style.display='none'
   document.getElementById('deal-result').style.display='none'
-  resetSteps();startTimer('Identifying car...')
+  resetSteps();startTimer('Identifying + fetching prices...')
+
   try{
-    setStep(1,'active')
-    var carData=await identifyCar(img64)
-    setStep(1,'done');setStep(2,'active')
+    // SPEED FIX: Run vision first (need car name for pricing)
+    // then fire price search immediately after — no unnecessary waiting
+    setStep(1,'active');setStep(2,'active')
+    const carData=await identifyCar(img64)
+    setStep(1,'done')
+
+    // Fire price search immediately with car data
     document.getElementById('timer-lbl').textContent='Fetching Indian market prices...'
-    var priceData=await searchPrices(carData.name,carData.rarity,carData.casting_year)
+    const priceData=await searchPrices(carData.name,carData.rarity,carData.casting_year)
     setStep(2,'done');setStep(3,'done');setStep(4,'done')
     stopTimer()
-    var result=Object.assign({},carData,priceData||{})
+
+    const result={...carData,...(priceData||{})}
     lastResult=result
     incScans()
     saveToHist(result)
     showResult(result)
-    updateScanCounter()
+
+    // Show scans remaining for free users
     if(!isPro()){
-      var remaining=FREE_SCANS-getTodayScans()
+      const remaining=FREE_SCANS-getTodayScans()
       if(remaining<=2&&remaining>0){
-        setTimeout(function(){
-          var el=document.getElementById('err-box')
-          el.innerHTML=remaining+' free scan'+(remaining===1?'':'s')+' left today. <button onclick="showProModal()" style="background:var(--gold);color:#000;border:none;padding:3px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Go Pro</button>'
+        setTimeout(()=>{
+          const el=document.getElementById('err-box')
+          el.innerHTML=`ℹ️ ${remaining} free scan${remaining===1?'':'s'} remaining today. <button onclick="showProModal()" style="background:var(--gold);color:#000;border:none;padding:3px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Go Pro</button>`
           el.style.background='#1a1500';el.style.border='1px solid rgba(255,214,10,0.3)';el.style.color='var(--gold)'
           el.style.display='block'
         },2000)
@@ -1034,7 +973,7 @@ async function analyzePhoto(){
     }
   }catch(err){
     stopTimer();setStep(1,'err')
-    document.getElementById('err-box').innerHTML='⚠️ '+err.message+'<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
+    document.getElementById('err-box').innerHTML=`⚠️ ${err.message}<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view · include card</div>`
     document.getElementById('err-box').style.display='block'
   }finally{
     btn.disabled=false;btn.textContent='🔎 Identify & Get Live Prices'
@@ -1042,29 +981,41 @@ async function analyzePhoto(){
   }
 }
 
-// ════════════════════════════════
-// DEAL ANALYZER
-// ════════════════════════════════
+// ── DEAL analyzer ──
 async function analyzeDeal(){
   if(!KEY)return
-  var asking=parseFloat(document.getElementById('deal-price').value)
-  var carName=document.getElementById('deal-car-name').value.trim()||(lastResult&&lastResult.name)||''
-  if(!asking){alert("Enter the seller's asking price");return}
-  if(!carName){alert('Enter the car name or scan it first');return}
-  var btn=document.getElementById('analyze-btn')
+  const askingPrice=parseFloat(document.getElementById('deal-price').value)
+  const carName=document.getElementById('deal-car-name').value.trim()||lastResult?.name||''
+  if(!askingPrice){alert('Enter the seller\'s asking price');return}
+  if(!carName){alert('Enter the car name or scan it first with Photo Scan');return}
+
+  const btn=document.getElementById('analyze-btn')
   btn.disabled=true;btn.textContent='⏳ Checking deal...'
   document.getElementById('err-box').style.display='none'
   document.getElementById('deal-result').style.display='none'
   startTimer('Checking deal...')
-  var prompt=`India Hot Wheels deal expert. Is ₹${asking} a good price for "${carName}"?\nReturn ONLY valid JSON:\n{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"why","suggestion":"exact counter-offer advice","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X"}`
+
+  const prompt=`You are India's #1 Hot Wheels deal expert.
+
+Car: "${carName}"
+Seller asking: ₹${askingPrice}
+
+Based on current Indian collector market (OLX, Instagram groups, swap meets, Amazon India):
+1. Is this a STEAL, FAIR PRICE, SLIGHTLY HIGH, or OVERPRICED?
+2. What is the fair collector price range in India right now?
+3. What should the buyer do?
+
+Return ONLY valid JSON:
+{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"specific reason why","suggestion":"exact advice e.g. offer ₹X counter","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"savings of ₹X or overpaying by ₹X","similar_olx_price":"what similar cars sell for on OLX"}`
+
   try{
-    var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:400})})
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:500})})
     if(!res.ok)throw new Error('API error — try again')
-    var data=await res.json()
-    var raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-    var s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-    var d=JSON.parse(raw.substring(s,e))
-    stopTimer();showDealResult(d,asking,carName)
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    const d=JSON.parse(raw.substring(s,e))
+    stopTimer();showDealResult(d,askingPrice,carName)
   }catch(err){
     stopTimer()
     document.getElementById('err-box').textContent='⚠️ '+err.message
@@ -1073,37 +1024,66 @@ async function analyzeDeal(){
 }
 
 function showDealResult(d,asking,carName){
-  var cfg={'Steal':{icon:'🤑',cls:'verdict-steal'},'Fair Price':{icon:'👍',cls:'verdict-fair'},'Slightly High':{icon:'🤔',cls:'verdict-high'},'Overpriced':{icon:'❌',cls:'verdict-overpriced'}}
-  var c=cfg[d.verdict]||cfg['Fair Price']
-  document.getElementById('deal-verdict-area').className='deal-verdict '+c.cls
-  document.getElementById('deal-verdict-icon').textContent=c.icon
+  const verdictConfig={
+    'Steal':{icon:'🤑',class:'verdict-steal',color:' var(--green)'},
+    'Fair Price':{icon:'👍',class:'verdict-fair',color:'var(--blue)'},
+    'Slightly High':{icon:'🤔',class:'verdict-high',color:'var(--gold)'},
+    'Overpriced':{icon:'❌',class:'verdict-overpriced',color:'#ff6b6b'},
+  }
+  const cfg=verdictConfig[d.verdict]||verdictConfig['Fair Price']
+  const va=document.getElementById('deal-verdict-area')
+  va.className='deal-verdict '+cfg.class
+  document.getElementById('deal-verdict-icon').textContent=cfg.icon
   document.getElementById('deal-verdict-label').textContent=d.verdict
   document.getElementById('deal-verdict-sub').textContent=d.verdict_reason||''
-  document.getElementById('deal-breakdown').innerHTML=[['Car',carName],['Seller asking','₹'+asking],['Fair price','₹'+(d.fair_india_price||'?')],['India retail','₹'+(d.market_retail||'?')],['India collector','₹'+(d.market_collector||'?')],[d.savings_or_overpay?.includes('saving')?'You save':'You overpay',d.savings_or_overpay||'?']].map(function(r){return '<div class="deal-row"><span class="deal-k">'+r[0]+'</span><span class="deal-v">'+r[1]+'</span></div>'}).join('')
+
+  document.getElementById('deal-breakdown').innerHTML=[
+    ['Car',carName],
+    ['Seller asking','₹'+asking],
+    ['Fair India price','₹'+(d.fair_india_price||'—')],
+    ['India retail','₹'+(d.market_retail||'—')],
+    ['India collector','₹'+(d.market_collector||'—')],
+    ['OLX similar','₹'+(d.similar_olx_price||'—')],
+    [d.savings_or_overpay?.includes('saving')?'You save':'You overpay',d.savings_or_overpay||'—'],
+  ].map(r=>`<div class="deal-row"><span class="deal-k">${r[0]}</span><span class="deal-v">${r[1]}</span></div>`).join('')
+
   if(d.suggestion)document.getElementById('deal-suggestion').textContent='💡 '+d.suggestion
   document.getElementById('deal-result').style.display='block'
   document.getElementById('deal-result').scrollIntoView({behavior:'smooth',block:'start'})
 }
 
-// ════════════════════════════════
-// FAKE ANALYZER
-// ════════════════════════════════
+// ── FAKE analyzer ──
 async function analyzeFake(){
   if(!fakeImg64||!KEY)return
-  var btn=document.getElementById('analyze-btn')
-  btn.disabled=true;btn.textContent='⏳ Checking...'
+  const btn=document.getElementById('analyze-btn')
+  btn.disabled=true;btn.textContent='⏳ Checking authenticity...'
   document.getElementById('err-box').style.display='none'
   document.getElementById('result').style.display='none'
   startTimer('Checking authenticity...')
-  var b64=fakeImg64.split(',')[1],mime=fakeImg64.split(';')[0].split(':')[1]
-  var prompt=`Authenticate this Hot Wheels car. Check logo quality, wheel quality, paint finish, tampo sharpness. Return ONLY valid JSON:\n{"identified":true,"is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":[],"good_signs":[],"recommendation":"advice","india_fake_note":"note about fakes in India"}`
+
+  const b64=fakeImg64.split(',')[1],mime=fakeImg64.split(';')[0].split(':')[1]
+  const prompt=`You are a Hot Wheels authentication expert. Examine this die-cast car image for signs of being fake or counterfeit.
+
+Check for:
+- "Hot Wheels" logo quality and font
+- Mattel logo presence and quality
+- Wheel quality (genuine HW wheels have specific look)
+- Paint quality and finish
+- Tampo print sharpness
+- Base plate markings
+- Overall build quality
+- Color accuracy
+
+Return ONLY valid JSON:
+{"identified":true,"car_name":"name if visible","is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":["flag1","flag2"],"good_signs":["sign1","sign2"],"recommendation":"what the buyer should do","fake_indicators_explained":"detailed explanation of what was checked","india_fake_note":"note about fake HW prevalence in Indian market"}`
+
   try{
-    var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:600})})
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}],temperature:0.1,max_tokens:700})})
     if(!res.ok)throw new Error('API error — try again')
-    var data=await res.json()
-    var raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-    var s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-    var d=JSON.parse(raw.substring(s,e))
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    const d=JSON.parse(raw.substring(s,e))
     stopTimer();showFakeResult(d)
   }catch(err){
     stopTimer()
@@ -1113,43 +1093,57 @@ async function analyzeFake(){
 }
 
 function showFakeResult(d){
-  var bg={'Authentic':'verdict-steal','Likely Authentic':'verdict-steal','Uncertain':'verdict-high','Likely Fake':'verdict-overpriced','Definitely Fake':'verdict-overpriced'}
-  document.getElementById('deal-verdict-area').className='deal-verdict '+(bg[d.verdict]||'verdict-fair')
+  const verdictColor={'Authentic':'var(--green)','Likely Authentic':'var(--green)','Uncertain':'var(--gold)','Likely Fake':'#ff6b6b','Definitely Fake':'#ff4444'}
+  const verdictBg={'Authentic':'verdict-steal','Likely Authentic':'verdict-steal','Uncertain':'verdict-high','Likely Fake':'verdict-overpriced','Definitely Fake':'verdict-overpriced'}
+
+  const va=document.getElementById('deal-verdict-area')
+  va.className='deal-verdict '+(verdictBg[d.verdict]||'verdict-fair')
   document.getElementById('deal-verdict-icon').textContent=d.is_authentic?'✅':'🚫'
   document.getElementById('deal-verdict-label').textContent=d.verdict||'Unknown'
-  document.getElementById('deal-verdict-sub').textContent='Score: '+(d.authenticity_score||'?')+'/100'
-  var rows=[]
-  if(d.good_signs&&d.good_signs.length)rows.push(['✓ Good signs',d.good_signs.join(' · ')])
-  if(d.red_flags&&d.red_flags.length)rows.push(['⚠️ Red flags',d.red_flags.join(' · ')])
-  if(d.india_fake_note)rows.push(['🇮🇳 India note',d.india_fake_note])
-  document.getElementById('deal-breakdown').innerHTML=rows.map(function(r){return '<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">'+r[0]+'</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">'+r[1]+'</span></div>'}).join('')
+  document.getElementById('deal-verdict-sub').textContent=`Authenticity score: ${d.authenticity_score||'?'}/100 · ${d.car_name||'Hot Wheels car'}`
+
+  const rows=[]
+  if(d.good_signs?.length)rows.push(['✓ Good signs',d.good_signs.join(' · ')])
+  if(d.red_flags?.length)rows.push(['⚠️ Red flags',d.red_flags.join(' · ')])
+  if(d.fake_indicators_explained)rows.push(['🔍 Analysis',d.fake_indicators_explained])
+  if(d.india_fake_note)rows.push(['🇮🇳 India Note',d.india_fake_note])
+
+  document.getElementById('deal-breakdown').innerHTML=rows.map(r=>`<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">${r[0]}</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">${r[1]}</span></div>`).join('')
   if(d.recommendation)document.getElementById('deal-suggestion').textContent='💡 '+d.recommendation
   document.getElementById('deal-result').style.display='block'
   document.getElementById('deal-result').scrollIntoView({behavior:'smooth',block:'start'})
 }
 
-// ════════════════════════════════
-// BARCODE
-// ════════════════════════════════
+// ── BARCODE lookup ──
 async function scanBarcode(){
-  var code=document.getElementById('barcode-input').value.trim()
+  const code=document.getElementById('barcode-input').value.trim()
   if(!code){alert('Enter a barcode number');return}
   if(!KEY){showKeySetup();return}
+
   document.getElementById('analyze-btn').style.display='block'
   document.getElementById('analyze-btn').disabled=true
   document.getElementById('analyze-btn').textContent='⏳ Looking up...'
   document.getElementById('err-box').style.display='none'
+  document.getElementById('result').style.display='none'
   startTimer('Looking up barcode...')
-  var prompt='Hot Wheels barcode/collector number: '+code+'. Identify this car and return ONLY valid JSON: {"identified":true,"confidence":80,"name":"model name","series":"series year","casting_year":"year","color":"color","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","investment":"Low|Medium|High|Very High","us_retail_usd":"1.49","us_collector_usd":"5-10","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"insight","fun_fact":"fact"}'
+
+  const prompt=`You are a Hot Wheels database expert. Look up this barcode/collector number from a Hot Wheels blister card:
+
+Barcode/Number: ${code}
+
+Identify the car and provide full details.
+Return ONLY valid JSON:
+{"identified":true,"confidence":80,"name":"model name","series":"series year","casting_year":"year","color":"color","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","rarity_reason":"why","investment":"Low|Medium|High|Very High","us_retail_usd":"1.49","us_collector_usd":"5-10","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian market insight","fun_fact":"fact"}`
+
   try{
-    var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:500})})
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:600})})
     if(!res.ok)throw new Error('API error')
-    var data=await res.json()
-    var raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-    var s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
-    var d=JSON.parse(raw.substring(s,e))
+    const data=await res.json()
+    let raw=data.choices[0].message.content.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}')+1
+    const d=JSON.parse(raw.substring(s,e))
     stopTimer()
-    if(!d.identified)throw new Error('Barcode not found. Try the collector number from the card back.')
+    if(!d.identified)throw new Error('Barcode not found. Try the collector number from the back of the card.')
     lastResult=d;showResult(d)
   }catch(err){
     stopTimer()
@@ -1161,412 +1155,494 @@ async function scanBarcode(){
   }
 }
 
-// ════════════════════════════════
-// SHOW RESULT
-// ════════════════════════════════
-function rcls(r){
-  var rv=(r||'').toLowerCase()
-  return rv.includes('super')?'rs':rv.includes('treasure')?'rt':rv.includes('error')?'re':rv.includes('rare')||rv.includes('vintage')||rv.includes('premium')?'rr':rv.includes('uncommon')?'ru':'rc'
+// ── Hunt mode ──
+function selectSeries(series,el){
+  currentSeries=series
+  document.querySelectorAll('.hunt-series-item').forEach(i=>i.classList.remove('selected'))
+  el.classList.add('selected')
+  renderHunt(series)
 }
 
+function renderHunt(series){
+  const data=HUNT_DATA[series]||[]
+  const checked=JSON.parse(localStorage.getItem('hs_hunt_'+series)||'{}')
+  document.getElementById('hunt-list').innerHTML=data.map((item,i)=>{
+    const isChecked=checked[i]||false
+    const prCls=item.priority.includes('MUST')?'rs':item.priority.includes('HIGH')?'rt':item.priority.includes('High')?'rr':'rc'
+    return `<div class="hunt-item" style="${isChecked?'opacity:0.5;text-decoration:line-through':''}"">
+      <input type="checkbox" ${isChecked?'checked':''} onchange="toggleHunt('${series}',${i},this)">
+      <div style="flex:1;min-width:0">
+        <div class="hunt-item-name">${item.name}</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+          <span class="rar ${rcls(item.rarity)}" style="font-size:10px;padding:2px 7px">${item.rarity}</span>
+          <span class="hunt-item-price">${item.india}</span>
+        </div>
+      </div>
+      <div style="font-size:10px;text-align:right;color:${item.priority.includes('MUST')?'var(--gold)':item.priority.includes('HIGH')?'var(--gold)':'var(--text3)'}">${item.priority}</div>
+    </div>`
+  }).join('')
+}
+
+function toggleHunt(series,idx,el){
+  const checked=JSON.parse(localStorage.getItem('hs_hunt_'+series)||'{}')
+  checked[idx]=el.checked
+  localStorage.setItem('hs_hunt_'+series,JSON.stringify(checked))
+  renderHunt(series)
+}
+
+// ── Show Result ──
+function rcls(r){const rv=(r||'').toLowerCase();return rv.includes('super')?'rs':rv.includes('treasure')?'rt':rv.includes('error')?'re':rv.includes('rare')||rv.includes('vintage')||rv.includes('premium')?'rr':rv.includes('uncommon')?'ru':'rc'}
+
 function showResult(d){
-  if(imgThumb)document.getElementById('r-thumb').innerHTML='<img src="'+imgThumb+'" alt="">'
+  if(imgThumb)document.getElementById('r-thumb').innerHTML=`<img src="${imgThumb}" alt="">`
   document.getElementById('r-name').textContent=d.name||'Unknown'
   document.getElementById('r-series').textContent=d.series||''
   document.getElementById('r-conf').style.width=(d.confidence||75)+'%'
 
-  var rb=document.getElementById('r-rar')
+  const rb=document.getElementById('r-rar')
   rb.textContent=d.rarity||'Common';rb.className='rar '+rcls(d.rarity)
 
-  var ab=document.getElementById('r-auth')
+  // Authenticity
+  const authBadge=document.getElementById('r-auth')
   if(d.is_authentic!==undefined){
-    ab.style.display='inline-flex'
-    ab.className='authentic-badge '+(d.is_authentic?'auth-yes':'auth-no')
-    ab.textContent=d.is_authentic?'✓ Authentic':'⚠️ Possibly Fake'
-  }else ab.style.display='none'
+    authBadge.style.display='inline-flex'
+    authBadge.className='authentic-badge '+(d.is_authentic?'auth-yes':'auth-no')
+    authBadge.textContent=(d.is_authentic?'✓ Authentic':'⚠️ Possibly Fake')
+  }else authBadge.style.display='none'
 
   document.getElementById('p1').textContent=d.india_retail_inr?'₹'+d.india_retail_inr:'—'
   document.getElementById('p2').textContent=d.india_collector_inr?'₹'+d.india_collector_inr:'—'
   document.getElementById('p3').textContent=d.us_retail_usd?'$'+d.us_retail_usd:'—'
   document.getElementById('p4').textContent=d.us_collector_usd?'$'+d.us_collector_usd:'—'
+  if(d.price_source_retail)document.getElementById('psrc1').textContent='Source: '+d.price_source_retail
+  if(d.price_source_collector)document.getElementById('psrc2').textContent='Source: '+d.price_source_collector
   document.getElementById('live-upd').textContent='Updated just now'
 
-  var trend=d.price_trend||'Stable'
+  const trend=d.price_trend||'Stable'
   document.getElementById('trend-ic').textContent=trend==='Rising'?'📈':trend==='Falling'?'📉':'➡️'
-  document.getElementById('trend-txt').innerHTML='<span class="'+(trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst')+'">'+trend+'</span>'+(d.price_trend_reason?' — '+d.price_trend_reason:'')
+  document.getElementById('trend-txt').innerHTML=`<span class="${trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst'}">${trend}</span>${d.price_trend_reason?' — '+d.price_trend_reason:''}`
 
-  document.getElementById('live-listings').style.display='none'
+  if(d.live_listings?.length){
+    document.getElementById('listings-list').innerHTML=d.live_listings.slice(0,4).map(l=>`<div class="listing" onclick="ol('${l.url||'#'}')"><span class="listing-plat">${l.platform||'OLX'}</span><span class="listing-desc">${l.description||''}</span><span class="listing-price">${l.price_inr?'₹'+l.price_inr:''}</span></div>`).join('')
+    document.getElementById('live-listings').style.display='block'
+  }else document.getElementById('live-listings').style.display='none'
 
-  var ib=document.getElementById('r-inv')
+  const ib=document.getElementById('r-inv')
   ib.textContent=(d.investment||'Medium')+' Potential';ib.className='inv-badge'
-  var iv=(d.investment||'').toLowerCase()
+  const iv=(d.investment||'').toLowerCase()
   ib.classList.add(iv.includes('very')?'iv':iv==='high'?'ih':iv==='medium'?'im':'il')
 
-  var rows=[['Color',d.color],['Casting Year',d.casting_year],['Tampo',d.tampo],['Wheels',d.wheel_type],['Condition',d.condition],['Rarity Reason',d.rarity_reason],['Why Invest',d.investment_reason],['Fun Fact',d.fun_fact]]
-  document.getElementById('r-dets').innerHTML=rows.filter(function(r){return r[1]&&r[1]!=='undefined'}).map(function(r){return '<div class="det"><span class="det-k">'+r[0]+'</span><span class="det-v">'+r[1]+'</span></div>'}).join('')
+  const rows=[['Color',d.color],['Casting Year',d.casting_year],['Tampo',d.tampo],['Wheels',d.wheel_type],['Condition',d.condition],['Rarity Reason',d.rarity_reason],['Why Invest',d.investment_reason],['Fun Fact',d.fun_fact]]
+  document.getElementById('r-dets').innerHTML=rows.filter(r=>r[1]&&r[1]!=='undefined').map(r=>`<div class="det"><span class="det-k">${r[0]}</span><span class="det-v">${r[1]}</span></div>`).join('')
 
   if(d.india_insight){document.getElementById('r-insight-txt').textContent=d.india_insight;document.getElementById('r-insight').style.display='block'}
   else document.getElementById('r-insight').style.display='none'
 
   // Buy links
-  if(d.name){
-    var buyLinks=[
-      {label:'Amazon India',url:'https://www.amazon.in/s?k=hot+wheels+'+encodeURIComponent(d.name)},
-      {label:'Flipkart',url:'https://www.flipkart.com/search?q=hot+wheels+'+encodeURIComponent(d.name)},
-      {label:'OLX',url:'https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(d.name)},
-      {label:'Maido',url:'https://www.maido.in/search?q='+encodeURIComponent(d.name)},
-    ]
-    var bl=document.getElementById('r-buy-list')
-    var bs=document.getElementById('r-buy-links')
-    if(bl){
-      bl.innerHTML=buyLinks.map(function(l){return '<span class="tag" onclick="ol(''+l.url+'')" style="cursor:pointer;color:var(--blue)">'+l.label+' →</span>'}).join('')
-      if(bs)bs.style.display='block'
-    }
+  const buyLinks=[
+    {label:'Amazon India',url:'https://www.amazon.in/s?k=hot+wheels+'+encodeURIComponent(d.name||'')},
+    {label:'Flipkart',url:'https://www.flipkart.com/search?q=hot+wheels+'+encodeURIComponent(d.name||'')},
+    {label:'OLX',url:'https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(d.name||'')},
+    {label:'Maido',url:'https://www.maido.in/search?q='+encodeURIComponent(d.name||'')},
+  ]
+  const buyEl=document.getElementById('r-buy-list')
+  const buySection=document.getElementById('r-buy-links')
+  if(buyEl){
+    buyEl.innerHTML=buyLinks.map(l=>`<span class="tag" onclick="ol('${l.url}')" style="cursor:pointer;color:var(--blue)">${l.label} →</span>`).join('')
+    buySection.style.display='block'
   }
 
+  // Pre-fill deal checker
   if(d.name)document.getElementById('deal-car-name').value=d.name
 
   document.getElementById('result').style.display='block'
   document.getElementById('deal-result').style.display='none'
   document.getElementById('analyze-btn').style.display='none'
-  setTimeout(function(){document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'})},100)
+  setTimeout(()=>document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'}),100)
 }
 
-// ════════════════════════════════
-// COLLECTION
-// ════════════════════════════════
+// ── Collection ──
 function addToCol(){
   if(!lastResult)return
-  var item={id:Date.now(),name:lastResult.name,series:lastResult.series,rarity:lastResult.rarity,color:lastResult.color,india_collector_inr:lastResult.india_collector_inr,investment:lastResult.investment,image:imgThumb,added:new Date().toISOString()}
+  const item={id:Date.now(),name:lastResult.name,series:lastResult.series,rarity:lastResult.rarity,color:lastResult.color,india_collector_inr:lastResult.india_collector_inr,investment:lastResult.investment,image:imgThumb,added:new Date().toISOString()}
   collection.unshift(item)
   localStorage.setItem('hs_col',JSON.stringify(collection))
-  if(_sb&&currentUser)saveToCloud(item)
+  saveToCloud(item).catch(()=>{}) // save to cloud if logged in
   renderCol();goPage('collection')
 }
-function delFromCol(id){
-  if(_sb&&currentUser)deleteFromCloud(id)
-  collection=collection.filter(function(c){return c.id!==id})
-  localStorage.setItem('hs_col',JSON.stringify(collection))
-  renderCol()
-}
-function sCol(by,el){sortBy=by;document.querySelectorAll('#sc .chip').forEach(function(b){b.classList.remove('active')});el.classList.add('active');renderCol()}
-function fCol(f,el){filterBy=f;document.querySelectorAll('#fc2 .chip').forEach(function(b){b.classList.remove('active')});el.classList.add('active');renderCol()}
+function delFromCol(id){deleteFromCloud(id).catch(()=>{});collection=collection.filter(c=>c.id!==id);localStorage.setItem('hs_col',JSON.stringify(collection));renderCol()}
+function sCol(by,el){sortBy=by;document.querySelectorAll('#sc .chip').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderCol()}
+function fCol(f,el){filterBy=f;document.querySelectorAll('#fc2 .chip').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderCol()}
 
 function renderCol(){
-  var items=collection.slice()
-  if(filterBy!=='all')items=items.filter(function(c){return(c.rarity||'').toLowerCase().includes(filterBy.toLowerCase())})
-  var order=['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
-  if(sortBy==='value')items.sort(function(a,b){return parseFloat((b.india_collector_inr||'0').split('-')[0])-parseFloat((a.india_collector_inr||'0').split('-')[0])})
-  else if(sortBy==='name')items.sort(function(a,b){return(a.name||'').localeCompare(b.name||'')})
-  else if(sortBy==='rarity')items.sort(function(a,b){return order.indexOf(a.rarity)-order.indexOf(b.rarity)})
-
-  var total=collection.length
-  var rare=collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage')}).length
-  var sth=collection.filter(function(c){return(c.rarity||'').toLowerCase().includes('treasure')}).length
-  var val=0;collection.forEach(function(c){var p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
-
+  let items=[...collection]
+  if(filterBy!=='all')items=items.filter(c=>(c.rarity||'').toLowerCase().includes(filterBy.toLowerCase()))
+  const order=['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
+  if(sortBy==='value')items.sort((a,b)=>parseFloat((b.india_collector_inr||'0').split('-')[0])-parseFloat((a.india_collector_inr||'0').split('-')[0]))
+  else if(sortBy==='name')items.sort((a,b)=>(a.name||'').localeCompare(b.name||''))
+  else if(sortBy==='rarity')items.sort((a,b)=>order.indexOf(a.rarity)-order.indexOf(b.rarity))
+  const total=collection.length
+  const rare=collection.filter(c=>{const r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage')}).length
+  const sth=collection.filter(c=>(c.rarity||'').toLowerCase().includes('treasure')).length
+  let val=0;collection.forEach(c=>{const p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
   document.getElementById('val-total').textContent=val>0?'₹'+val.toLocaleString('en-IN'):'₹0'
-  document.getElementById('v-cars').textContent=total
-  document.getElementById('v-rare').textContent=rare
-  document.getElementById('v-sth').textContent=sth
+  document.getElementById('v-cars').textContent=total;document.getElementById('v-rare').textContent=rare;document.getElementById('v-sth').textContent=sth
   document.getElementById('v-avg').textContent=total>0?'₹'+Math.round(val/total).toLocaleString('en-IN'):'₹0'
-
-  if(!items.length){
-    document.getElementById('col-list').innerHTML='<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">'+(filterBy==='all'?'No cars yet':'No '+filterBy+' cars')+'</div><div class="empty-s">'+(filterBy==='all'?currentUser?'Scan a car and tap "Add"':'Scan a car and tap "Add" (Sign in to save to cloud)':'Try a different filter')+'</div></div>'
-    return
-  }
-  document.getElementById('col-list').innerHTML=items.map(function(c){
-    return '<div class="col-item"><div class="col-thumb">'+(c.image?'<img src="'+c.image+'" alt="">':' 🚗')+'</div><div style="flex:1;min-width:0"><div class="col-name">'+(c.name||'Unknown')+'</div><div class="col-meta">'+(c.series||'')+'</div><div style="display:flex;gap:5px;align-items:center"><span class="rar '+rcls(c.rarity)+'" style="font-size:10px;padding:2px 7px">'+(c.rarity||'Common')+'</span><span class="col-price">'+(c.india_collector_inr?'₹'+c.india_collector_inr:'')+'</span></div></div><button class="col-del" onclick="delFromCol('+c.id+')">🗑</button></div>'
-  }).join('')
+  if(!items.length){document.getElementById('col-list').innerHTML=`<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">${filterBy==='all'?'No cars yet':'No '+filterBy+' cars'}</div><div class="empty-s">${filterBy==='all'?currentUser?'Scan a car and tap "Add"':'Scan a car and tap "Add" (Sign in to save to cloud)':'Try a different filter'}</div></div>`;return}
+  document.getElementById('col-list').innerHTML=items.map(c=>`<div class="col-item"><div class="col-thumb">${c.image?`<img src="${c.image}" alt="">`:' 🚗'}</div><div style="flex:1;min-width:0"><div class="col-name">${c.name||'Unknown'}</div><div class="col-meta">${c.series||''}</div><div style="display:flex;gap:5px;align-items:center"><span class="rar ${rcls(c.rarity)}" style="font-size:10px;padding:2px 7px">${c.rarity||'Common'}</span><span class="col-price">${c.india_collector_inr?'₹'+c.india_collector_inr:''}</span></div></div><button class="col-del" onclick="delFromCol(${c.id})">🗑</button></div>`).join('')
 }
 
 function exportVal(){
   if(!collection.length){alert('Add some cars first!');return}
-  var val=0;collection.forEach(function(c){var p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
-  var date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
-  var txt='HOTSCAN INDIA — COLLECTION VALUATION\n'+'='.repeat(40)+'\nDate: '+date+'\n\nTotal Cars: '+collection.length+'\nEstimated Value: ₹'+val.toLocaleString('en-IN')+'\n\n'+collection.map(function(c,i){return(i+1)+'. '+(c.name||'Unknown')+' | '+(c.rarity||'Common')+' | ₹'+(c.india_collector_inr||'N/A')}).join('\n')+'\n\n'+'='.repeat(40)+'\nHotScan India · hotscan-theta.vercel.app'
-  var blob=new Blob([txt],{type:'text/plain'})
-  var url=URL.createObjectURL(blob)
-  var a=document.createElement('a');a.href=url;a.download='HotScan_Valuation_'+new Date().toISOString().split('T')[0]+'.txt';a.click();URL.revokeObjectURL(url)
+  let val=0;collection.forEach(c=>{const p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
+  const date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
+  const txt=`HOTSCAN INDIA — COLLECTION VALUATION CERTIFICATE\n${'='.repeat(50)}\nGenerated: ${date}\nApp: HotScan India v3.0 (hotscan-theta.vercel.app)\n\nCOLLECTION SUMMARY\nTotal Cars: ${collection.length}\nEstimated Total Value: ₹${val.toLocaleString('en-IN')} INR\n\nCAR LIST\n${collection.map((c,i)=>`${i+1}. ${c.name||'Unknown'} | ${c.rarity||'Common'} | ₹${c.india_collector_inr||'N/A'}`).join('\n')}\n\n${'='.repeat(50)}\nNote: Values are AI estimates based on current Indian\ncollector market data. For insurance, get a professional appraisal.\n${'='.repeat(50)}`
+  const blob=new Blob([txt],{type:'text/plain'})
+  const url=URL.createObjectURL(blob)
+  const a=document.createElement('a')
+  a.href=url;a.download=`HotScan_Valuation_${new Date().toISOString().split('T')[0]}.txt`
+  a.click();URL.revokeObjectURL(url)
 }
 
-// ════════════════════════════════
-// ALERTS
-// ════════════════════════════════
+// ── Alerts ──
 function addAlert(){
   if(!lastResult)return
-  if(alerts.find(function(a){return a.name===lastResult.name})){alert('Alert already set for: '+lastResult.name);return}
+  if(alerts.find(a=>a.name===lastResult.name)){alert('Alert already set for: '+lastResult.name);return}
   alerts.unshift({id:Date.now(),name:lastResult.name,rarity:lastResult.rarity,india_collector_inr:lastResult.india_collector_inr,added:new Date().toISOString()})
   localStorage.setItem('hs_alerts',JSON.stringify(alerts))
   renderAlerts();goPage('alerts')
 }
-function delAlert(id){alerts=alerts.filter(function(a){return a.id!==id});localStorage.setItem('hs_alerts',JSON.stringify(alerts));renderAlerts()}
+function delAlert(id){alerts=alerts.filter(a=>a.id!==id);localStorage.setItem('hs_alerts',JSON.stringify(alerts));renderAlerts()}
 function clearAlerts(){if(!confirm('Clear all alerts?'))return;alerts=[];localStorage.setItem('hs_alerts','[]');renderAlerts()}
 function renderAlerts(){
   if(!alerts.length){document.getElementById('alerts-list').innerHTML='<div class="empty"><div class="empty-icon">🔔</div><div class="empty-t">No alerts yet</div><div class="empty-s">Scan a car and tap "Alert" to watch for deals</div></div>';return}
-  document.getElementById('alerts-list').innerHTML=alerts.map(function(a){
-    return '<div class="alert-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1;min-width:0"><div class="alert-name">'+(a.name||'')+'</div><div class="alert-meta">'+(a.rarity||'Common')+' · Target: ₹'+(a.india_collector_inr||'?')+'</div><div style="display:flex;gap:8px;margin-top:5px"><button class="alert-link" onclick="ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(a.name||'')+'')">OLX →</button><button class="alert-link" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')">Instagram →</button></div></div><button class="alert-del" onclick="delAlert('+a.id+')">✕</button></div></div>'
-  }).join('')
+  document.getElementById('alerts-list').innerHTML=alerts.map(a=>`<div class="alert-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1;min-width:0"><div class="alert-name">${a.name}</div><div class="alert-meta">${a.rarity||'Common'} · Target: ₹${a.india_collector_inr||'?'}</div><div style="display:flex;gap:8px;margin-top:5px"><button class="alert-link" onclick="ol('https://www.olx.in/items/q-hot+wheels+${encodeURIComponent(a.name||'')}')">OLX →</button><button class="alert-link" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')">Instagram →</button><button class="alert-link" onclick="ol('https://www.amazon.in/s?k=hot+wheels+${encodeURIComponent(a.name||'')}')">Amazon →</button></div></div><button class="alert-del" onclick="delAlert(${a.id})">✕</button></div></div>`).join('')
 }
 
-// ════════════════════════════════
-// HISTORY
-// ════════════════════════════════
+// ── History ──
 function saveToHist(d){
   history.unshift({id:Date.now(),name:d.name,series:d.series,rarity:d.rarity,india_collector_inr:d.india_collector_inr,image:imgThumb,scanned:new Date().toISOString()})
   if(history.length>50)history=history.slice(0,50)
   localStorage.setItem('hs_hist',JSON.stringify(history))
 }
+function renderHist(){} // History shown in collection for now
 
-// ════════════════════════════════
-// HUNT MODE
-// ════════════════════════════════
-function selectSeries(series,el){
-  currentSeries=series
-  document.querySelectorAll('.hunt-series-item').forEach(function(i){i.classList.remove('selected')})
-  el.classList.add('selected')
-  renderHunt(series)
-}
-function toggleHunt(series,idx,el){
-  var checked=JSON.parse(localStorage.getItem('hs_hunt_'+series)||'{}')
-  checked[idx]=el.checked
-  localStorage.setItem('hs_hunt_'+series,JSON.stringify(checked))
-  renderHunt(series)
-}
-function renderHunt(series){
-  var data=HUNT_DATA[series]||[]
-  var checked=JSON.parse(localStorage.getItem('hs_hunt_'+series)||'{}')
-  document.getElementById('hunt-list').innerHTML=data.map(function(item,i){
-    var isChecked=checked[i]||false
-    var prCls=item.priority.includes('MUST')||item.priority.includes('BIG')?'rs':item.priority.includes('HIGH')||item.priority==='High'?'rt':'rc'
-    return '<div class="hunt-item" style="'+(isChecked?'opacity:0.5':'')+'"><input type="checkbox" '+(isChecked?'checked':'')+' onchange="toggleHunt(''+series+'','+i+',this)"><div style="flex:1;min-width:0"><div class="hunt-item-name">'+item.name+'</div><div style="display:flex;gap:6px;align-items:center;margin-top:3px"><span class="rar '+prCls+'" style="font-size:10px;padding:2px 7px">'+item.rarity+'</span><span class="hunt-item-price">'+item.india+'</span></div></div><div style="font-size:10px;text-align:right;color:var(--gold)">'+item.priority+'</div></div>'
-  }).join('')
-}
-
-// ════════════════════════════════
-// SHARE
-// ════════════════════════════════
+// ── Share ──
 function showShare(){
   if(!lastResult)return
   document.getElementById('sc-name').textContent=lastResult.name||'—'
   document.getElementById('sc-series').textContent=lastResult.series||'—'
-  var scr=document.getElementById('sc-rar');scr.textContent=lastResult.rarity||'Common';scr.className='rar '+rcls(lastResult.rarity)
+  const scr=document.getElementById('sc-rar');scr.textContent=lastResult.rarity||'Common';scr.className='rar '+rcls(lastResult.rarity)
   document.getElementById('sc-inv').textContent=(lastResult.investment||'')+' Investment'
   document.getElementById('sc-inr').textContent=lastResult.india_collector_inr?'₹'+lastResult.india_collector_inr:'—'
   document.getElementById('sc-usd').textContent=lastResult.us_collector_usd?'$'+lastResult.us_collector_usd:'—'
-  var sci=document.getElementById('sc-img');sci.innerHTML=imgThumb?'<img src="'+imgThumb+'" alt="" style="width:100%;height:100%;object-fit:cover">':' 🚗'
+  const sci=document.getElementById('sc-img');sci.innerHTML=imgThumb?`<img src="${imgThumb}" alt="" style="width:100%;height:100%;object-fit:cover">`:' 🚗'
   document.getElementById('share-modal').classList.add('open')
   document.body.style.overflow='hidden'
 }
 function closeShare(){document.getElementById('share-modal').classList.remove('open');document.body.style.overflow=''}
 function shareWA(){
   if(!lastResult)return
-  var txt='🚗 *'+lastResult.name+'*\n📦 '+lastResult.series+'\n⭐ '+lastResult.rarity+'\n🇮🇳 India: ₹'+lastResult.india_collector_inr+'\n🇺🇸 US: $'+lastResult.us_collector_usd+'\n📈 '+lastResult.investment+' Investment\n\n_Scanned with HotScan India 🔍_\n_hotscan-theta.vercel.app_'
+  const txt=`🚗 *${lastResult.name}*\n📦 ${lastResult.series}\n⭐ ${lastResult.rarity}\n🇮🇳 India: ₹${lastResult.india_collector_inr}\n🇺🇸 US: $${lastResult.us_collector_usd}\n📈 ${lastResult.investment} Investment\n\n_Scanned with HotScan India 🔍_\n_India's #1 Hot Wheels Scanner_\n_hotscan-theta.vercel.app_`
   window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(txt),'_blank')
 }
 async function shareNative(){
   if(!lastResult)return
-  var txt='🚗 '+lastResult.name+'\n📦 '+lastResult.series+'\n⭐ '+lastResult.rarity+'\n🇮🇳 India: ₹'+lastResult.india_collector_inr+'\n🇺🇸 US: $'+lastResult.us_collector_usd+'\n📈 '+lastResult.investment+' Investment\n\nScanned with HotScan India 🔍\nhttps://hotscan-theta.vercel.app'
+  const txt=`🚗 ${lastResult.name}\n📦 ${lastResult.series}\n⭐ ${lastResult.rarity}\n🇮🇳 India: ₹${lastResult.india_collector_inr}\n🇺🇸 US: $${lastResult.us_collector_usd}\n📈 ${lastResult.investment} Investment\n\nScanned with HotScan India 🔍\nhttps://hotscan-theta.vercel.app`
   if(navigator.share){try{await navigator.share({title:'HotScan — '+lastResult.name,text:txt})}catch(e){}}
   else{await navigator.clipboard?.writeText(txt);alert('Copied!')}
 }
 
-// ════════════════════════════════
-// RESET
-// ════════════════════════════════
+// ── Reset ──
 function resetScan(){
   img64=null;imgThumb=null;fakeImg64=null;lastResult=null
-  document.getElementById('preview-img').src=''
-  document.getElementById('preview-wrap').style.display='none'
-  document.getElementById('scan-ph').style.display='block'
-  document.getElementById('scan-area').classList.remove('has-image')
+  document.getElementById('preview-img').src='';document.getElementById('preview-wrap').style.display='none'
+  document.getElementById('scan-ph').style.display='block';document.getElementById('scan-area').classList.remove('has-image')
   try{document.getElementById('fake-preview-img').src='';document.getElementById('fake-preview-wrap').style.display='none';document.getElementById('fake-scan-ph').style.display='block'}catch(e){}
   document.getElementById('analyze-btn').style.display='none'
   document.getElementById('result').style.display='none'
   document.getElementById('deal-result').style.display='none'
   document.getElementById('err-box').style.display='none'
-  try{document.getElementById('r-insight').style.display='none'}catch(e){}
-  try{document.getElementById('live-listings').style.display='none'}catch(e){}
-  try{document.getElementById('r-buy-links').style.display='none'}catch(e){}
-  document.getElementById('fc').value=''
-  document.getElementById('fg').value=''
+  document.getElementById('r-insight').style.display='none'
+  document.getElementById('live-listings').style.display='none'
+  document.getElementById('fc').value='';document.getElementById('fg').value=''
   window.scrollTo({top:0,behavior:'smooth'})
 }
 
 function ol(url){if(url&&url!=='#')window.open(url,'_blank')}
 
-// ════════════════════════════════════════════════
-// AUTH + PAYMENTS (Supabase + Razorpay)
-// ════════════════════════════════════════════════
-async function initAuth(){
-  if(!_sb){updateHeaderUI();return}
-  try{
-    var session=await _sb.auth.getSession()
-    if(session.data&&session.data.session&&session.data.session.user){
-      currentUser=session.data.session.user
-      await loadProfile()
-    }
-  }catch(e){console.warn('getSession error:',e)}
+// ═══════════════════════════════════════════════════════
+// SUPABASE + AUTH + PAYMENTS
+// ═══════════════════════════════════════════════════════
+const SUPA_URL = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
+const RZP_KEY  = 'rzp_live_SX0GLL6DXzycgo'
+const DEV_EMAIL = 'mahak867@gmail.com'
+
+const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY)
+let currentUser = null
+let userProfile = null
+
+// ── Auth init ──
+async function initAuth() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user) {
+    currentUser = session.user
+    await loadProfile()
+  }
   updateHeaderUI()
 
-  try{
-    _sb.auth.onAuthStateChange(async function(event,session){
-      currentUser=session&&session.user?session.user:null
-      if(currentUser){await loadProfile();await syncCollectionFromCloud()}
-      else{userProfile=null}
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    currentUser = session?.user || null
+    if (currentUser) {
+      await loadProfile()
+      await syncCollectionFromCloud()
+    } else {
+      userProfile = null
+    }
+    updateHeaderUI()
+  })
+}
+
+// ── Load profile ──
+async function loadProfile() {
+  if (!currentUser) return
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single()
+
+  userProfile = data
+
+  // Auto-grant developer account
+  if (currentUser.email === DEV_EMAIL && !data?.is_developer) {
+    await supabase.from('profiles').update({
+      is_pro: true,
+      is_developer: true,
+      pro_since: new Date().toISOString()
+    }).eq('id', currentUser.id)
+    userProfile = { ...userProfile, is_pro: true, is_developer: true }
+  }
+}
+
+// ── Check if user is Pro ──
+function isPro() {
+  if (userProfile?.is_pro || userProfile?.is_developer) return true
+  return localStorage.getItem('hs_pro') === 'true'
+}
+
+// ── Header UI ──
+function updateHeaderUI() {
+  const header = document.querySelector('.header')
+  const oldBadge = document.getElementById('user-hdr-btn')
+  if (oldBadge) oldBadge.remove()
+
+  const btn = document.createElement('div')
+  btn.id = 'user-hdr-btn'
+  btn.className = 'user-badge'
+  btn.onclick = currentUser ? openAccountModal : openAuth
+
+  if (currentUser) {
+    const initials = (currentUser.email || '?')[0].toUpperCase()
+    const planIcon = userProfile?.is_developer ? '👑' : userProfile?.is_pro ? '⭐' : ''
+    btn.innerHTML = `<div class="user-avatar">${initials}</div><div class="user-name">${planIcon} ${currentUser.email.split('@')[0]}</div>`
+  } else {
+    btn.innerHTML = '<div style="background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600">Sign In</div>'
+  }
+
+  // Remove old ver badge, replace with user btn
+  const verEl = document.getElementById('scan-counter')
+  if (verEl) verEl.style.display = 'none'
+  header.appendChild(btn)
+
+  updateScanCounter()
+}
+
+// ── Auth modal ──
+function openAuth() {
+  document.getElementById('auth-modal').classList.add('open')
+  document.body.style.overflow = 'hidden'
+  showLogin()
+}
+function closeAuth() { document.getElementById('auth-modal').classList.remove('open'); document.body.style.overflow = '' }
+function showLogin() { document.getElementById('auth-login-view').style.display='block'; document.getElementById('auth-signup-view').style.display='none'; document.getElementById('auth-verify-view').style.display='none' }
+function showSignup() { document.getElementById('auth-login-view').style.display='none'; document.getElementById('auth-signup-view').style.display='block'; document.getElementById('auth-verify-view').style.display='none' }
+
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim()
+  const pass  = document.getElementById('auth-pass').value
+  const err   = document.getElementById('auth-err')
+  err.style.display = 'none'
+  if (!email || !pass) { err.textContent = 'Enter email and password'; err.style.display = 'block'; return }
+  const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
+  if (error) { err.textContent = error.message; err.style.display = 'block' }
+  else { closeAuth(); await syncCollectionFromCloud() }
+}
+
+async function signUp() {
+  const email = document.getElementById('su-email').value.trim()
+  const pass  = document.getElementById('su-pass').value
+  const err   = document.getElementById('auth-err-signup')
+  err.style.display = 'none'
+  if (!email || !pass) { err.textContent = 'Enter email and password'; err.style.display = 'block'; return }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters'; err.style.display = 'block'; return }
+  const { error } = await supabase.auth.signUp({ email, password: pass })
+  if (error) { err.textContent = error.message; err.style.display = 'block' }
+  else { document.getElementById('auth-login-view').style.display='none'; document.getElementById('auth-signup-view').style.display='none'; document.getElementById('auth-verify-view').style.display='block' }
+}
+
+async function signOutUser() {
+  await supabase.auth.signOut()
+  currentUser = null; userProfile = null
+  closeAccountModal()
+  updateHeaderUI()
+}
+
+// ── Account modal ──
+function openAccountModal() {
+  const el = document.getElementById('account-modal')
+  el.classList.add('open')
+  document.body.style.overflow = 'hidden'
+
+  if (currentUser) {
+    const initials = (currentUser.email || '?')[0].toUpperCase()
+    document.getElementById('acc-avatar').textContent = initials
+    document.getElementById('acc-email').textContent = currentUser.email
+
+    const planEl = document.getElementById('acc-plan')
+    const upgradeSection = document.getElementById('acc-upgrade-section')
+    const sinceEl = document.getElementById('acc-since')
+
+    if (userProfile?.is_developer) {
+      planEl.textContent = '👑 Developer — Lifetime Pro'
+      planEl.className = 'account-plan plan-dev'
+      upgradeSection.style.display = 'none'
+      sinceEl.textContent = 'You built this app 🚗'
+    } else if (userProfile?.is_pro) {
+      planEl.textContent = '⭐ Pro Member'
+      planEl.className = 'account-plan plan-pro'
+      upgradeSection.style.display = 'none'
+      if (userProfile.pro_since) sinceEl.textContent = 'Pro since ' + new Date(userProfile.pro_since).toLocaleDateString('en-IN')
+    } else {
+      planEl.textContent = 'Free Plan'
+      planEl.className = 'account-plan plan-free'
+      upgradeSection.style.display = 'block'
+      const used = getTodayScans()
+      document.getElementById('acc-scans').textContent = `${used}/${FREE_SCANS} scans used today`
+    }
+  }
+}
+function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); document.body.style.overflow = '' }
+
+// ── Razorpay payment ──
+async function startPayment() {
+  if (!currentUser) { closeAccountModal(); openAuth(); return }
+
+  const options = {
+    key: RZP_KEY,
+    amount: 9900, // ₹99 in paise
+    currency: 'INR',
+    name: 'HotScan India',
+    description: 'Pro Subscription — Unlimited Scans',
+    image: 'https://hotscan-theta.vercel.app/icon-192.png',
+    prefill: {
+      email: currentUser.email,
+    },
+    notes: {
+      user_id: currentUser.id,
+    },
+    theme: { color: '#e63946' },
+    handler: async function(response) {
+      // Payment successful — activate Pro
+      await supabase.from('profiles').update({
+        is_pro: true,
+        pro_since: new Date().toISOString(),
+        razorpay_subscription_id: response.razorpay_payment_id
+      }).eq('id', currentUser.id)
+
+      await loadProfile()
+      localStorage.setItem('hs_pro', 'true')
+      closeAccountModal()
       updateHeaderUI()
-      updateScanCounter()
-    })
-  }catch(e){}
-}
 
-async function loadProfile(){
-  if(!currentUser||!_sb)return
-  try{
-    var res=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
-    userProfile=res.data
-    if(currentUser.email===DEV_EMAIL&&!userProfile?.is_developer){
-      await _sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',currentUser.id)
-      userProfile=Object.assign({},userProfile,{is_pro:true,is_developer:true})
-    }
-    if(userProfile?.is_pro)localStorage.setItem('hs_pro','true')
-  }catch(e){console.warn('loadProfile error:',e)}
-}
-
-function updateHeaderUI(){
-  var oldBtn=document.getElementById('user-hdr-btn')
-  if(oldBtn)oldBtn.remove()
-  var hdr=document.querySelector('.header')
-  if(!hdr)return
-  var btn=document.createElement('div')
-  btn.id='user-hdr-btn'
-  btn.className='user-badge'
-  btn.style.cursor='pointer'
-  btn.onclick=currentUser?openAccountModal:openAuth
-
-  var sc=document.getElementById('scan-counter')
-  if(sc)sc.style.display='none'
-
-  if(currentUser){
-    var initials=(currentUser.email||'?')[0].toUpperCase()
-    var planIcon=userProfile&&userProfile.is_developer?'👑':userProfile&&userProfile.is_pro?'⭐':''
-    btn.innerHTML='<div class="user-avatar">'+initials+'</div><div class="user-name">'+planIcon+' '+currentUser.email.split('@')[0]+'</div>'
-  }else{
-    btn.innerHTML='<div style="background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600">Sign In</div>'
-  }
-  hdr.appendChild(btn)
-}
-
-function openAuth(){document.getElementById('auth-modal').classList.add('open');document.body.style.overflow='hidden';showLogin()}
-function closeAuth(){document.getElementById('auth-modal').classList.remove('open');document.body.style.overflow=''}
-function showLogin(){document.getElementById('auth-login-view').style.display='block';document.getElementById('auth-signup-view').style.display='none';document.getElementById('auth-verify-view').style.display='none'}
-function showSignup(){document.getElementById('auth-login-view').style.display='none';document.getElementById('auth-signup-view').style.display='block';document.getElementById('auth-verify-view').style.display='none'}
-
-async function signIn(){
-  var email=document.getElementById('auth-email').value.trim()
-  var pass=document.getElementById('auth-pass').value
-  var err=document.getElementById('auth-err')
-  err.style.display='none'
-  if(!email||!pass){err.textContent='Enter email and password';err.style.display='block';return}
-  if(!_sb){err.textContent='Auth not available';err.style.display='block';return}
-  var result=await _sb.auth.signInWithPassword({email:email,password:pass})
-  if(result.error){err.textContent=result.error.message;err.style.display='block'}
-  else{closeAuth();await syncCollectionFromCloud()}
-}
-
-async function signUp(){
-  var email=document.getElementById('su-email').value.trim()
-  var pass=document.getElementById('su-pass').value
-  var err=document.getElementById('auth-err-signup')
-  err.style.display='none'
-  if(!email||!pass){err.textContent='Enter email and password';err.style.display='block';return}
-  if(pass.length<6){err.textContent='Password must be at least 6 characters';err.style.display='block';return}
-  if(!_sb){err.textContent='Auth not available';err.style.display='block';return}
-  var result=await _sb.auth.signUp({email:email,password:pass,options:{emailRedirectTo:'https://hotscan-theta.vercel.app'}})
-  if(result.error){err.textContent=result.error.message;err.style.display='block'}
-  else{document.getElementById('auth-login-view').style.display='none';document.getElementById('auth-signup-view').style.display='none';document.getElementById('auth-verify-view').style.display='block'}
-}
-
-async function signOutUser(){
-  if(_sb)await _sb.auth.signOut()
-  currentUser=null;userProfile=null
-  localStorage.removeItem('hs_pro')
-  closeAccountModal();updateHeaderUI();updateScanCounter()
-}
-
-function openAccountModal(){
-  document.getElementById('account-modal').classList.add('open')
-  document.body.style.overflow='hidden'
-  if(!currentUser)return
-  var initials=(currentUser.email||'?')[0].toUpperCase()
-  document.getElementById('acc-avatar').textContent=initials
-  document.getElementById('acc-email').textContent=currentUser.email
-  var planEl=document.getElementById('acc-plan')
-  var upSec=document.getElementById('acc-upgrade-section')
-  var sinceEl=document.getElementById('acc-since')
-  if(userProfile&&userProfile.is_developer){
-    planEl.textContent='👑 Developer — Lifetime Pro';planEl.className='account-plan plan-dev'
-    upSec.style.display='none';sinceEl.textContent='You built this app 🚗'
-  }else if(userProfile&&userProfile.is_pro){
-    planEl.textContent='⭐ Pro Member';planEl.className='account-plan plan-pro'
-    upSec.style.display='none'
-    if(userProfile.pro_since)sinceEl.textContent='Pro since '+new Date(userProfile.pro_since).toLocaleDateString('en-IN')
-  }else{
-    planEl.textContent='Free Plan';planEl.className='account-plan plan-free'
-    upSec.style.display='block'
-    document.getElementById('acc-scans').textContent=getTodayScans()+'/'+FREE_SCANS+' scans used today'
-  }
-}
-function closeAccountModal(){document.getElementById('account-modal').classList.remove('open');document.body.style.overflow=''}
-
-async function startPayment(){
-  if(!currentUser){closeAccountModal();openAuth();return}
-  var options={
-    key:RZP_KEY,amount:9900,currency:'INR',
-    name:'HotScan India',description:'Pro Subscription — Unlimited Scans',
-    prefill:{email:currentUser.email},
-    notes:{user_id:currentUser.id},
-    theme:{color:'#e63946'},
-    handler:async function(response){
-      if(_sb){
-        await _sb.from('profiles').update({is_pro:true,pro_since:new Date().toISOString(),razorpay_subscription_id:response.razorpay_payment_id}).eq('id',currentUser.id)
-        await loadProfile()
-      }
-      localStorage.setItem('hs_pro','true')
-      closeAccountModal();updateHeaderUI();updateScanCounter()
-      setTimeout(function(){alert('🎉 Welcome to HotScan Pro!\nUnlimited scans activated!')},500)
+      // Show success
+      setTimeout(() => {
+        alert('🎉 Welcome to HotScan Pro!\nUnlimited scans activated. Enjoy!')
+      }, 500)
     }
   }
-  var rzp=new Razorpay(options)
-  rzp.on('payment.failed',function(r){alert('Payment failed: '+r.error.description)})
-  closeAccountModal();rzp.open()
+
+  const rzp = new Razorpay(options)
+  rzp.on('payment.failed', function(response) {
+    alert('Payment failed: ' + response.error.description)
+  })
+  closeAccountModal()
+  rzp.open()
 }
 
-async function syncCollectionFromCloud(){
-  if(!currentUser||!_sb)return
-  try{
-    var res=await _sb.from('collection').select('*').eq('user_id',currentUser.id).order('added_at',{ascending:false})
-    if(res.data&&res.data.length>0){
-      collection=res.data.map(function(d){return{id:d.id,name:d.name,series:d.series,rarity:d.rarity,color:d.color,india_collector_inr:d.india_collector_inr,investment:d.investment,image:d.image_thumb,added:d.added_at}} )
-      localStorage.setItem('hs_col',JSON.stringify(collection))
+// ── Cloud collection sync ──
+async function syncCollectionFromCloud() {
+  if (!currentUser) return
+  try {
+    const { data } = await supabase
+      .from('collection')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('added_at', { ascending: false })
+
+    if (data && data.length > 0) {
+      // Merge cloud with local — cloud wins for logged in users
+      collection = data.map(d => ({
+        id: d.id,
+        name: d.name,
+        series: d.series,
+        rarity: d.rarity,
+        color: d.color,
+        india_collector_inr: d.india_collector_inr,
+        investment: d.investment,
+        image: d.image_thumb,
+        added: d.added_at
+      }))
+      localStorage.setItem('hs_col', JSON.stringify(collection))
       renderCol()
     }
-  }catch(e){console.warn('Sync error:',e)}
+  } catch(e) {
+    console.log('Cloud sync error:', e)
+  }
 }
 
-async function saveToCloud(item){
-  if(!currentUser||!_sb)return
-  try{
-    await _sb.from('collection').insert({user_id:currentUser.id,name:item.name,series:item.series,rarity:item.rarity,color:item.color,india_collector_inr:item.india_collector_inr,investment:item.investment,image_thumb:item.image?item.image.substring(0,5000):null,added_at:item.added})
-  }catch(e){console.warn('Cloud save error:',e)}
+async function saveToCloud(item) {
+  if (!currentUser) return
+  try {
+    await supabase.from('collection').insert({
+      user_id: currentUser.id,
+      name: item.name,
+      series: item.series,
+      rarity: item.rarity,
+      color: item.color,
+      india_collector_inr: item.india_collector_inr,
+      investment: item.investment,
+      image_thumb: item.image ? item.image.substring(0, 5000) : null, // limit size
+      added_at: item.added
+    })
+  } catch(e) {
+    console.log('Cloud save error:', e)
+  }
 }
 
-async function deleteFromCloud(id){
-  if(!currentUser||!_sb)return
-  try{await _sb.from('collection').delete().eq('id',id).eq('user_id',currentUser.id)}catch(e){}
+async function deleteFromCloud(id) {
+  if (!currentUser) return
+  try {
+    await supabase.from('collection').delete().eq('id', id).eq('user_id', currentUser.id)
+  } catch(e) {
+    console.log('Cloud delete error:', e)
+  }
 }
+
+// ── Init auth on load ──
+initAuth()
 </script>
-
 
 <!-- Pro Modal -->
 <div class="modal-overlay" id="pro-modal">
