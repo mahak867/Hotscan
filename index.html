@@ -20,7 +20,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 :root{--red:#e63946;--red2:#c1121f;--gold:#ffd60a;--green:#2dc653;--blue:#4cc9f0;--purple:#c77dff;--orange:#ff9f1c;--surface:#141414;--surface2:#1e1e1e;--surface3:#282828;--border:#252525;--border2:#333;--text2:#aaa;--text3:#555}
 
 .nav{display:flex;background:#0a0a0a;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
-.nav-item{flex:1;padding:10px 2px 8px;text-align:center;cursor:pointer;font-size:9px;color:var(--text3);border-bottom:2px solid transparent;transition:all 0.15s}
+.nav-item{flex:1;padding:9px 1px 7px;text-align:center;cursor:pointer;font-size:8.5px;color:var(--text3);border-bottom:2px solid transparent;transition:all 0.15s}
 .nav-item.active{color:var(--red);border-bottom-color:var(--red)}
 .nav-icon{font-size:17px;display:block;margin-bottom:2px}
 
@@ -351,6 +351,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   <div class="nav-item" onclick="goPage('collection')"><span class="nav-icon">🗂</span>Collection</div>
   <div class="nav-item" onclick="goPage('hunt')"><span class="nav-icon">🎯</span>Hunt</div>
   <div class="nav-item" onclick="goPage('alerts')"><span class="nav-icon">🔔</span>Alerts</div>
+  <div class="nav-item" onclick="goPage('profile')"><span class="nav-icon">👤</span>Profile</div>
   <div class="nav-item" onclick="goPage('more')"><span class="nav-icon">⚙️</span>More</div>
 </div>
 
@@ -594,6 +595,87 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.olx.in/items/q-hot-wheels-treasure-hunt')"><div style="font-size:15px">🔥</div><div><div style="font-size:12px;font-weight:600">OLX — Treasure Hunts</div><div style="font-size:10px;color:var(--text3)">Live listings</div></div><div style="margin-left:auto;color:var(--text3)">›</div></div>
       <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')"><div style="font-size:15px">📸</div><div><div style="font-size:12px;font-weight:600">Instagram #HotWheelsIndiaSale</div><div style="font-size:10px;color:var(--text3)">Fresh daily</div></div><div style="margin-left:auto;color:var(--text3)">›</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div class="page" id="page-profile">
+  <div class="page-hdr"><div class="page-title">My Profile</div></div>
+
+  <!-- Not logged in state -->
+  <div id="profile-guest" style="display:none">
+    <div style="background:var(--surface);border-radius:16px;padding:30px 20px;text-align:center;border:1px solid var(--border);margin-bottom:12px">
+      <div style="font-size:52px;margin-bottom:12px">👤</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:6px">Sign in to HotScan</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">Save your collection to the cloud, sync across devices, and unlock Pro features</div>
+      <button onclick="openAuth()" style="background:var(--red);color:#fff;border:none;padding:14px 32px;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px">Sign In / Create Account</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Why create an account?</div>
+      <div style="font-size:13px;color:var(--text2);line-height:2">☁️ Cloud sync — access your collection on any device<br>🔒 Secure — your data is safe with Clerk + Supabase<br>⭐ Pro — unlock unlimited scans for ₹99/month<br>👑 Free — basic collection tracking always free</div>
+    </div>
+  </div>
+
+  <!-- Logged in state -->
+  <div id="profile-user" style="display:none">
+    <!-- Avatar card -->
+    <div style="background:linear-gradient(135deg,#1a0d00,#0d001a);border-radius:18px;padding:24px;text-align:center;border:1px solid rgba(255,214,10,0.15);margin-bottom:12px">
+      <div id="prof-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;margin:0 auto 12px;box-shadow:0 4px 20px rgba(230,57,70,0.4)">?</div>
+      <div id="prof-name" style="font-size:18px;font-weight:800;margin-bottom:4px">—</div>
+      <div id="prof-email" style="font-size:13px;color:var(--text2);margin-bottom:12px">—</div>
+      <div id="prof-plan-badge" class="account-plan plan-free" style="display:inline-flex;margin-bottom:4px">Free Plan</div>
+      <div id="prof-since" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
+    </div>
+
+    <!-- Collection summary -->
+    <div class="card" id="prof-col-summary">
+      <div class="card-title">📦 My Collection</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+          <div id="prof-total" style="font-size:22px;font-weight:800;color:var(--gold)">0</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Cars</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+          <div id="prof-value" style="font-size:16px;font-weight:800;color:var(--gold)">₹0</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Value</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+          <div id="prof-rare" style="font-size:22px;font-weight:800;color:var(--gold)">0</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Rare+</div>
+        </div>
+      </div>
+      <button onclick="goPage('collection')" style="background:var(--surface2);border:1px solid var(--border2);color:#fff;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;width:100%;margin-top:12px">View Full Collection →</button>
+    </div>
+
+    <!-- Upgrade card (free users only) -->
+    <div id="prof-upgrade" style="display:none;background:linear-gradient(135deg,#1a1400,#0d001a);border-radius:16px;padding:18px;margin-bottom:12px;border:1px solid rgba(255,214,10,0.2)">
+      <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:4px">⭐ Upgrade to Pro</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Unlimited scans · Cloud collection · Price alerts</div>
+      <div style="font-size:26px;font-weight:800;color:var(--gold);margin-bottom:12px">₹99<span style="font-size:13px;font-weight:400;color:var(--text2)">/month</span></div>
+      <button onclick="startPayment()" style="background:var(--gold);color:#000;border:none;padding:13px;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;width:100%">Get Pro Now</button>
+    </div>
+
+    <!-- Scan stats -->
+    <div class="card">
+      <div class="card-title">📊 Today's Usage</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;color:var(--text2)" id="prof-scans-label">Scans used today</div>
+        <div id="prof-scans-val" style="font-size:16px;font-weight:700;color:var(--gold)">0/5</div>
+      </div>
+      <div style="height:4px;background:var(--surface3);border-radius:4px;margin-top:10px;overflow:hidden">
+        <div id="prof-scans-bar" style="height:100%;background:linear-gradient(90deg,var(--red),var(--gold));border-radius:4px;transition:width 0.4s;width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+      <div class="card-title">Account</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onclick="exportVal()" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">📄 Export Valuation Certificate</button>
+        <button onclick="syncCollectionFromCloud()" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">☁️ Sync Collection from Cloud</button>
+        <button onclick="signOutUser()" style="background:#1a0808;border:1px solid #4a1a1a;color:#ff8080;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">🚪 Sign Out</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1579,6 +1661,57 @@ async function loadProfile(){
   }catch(e){console.warn('loadProfile error:',e)}
 }
 
+function renderProfilePage(){
+  if(!currentUser){
+    document.getElementById('profile-guest').style.display='block'
+    document.getElementById('profile-user').style.display='none'
+    return
+  }
+  document.getElementById('profile-guest').style.display='none'
+  document.getElementById('profile-user').style.display='block'
+
+  // Avatar
+  var initials=(currentUser.name||currentUser.email||'?')[0].toUpperCase()
+  document.getElementById('prof-avatar').textContent=initials
+
+  // Name + email
+  document.getElementById('prof-name').textContent=currentUser.name||currentUser.email.split('@')[0]
+  document.getElementById('prof-email').textContent=currentUser.email
+
+  // Plan badge
+  var planEl=document.getElementById('prof-plan-badge')
+  var upgradeEl=document.getElementById('prof-upgrade')
+  var sinceEl=document.getElementById('prof-since')
+  if(userProfile&&userProfile.is_developer){
+    planEl.textContent='👑 Developer — Lifetime Pro';planEl.className='account-plan plan-dev'
+    upgradeEl.style.display='none'
+    sinceEl.textContent='You built this app 🚗'
+  }else if(userProfile&&userProfile.is_pro){
+    planEl.textContent='⭐ Pro Member';planEl.className='account-plan plan-pro'
+    upgradeEl.style.display='none'
+    if(userProfile.pro_since)sinceEl.textContent='Pro since '+new Date(userProfile.pro_since).toLocaleDateString('en-IN')
+  }else{
+    planEl.textContent='Free Plan';planEl.className='account-plan plan-free'
+    upgradeEl.style.display='block'
+  }
+
+  // Collection stats
+  var total=collection.length
+  var rare=collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')}).length
+  var val=0;collection.forEach(function(c){var p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
+  document.getElementById('prof-total').textContent=total
+  document.getElementById('prof-value').textContent=val>0?'₹'+val.toLocaleString('en-IN'):'₹0'
+  document.getElementById('prof-rare').textContent=rare
+
+  // Scans
+  var used=getTodayScans()
+  var max=isPro()?'∞':String(FREE_SCANS)
+  document.getElementById('prof-scans-label').textContent=isPro()?'Unlimited scans (Pro)':'Scans used today'
+  document.getElementById('prof-scans-val').textContent=isPro()?'∞':used+'/'+FREE_SCANS
+  document.getElementById('prof-scans-bar').style.width=isPro()?'100%':Math.min(used/FREE_SCANS*100,100)+'%'
+  if(isPro())document.getElementById('prof-scans-bar').style.background='var(--green)'
+}
+
 function updateHeaderUI(){
   var oldBtn=document.getElementById('user-hdr-btn')
   if(oldBtn)oldBtn.remove()
@@ -1613,8 +1746,38 @@ function openAuth(){
     try{
       window.Clerk.mountSignIn(container, {
         appearance:{
-          variables:{colorPrimary:'#e63946',colorBackground:'#1e1e1e',colorText:'#ffffff',colorInputBackground:'#282828',colorInputText:'#ffffff'},
-          elements:{card:{background:'#1e1e1e',border:'1px solid #333'},headerTitle:{color:'#fff'},headerSubtitle:{color:'#aaa'},formButtonPrimary:{background:'#e63946'},footerActionLink:{color:'#4cc9f0'}}
+          layout:{logoPlacement:'none',showOptionalFields:false,socialButtonsVariant:'iconButton',socialButtonsPlacement:'top'},
+          variables:{
+            colorPrimary:'#e63946',
+            colorBackground:'#141414',
+            colorText:'#ffffff',
+            colorTextSecondary:'#aaaaaa',
+            colorInputBackground:'#1e1e1e',
+            colorInputText:'#ffffff',
+            colorNeutral:'#555555',
+            borderRadius:'12px',
+            fontFamily:'-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,sans-serif',
+          },
+          elements:{
+            rootBox:{width:'100%'},
+            card:{background:'transparent',boxShadow:'none',border:'none',padding:'0'},
+            headerTitle:{color:'#fff',fontSize:'20px',fontWeight:'800'},
+            headerSubtitle:{color:'#aaa',fontSize:'13px'},
+            socialButtonsBlockButton:{background:'#1e1e1e',border:'1px solid #333',color:'#fff',borderRadius:'10px'},
+            socialButtonsBlockButtonText:{color:'#fff'},
+            dividerLine:{background:'#333'},
+            dividerText:{color:'#555'},
+            formFieldLabel:{color:'#aaa',fontSize:'12px'},
+            formFieldInput:{background:'#1e1e1e',border:'1px solid #333',color:'#fff',borderRadius:'10px',fontSize:'14px'},
+            formFieldInput__focus:{borderColor:'#e63946'},
+            formButtonPrimary:{background:'linear-gradient(135deg,#e63946,#c1121f)',borderRadius:'10px',fontSize:'14px',fontWeight:'700',boxShadow:'0 4px 12px rgba(230,57,70,0.3)'},
+            footerActionLink:{color:'#4cc9f0'},
+            footerActionText:{color:'#555'},
+            identityPreviewText:{color:'#fff'},
+            identityPreviewEditButton:{color:'#4cc9f0'},
+            alertText:{color:'#ff8080'},
+            formResendCodeLink:{color:'#4cc9f0'},
+          }
         }
       })
     }catch(e){console.warn('Clerk mount error:',e)}
