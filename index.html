@@ -13,6 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script async crossorigin="anonymous" data-clerk-publishable-key="pk_test_bmljZS1mb3gtOS5jbGVyay5hY2NvdW50cy5kZXYk" src="https://nice-fox-9.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js" type="text/javascript"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:#080808;color:#fff;overflow-x:hidden}
@@ -657,7 +658,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 const SUPA_URL  = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
 const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
 const RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
-const DEV_EMAIL = 'mahak867@gmail.com'
+const DEV_EMAIL = 'mahakfahad07@gmail.com'
 const FREE_SCANS = 5
 
 // ── State ──
@@ -1511,37 +1512,70 @@ function ol(url){if(url&&url!=='#')window.open(url,'_blank')}
 // AUTH + PAYMENTS (Supabase + Razorpay)
 // ════════════════════════════════════════════════
 async function initAuth(){
-  if(!_sb){updateHeaderUI();return}
+  // Wait for Clerk to be ready
   try{
-    var session=await _sb.auth.getSession()
-    if(session.data&&session.data.session&&session.data.session.user){
-      currentUser=session.data.session.user
-      await loadProfile()
+    if(!window.Clerk){
+      // Clerk not loaded yet, retry after delay
+      setTimeout(initAuth, 500)
+      return
     }
-  }catch(e){console.warn('getSession error:',e)}
-  updateHeaderUI()
+    await window.Clerk.load()
 
-  try{
-    _sb.auth.onAuthStateChange(async function(event,session){
-      currentUser=session&&session.user?session.user:null
-      if(currentUser){await loadProfile();await syncCollectionFromCloud()}
-      else{userProfile=null}
+    // Check if already signed in
+    var user = window.Clerk.user
+    if(user){
+      currentUser = {
+        id: user.id,
+        email: user.primaryEmailAddress?.emailAddress || '',
+        name: user.firstName || user.primaryEmailAddress?.emailAddress?.split('@')[0] || ''
+      }
+      await loadProfile()
+      await syncCollectionFromCloud()
+    }
+
+    // Listen for auth changes
+    window.Clerk.addListener(async function(resources){
+      var user = resources.user
+      if(user){
+        currentUser = {
+          id: user.id,
+          email: user.primaryEmailAddress?.emailAddress || '',
+          name: user.firstName || user.primaryEmailAddress?.emailAddress?.split('@')[0] || ''
+        }
+        await loadProfile()
+        await syncCollectionFromCloud()
+      } else {
+        currentUser = null
+        userProfile = null
+        localStorage.removeItem('hs_pro')
+      }
       updateHeaderUI()
       updateScanCounter()
     })
-  }catch(e){}
+  }catch(e){
+    console.warn('Clerk init error:', e)
+  }
+  updateHeaderUI()
 }
 
 async function loadProfile(){
   if(!currentUser||!_sb)return
   try{
+    // Use Clerk user ID as the profile key
+    // First ensure profile exists
     var res=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+    if(res.error&&res.error.code==='PGRST116'){
+      // Profile doesn't exist, create it
+      await _sb.from('profiles').insert({id:currentUser.id,email:currentUser.email})
+      res=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+    }
     userProfile=res.data
-    if(currentUser.email===DEV_EMAIL&&!userProfile?.is_developer){
+    // Auto-grant developer account for dev email
+    if(currentUser.email===DEV_EMAIL&&!(userProfile&&userProfile.is_developer)){
       await _sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',currentUser.id)
       userProfile=Object.assign({},userProfile,{is_pro:true,is_developer:true})
     }
-    if(userProfile?.is_pro)localStorage.setItem('hs_pro','true')
+    if(userProfile&&userProfile.is_pro)localStorage.setItem('hs_pro','true')
   }catch(e){console.warn('loadProfile error:',e)}
 }
 
@@ -1569,50 +1603,45 @@ function updateHeaderUI(){
   hdr.appendChild(btn)
 }
 
-function openAuth(){document.getElementById('auth-modal').classList.add('open');document.body.style.overflow='hidden';showLogin()}
-function closeAuth(){document.getElementById('auth-modal').classList.remove('open');document.body.style.overflow=''}
-function showLogin(){document.getElementById('auth-login-view').style.display='block';document.getElementById('auth-signup-view').style.display='none';document.getElementById('auth-verify-view').style.display='none';document.getElementById('auth-forgot-view').style.display='none'}
-function showSignup(){document.getElementById('auth-login-view').style.display='none';document.getElementById('auth-signup-view').style.display='block';document.getElementById('auth-verify-view').style.display='none';document.getElementById('auth-forgot-view').style.display='none'}
-function showForgot(){document.getElementById('auth-login-view').style.display='none';document.getElementById('auth-signup-view').style.display='none';document.getElementById('auth-verify-view').style.display='none';document.getElementById('auth-forgot-view').style.display='block'}
-async function sendReset(){
-  var email=document.getElementById('forgot-email').value.trim()
-  var err=document.getElementById('auth-err-forgot')
-  var ok=document.getElementById('auth-ok-forgot')
-  err.style.display='none';ok.style.display='none'
-  if(!email){err.textContent='Enter your email';err.style.display='block';return}
-  if(!_sb){err.textContent='Auth not available';err.style.display='block';return}
-  var result=await _sb.auth.resetPasswordForEmail(email,{redirectTo:'https://hotscan-theta.vercel.app'})
-  if(result.error){err.textContent=result.error.message;err.style.display='block'}
-  else{ok.textContent='Reset link sent! Check your email inbox.';ok.style.display='block'}
+function openAuth(){
+  if(window.Clerk){
+    // Mount Clerk's beautiful built-in sign-in UI
+    var container = document.getElementById('clerk-auth-container')
+    if(container) container.innerHTML = ''
+    document.getElementById('auth-modal').classList.add('open')
+    document.body.style.overflow='hidden'
+    try{
+      window.Clerk.mountSignIn(container, {
+        appearance:{
+          variables:{colorPrimary:'#e63946',colorBackground:'#1e1e1e',colorText:'#ffffff',colorInputBackground:'#282828',colorInputText:'#ffffff'},
+          elements:{card:{background:'#1e1e1e',border:'1px solid #333'},headerTitle:{color:'#fff'},headerSubtitle:{color:'#aaa'},formButtonPrimary:{background:'#e63946'},footerActionLink:{color:'#4cc9f0'}}
+        }
+      })
+    }catch(e){console.warn('Clerk mount error:',e)}
+  }
 }
+function closeAuth(){
+  if(window.Clerk){
+    try{
+      var container=document.getElementById('clerk-auth-container')
+      if(container) window.Clerk.unmountSignIn(container)
+    }catch(e){}
+  }
+  document.getElementById('auth-modal').classList.remove('open')
+  document.body.style.overflow=''
+}
+function showLogin(){openAuth()}
+function showSignup(){openAuth()} function showForgot(){openAuth()} async function sendReset(){openAuth()}
 
-async function signIn(){
-  var email=document.getElementById('auth-email').value.trim()
-  var pass=document.getElementById('auth-pass').value
-  var err=document.getElementById('auth-err')
-  err.style.display='none'
-  if(!email||!pass){err.textContent='Enter email and password';err.style.display='block';return}
-  if(!_sb){err.textContent='Auth not available';err.style.display='block';return}
-  var result=await _sb.auth.signInWithPassword({email:email,password:pass})
-  if(result.error){err.textContent=result.error.message;err.style.display='block'}
-  else{closeAuth();await syncCollectionFromCloud()}
-}
+async function signIn(){openAuth()}
 
-async function signUp(){
-  var email=document.getElementById('su-email').value.trim()
-  var pass=document.getElementById('su-pass').value
-  var err=document.getElementById('auth-err-signup')
-  err.style.display='none'
-  if(!email||!pass){err.textContent='Enter email and password';err.style.display='block';return}
-  if(pass.length<6){err.textContent='Password must be at least 6 characters';err.style.display='block';return}
-  if(!_sb){err.textContent='Auth not available';err.style.display='block';return}
-  var result=await _sb.auth.signUp({email:email,password:pass,options:{emailRedirectTo:'https://hotscan-theta.vercel.app'}})
-  if(result.error){err.textContent=result.error.message;err.style.display='block'}
-  else{document.getElementById('auth-login-view').style.display='none';document.getElementById('auth-signup-view').style.display='none';document.getElementById('auth-verify-view').style.display='block'}
-}
+async function signUp(){openAuth()}
 
 async function signOutUser(){
-  if(_sb)await _sb.auth.signOut()
+  try{
+    if(window.Clerk) await window.Clerk.signOut()
+  }catch(e){}
+  if(_sb) try{ await _sb.auth.signOut() }catch(e){}
   currentUser=null;userProfile=null
   localStorage.removeItem('hs_pro')
   closeAccountModal();updateHeaderUI();updateScanCounter()
@@ -1711,49 +1740,13 @@ async function deleteFromCloud(id){
   </div>
 </div>
 
-<!-- Auth Modal -->
+<!-- Auth Modal — powered by Clerk -->
 <div class="auth-modal" id="auth-modal">
   <div class="auth-box">
-    <div id="auth-login-view">
-      <div class="auth-title">Sign in to HotScan</div>
-      <div class="auth-sub">Save your collection across devices</div>
-      <div class="auth-err" id="auth-err"></div>
-      <input class="auth-input" type="email" id="auth-email" placeholder="Email address" autocomplete="email">
-      <input class="auth-input" type="password" id="auth-pass" placeholder="Password" autocomplete="current-password">
-      <button class="auth-btn auth-btn-primary" onclick="signIn()">Sign In</button>
-      <button class="auth-btn auth-btn-secondary" onclick="closeAuth()">Maybe later</button>
-      <div class="auth-switch" style="display:flex;justify-content:space-between">
-        <span>No account? <button onclick="showSignup()">Create one free</button></span>
-        <button onclick="showForgot()" style="color:var(--text3)">Forgot password?</button>
-      </div>
+    <div id="clerk-auth-container" style="min-height:200px;display:flex;align-items:center;justify-content:center">
+      <div style="color:var(--text3);font-size:13px">Loading...</div>
     </div>
-    <div id="auth-forgot-view" style="display:none">
-      <div class="auth-title">Reset Password</div>
-      <div class="auth-sub">Enter your email and we'll send a reset link</div>
-      <div class="auth-err" id="auth-err-forgot"></div>
-      <div class="auth-err" id="auth-ok-forgot" style="color:var(--green);display:none"></div>
-      <input class="auth-input" type="email" id="forgot-email" placeholder="Email address" autocomplete="email">
-      <button class="auth-btn auth-btn-primary" onclick="sendReset()">Send Reset Link</button>
-      <button class="auth-btn auth-btn-secondary" onclick="showLogin()">Back to Sign In</button>
-    </div>
-    <div id="auth-signup-view" style="display:none">
-      <div class="auth-title">Create Account</div>
-      <div class="auth-sub">Free — save your collection to the cloud</div>
-      <div class="auth-err" id="auth-err-signup"></div>
-      <input class="auth-input" type="email" id="su-email" placeholder="Email address" autocomplete="email">
-      <input class="auth-input" type="password" id="su-pass" placeholder="Password (min 6 chars)" autocomplete="new-password">
-      <button class="auth-btn auth-btn-primary" onclick="signUp()">Create Account</button>
-      <button class="auth-btn auth-btn-secondary" onclick="closeAuth()">Maybe later</button>
-      <div class="auth-switch">Have an account? <button onclick="showLogin()">Sign in</button></div>
-    </div>
-    <div id="auth-verify-view" style="display:none">
-      <div style="text-align:center;padding:20px 0">
-        <div style="font-size:48px;margin-bottom:12px">📧</div>
-        <div class="auth-title">Check your email</div>
-        <div class="auth-sub">We sent a verification link to your email. Click it to activate your account.</div>
-        <button class="auth-btn auth-btn-secondary" style="margin-top:16px" onclick="closeAuth()">OK</button>
-      </div>
-    </div>
+    <button class="auth-btn auth-btn-secondary" style="margin-top:12px" onclick="closeAuth()">Maybe later</button>
   </div>
 </div>
 
