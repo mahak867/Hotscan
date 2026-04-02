@@ -282,6 +282,24 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .rg-row:last-child{border-bottom:none}
 .rg-badge{flex-shrink:0;padding:3px 7px;border-radius:20px;font-size:10px;font-weight:700;min-width:72px;text-align:center}
 .rg-info{font-size:11px;color:var(--text2);line-height:1.4}
+/* ── Multi-car results ── */
+.multi-results-header{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.multi-car-result{background:var(--surface);border-radius:14px;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)}
+.multi-car-header{background:linear-gradient(135deg,#0d0b18,#180b0b);padding:12px;display:flex;gap:10px;align-items:center;cursor:pointer}
+.multi-car-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px}
+.multi-car-thumb img{width:100%;height:100%;object-fit:cover}
+.multi-car-info{flex:1;min-width:0}
+.multi-car-name{font-size:14px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.multi-car-series{font-size:11px;color:var(--text2);margin-bottom:5px}
+.multi-car-prices{display:flex;gap:8px;align-items:center}
+.multi-car-inr{font-size:13px;font-weight:700;color:var(--gold)}
+.multi-car-expand{color:var(--text3);font-size:14px;flex-shrink:0;transition:transform .2s}
+.multi-car-expand.open{transform:rotate(180deg)}
+.multi-car-body{display:none;border-top:1px solid var(--border);padding:12px}
+.multi-car-body.open{display:block}
+.multi-add-btn{background:var(--surface2);border:1px solid var(--border2);color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px;margin-top:8px}
+.multi-add-btn:active{opacity:.8}
+
 /* ── Empty ── */
 .empty{text-align:center;padding:34px 18px;color:var(--text3)}
 .empty-icon{font-size:40px;margin-bottom:8px}
@@ -338,17 +356,24 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <div class="scan-area" id="scan-area">
       <div class="scan-ph" id="scan-ph">
         <div class="scan-emoji">🚗</div>
-        <div class="scan-title">Scan a Hot Wheels Car</div>
-        <div class="scan-sub">Take a photo → get live Indian prices, rarity and market insight instantly</div>
+        <div class="scan-title">Scan Hot Wheels Cars</div>
+        <div class="scan-sub">Take a photo or upload multiple images — AI identifies every car precisely</div>
         <div class="scan-btns">
           <button class="btn-red" onclick="openCam()">📷 Camera</button>
           <button class="btn-dark" onclick="openGal()">🖼 Gallery</button>
+          <button class="btn-dark" onclick="openMulti()">📁 Multiple</button>
         </div>
       </div>
       <div id="preview-wrap"><img id="preview-img" src="" alt=""><button class="retake-btn" onclick="openGal()">Change</button></div>
+      <!-- Multi-image preview -->
+      <div id="multi-preview" style="display:none;padding:12px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px" id="multi-count">0 images selected</div>
+        <div id="multi-thumbs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
     </div>
     <input type="file" id="fc" accept="image/*" capture="environment">
     <input type="file" id="fg" accept="image/*">
+    <input type="file" id="fg-multi" accept="image/*" multiple>
   </div>
   <!-- Barcode mode -->
   <div id="mode-barcode" style="display:none">
@@ -998,8 +1023,25 @@ async function handleFile(file, mode) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('fc').addEventListener('change', function(e) { handleFile(e.target.files[0], 'photo') })
-  document.getElementById('fg').addEventListener('change', function(e) { handleFile(e.target.files[0], 'photo') })
+  document.getElementById('fc').addEventListener('change', function(e) {
+    multiImages = []
+    document.getElementById('multi-preview').style.display = 'none'
+    handleFile(e.target.files[0], 'photo')
+  })
+  document.getElementById('fg').addEventListener('change', function(e) {
+    multiImages = []
+    document.getElementById('multi-preview').style.display = 'none'
+    handleFile(e.target.files[0], 'photo')
+  })
+  document.getElementById('fg-multi').addEventListener('change', function(e) {
+    if (e.target.files.length === 1) {
+      multiImages = []
+      document.getElementById('multi-preview').style.display = 'none'
+      handleFile(e.target.files[0], 'photo')
+    } else {
+      handleMultiFiles(e.target.files)
+    }
+  })
   document.getElementById('fc-fake').addEventListener('change', function(e) { handleFile(e.target.files[0], 'fake') })
   document.getElementById('fg-fake').addEventListener('change', function(e) { handleFile(e.target.files[0], 'fake') })
 })
@@ -1033,7 +1075,10 @@ function setStep(n, s) {
 }
 function resetSteps() { [1,2,3].forEach(function(n) { setStep(n, 'wait') }) }
 function runAnalyze() {
-  if (currentMode === 'photo') analyzePhoto()
+  if (currentMode === 'photo') {
+    if (multiImages.length > 1) analyzeMultiPhoto()
+    else analyzePhoto()
+  }
   else if (currentMode === 'deal') analyzeDeal()
   else if (currentMode === 'fake') analyzeFake()
 }
@@ -1603,9 +1648,286 @@ function submitEvent() {
   document.getElementById('event-date-inp').value = ''
 }
 
+// ── Multi-image upload ──
+var multiImages = []  // array of {img64, thumb, file}
+
+function openMulti() {
+  if (!KEY) { showKeySetup(); return }
+  var f = document.getElementById('fg-multi'); f.value = ''; f.click()
+}
+
+async function handleMultiFiles(files) {
+  if (!files || !files.length) return
+  multiImages = []
+  document.getElementById('multi-thumbs').innerHTML = ''
+  document.getElementById('multi-preview').style.display = 'block'
+  document.getElementById('preview-wrap').style.display = 'none'
+  document.getElementById('scan-ph').style.display = 'none'
+  document.getElementById('scan-area').classList.add('has-img')
+
+  for (var i = 0; i < Math.min(files.length, 5); i++) {
+    var file = files[i]
+    var raw = await new Promise(function(resolve) {
+      var rd = new FileReader(); rd.onload = function(e){resolve(e.target.result)}; rd.readAsDataURL(file)
+    })
+    var compressed = await compress(raw, 512)
+    var thumb = await compressThumb(raw)
+    multiImages.push({img64: compressed, thumb: thumb})
+    // Show thumbnail
+    var thumbEl = document.createElement('div')
+    thumbEl.style.cssText = 'width:60px;height:60px;border-radius:8px;overflow:hidden;border:2px solid var(--border2);position:relative'
+    var img = document.createElement('img'); img.src = thumb; img.style.cssText = 'width:100%;height:100%;object-fit:cover'
+    thumbEl.appendChild(img)
+    document.getElementById('multi-thumbs').appendChild(thumbEl)
+  }
+
+  document.getElementById('multi-count').textContent = multiImages.length + ' image' + (multiImages.length===1?'':'s') + ' selected — AI will identify all cars'
+  document.getElementById('analyze-btn').style.display = 'block'
+  document.getElementById('analyze-btn').textContent = '🔎 Identify All Cars (' + multiImages.length + ' photos)'
+  document.getElementById('result').style.display = 'none'
+  document.getElementById('err-box').style.display = 'none'
+
+  // Also set single image to first for fallback
+  img64 = multiImages[0].img64
+  imgThumb = multiImages[0].thumb
+}
+
+// ── Multi-car identification ──
+async function identifyMultipleCars(imageData) {
+  var b64 = imageData.split(',')[1]
+  var mime = imageData.split(';')[0].split(':')[1]
+  var sys = "You are the world's most precise Hot Wheels identification AI. When given an image with MULTIPLE Hot Wheels cars, you MUST identify EACH car separately with full precision. Never group them or summarize. Each car gets its own complete entry."
+  var usr = [
+    'Identify every Hot Wheels car in the image precisely.',
+    'Return ONLY valid JSON:',
+    '{"cars":[',
+    '{"name":"exact model name","series":"series year","casting_year":"year",',
+    '"color":"color","tampo":"decorations","wheel_type":"wheel type",',
+    '"rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",',
+    '"rarity_reason":"why","condition":"Mint on Card|Near Mint|Very Good|Good",',
+    '"investment":"Low|Medium|High|Very High","investment_reason":"why",',
+    '"fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12",',
+    '"india_retail_inr":"150-200","india_collector_inr":"300-600",',
+    '"confidence":90,"is_authentic":true}',
+    '],"total_cars_found":1,"notes":"image observations"}'
+  ].join('')
+
+  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
+      temperature: 0.05, max_tokens: 2000
+    })
+  })
+  if (!res.ok) {
+    var e = await res.json().catch(function(){return{}})
+    if (res.status === 401) throw new Error('Invalid API key')
+    if (res.status === 429) throw new Error('Rate limit — wait 30 seconds')
+    throw new Error((e.error&&e.error.message)||'Vision error')
+  }
+  var data = await res.json()
+  return parseJSON(data.choices[0].message.content)
+}
+
+async function analyzeMultiPhoto() {
+  if (!multiImages.length || !KEY) return
+  if (!checkLimit()) return
+  var btn = document.getElementById('analyze-btn')
+  btn.disabled = true; btn.textContent = '⏳ Identifying all cars...'
+  document.getElementById('pipeline').style.display = 'block'
+  document.getElementById('err-box').style.display = 'none'
+  document.getElementById('result').style.display = 'none'
+  resetSteps(); startTimer('Scanning ' + multiImages.length + ' images...')
+
+  var allCars = []
+  try {
+    for (var i = 0; i < multiImages.length; i++) {
+      setStep(1, 'active')
+      document.getElementById('timer-lbl').textContent = 'Scanning image ' + (i+1) + ' of ' + multiImages.length + '...'
+      var result = await identifyMultipleCars(multiImages[i].img64)
+      if (result && result.cars) {
+        result.cars.forEach(function(car) {
+          car._sourceImage = multiImages[i].thumb
+          car._imageIndex = i
+          allCars.push(car)
+        })
+      }
+      setStep(1, 'done')
+    }
+
+    // Get prices for all cars in parallel
+    setStep(2, 'active')
+    document.getElementById('timer-lbl').textContent = 'Fetching prices for ' + allCars.length + ' cars...'
+    var pricePromises = allCars.map(function(car) {
+      return searchPrices(car.name, car.rarity, car.casting_year)
+    })
+    var prices = await Promise.all(pricePromises)
+    prices.forEach(function(p, i) { if (p) allCars[i] = Object.assign({}, allCars[i], p) })
+
+    setStep(2, 'done'); setStep(3, 'done')
+    stopTimer()
+    incScans()
+    showMultiResults(allCars)
+  } catch(err) {
+    stopTimer(); setStep(1, 'err')
+    document.getElementById('err-box').innerHTML = '⚠️ ' + err.message
+    document.getElementById('err-box').style.display = 'block'
+  } finally {
+    btn.disabled = false; btn.textContent = '🔎 Identify All Cars (' + multiImages.length + ' photos)'
+    document.getElementById('pipeline').style.display = 'none'
+  }
+}
+
+function showMultiResults(cars) {
+  // Replace result area with multi-car results
+  var resultEl = document.getElementById('result')
+  resultEl.style.display = 'block'
+  resultEl.innerHTML = ''
+
+  var header = document.createElement('div')
+  header.className = 'multi-results-header'
+  header.style.cssText = 'padding:14px 14px 0'
+  header.innerHTML = '<span style="font-size:20px">🚗</span><span>' + cars.length + ' car' + (cars.length===1?'':'s') + ' identified</span>'
+  resultEl.appendChild(header)
+
+  // Total value
+  var totalVal = 0
+  cars.forEach(function(c) { var p=parseFloat((c.india_collector_inr||'0').split('-')[0]); if(!isNaN(p)) totalVal+=p })
+  var valBar = document.createElement('div')
+  valBar.style.cssText = 'padding:0 14px 12px;font-size:13px;color:var(--text2)'
+  valBar.innerHTML = 'Total estimated value: <strong style="color:var(--gold)">₹' + totalVal.toLocaleString('en-IN') + '</strong>'
+  resultEl.appendChild(valBar)
+
+  // Add all to collection button
+  var addAllBtn = document.createElement('button')
+  addAllBtn.style.cssText = 'margin:0 14px 12px;background:var(--green);color:#000;border:none;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;width:calc(100% - 28px)'
+  addAllBtn.textContent = '➕ Add All ' + cars.length + ' Cars to Collection'
+  addAllBtn.onclick = function() {
+    cars.forEach(function(car) {
+      addCarToCollection(car, car._sourceImage)
+    })
+    goPage('collection')
+  }
+  resultEl.appendChild(addAllBtn)
+
+  // Individual car cards
+  cars.forEach(function(car, idx) {
+    var card = document.createElement('div')
+    card.className = 'multi-car-result'
+    card.style.cssText = 'margin:0 14px 10px'
+
+    var headerDiv = document.createElement('div')
+    headerDiv.className = 'multi-car-header'
+    headerDiv.onclick = function() {
+      var body = card.querySelector('.multi-car-body')
+      var arrow = card.querySelector('.multi-car-expand')
+      body.classList.toggle('open')
+      arrow.classList.toggle('open')
+    }
+
+    var thumb = document.createElement('div'); thumb.className = 'multi-car-thumb'
+    if (car._sourceImage) { var img=document.createElement('img'); img.src=car._sourceImage; img.alt=''; thumb.appendChild(img) } else thumb.textContent = '🚗'
+
+    var info = document.createElement('div'); info.className = 'multi-car-info'
+    var nm = document.createElement('div'); nm.className = 'multi-car-name'; nm.textContent = car.name || 'Unknown'
+    var ser = document.createElement('div'); ser.className = 'multi-car-series'; ser.textContent = car.series || ''
+    var prices = document.createElement('div'); prices.className = 'multi-car-prices'
+    var rarSpan = document.createElement('span'); rarSpan.className = 'rar ' + rcls(car.rarity); rarSpan.style.cssText='font-size:10px;padding:2px 7px'; rarSpan.textContent = car.rarity||'Common'
+    var priceSpan = document.createElement('span'); priceSpan.className = 'multi-car-inr'; priceSpan.textContent = car.india_collector_inr ? '₹'+car.india_collector_inr : ''
+    prices.appendChild(rarSpan); prices.appendChild(priceSpan)
+    info.appendChild(nm); info.appendChild(ser); info.appendChild(prices)
+
+    var arrow = document.createElement('span'); arrow.className = 'multi-car-expand'; arrow.textContent = '▾'
+    headerDiv.appendChild(thumb); headerDiv.appendChild(info); headerDiv.appendChild(arrow)
+
+    var body = document.createElement('div'); body.className = 'multi-car-body'
+    var detailRows = [['Color',car.color],['Wheels',car.wheel_type],['Condition',car.condition],['US Retail','$'+(car.us_retail_usd||'?')],['US Collector','$'+(car.us_collector_usd||'?')],['Investment',car.investment],['Fun Fact',car.fun_fact]]
+    body.innerHTML = detailRows.filter(function(r){return r[1]&&r[1]!=='undefined'}).map(function(r){return '<div class="det"><span class="det-k">'+r[0]+'</span><span class="det-v">'+r[1]+'</span></div>'}).join('')
+    if (car.india_insight) body.innerHTML += '<div style="background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:9px 11px;margin-top:8px;font-size:12px;color:#ccc;line-height:1.6">'+car.india_insight+'</div>'
+
+    var actRow = document.createElement('div'); actRow.style.cssText = 'display:flex;gap:6px;margin-top:8px'
+    var addBtn = document.createElement('button'); addBtn.className = 'multi-add-btn'; addBtn.textContent = '➕ Add to Collection'
+    addBtn.onclick = (function(c) { return function() { addCarToCollection(c, c._sourceImage); alert(c.name + ' added to collection!') } })(car)
+    var shareBtn = document.createElement('button'); shareBtn.className = 'multi-add-btn'; shareBtn.textContent = '📤 Share'
+    shareBtn.onclick = (function(c) { return function() { lastResult=c; imgThumb=c._sourceImage; showShare() } })(car)
+    actRow.appendChild(addBtn); actRow.appendChild(shareBtn)
+    body.appendChild(actRow)
+
+    card.appendChild(headerDiv); card.appendChild(body)
+    resultEl.appendChild(card)
+  })
+
+  resultEl.scrollIntoView({behavior:'smooth', block:'start'})
+}
+
+// ── Improved cloud collection sync ──
+async function fullCloudSync() {
+  if (!currentUser || !_sb) return
+  try {
+    // Pull from cloud — overrides local
+    var res = await _sb.from('collection').select('*').eq('user_id', currentUser.id).order('added_at', {ascending:false})
+    if (res.data && res.data.length >= 0) {
+      collection = res.data.map(function(d) {
+        return {
+          id: d.id, name: d.name, series: d.series,
+          casting_year: d.casting_year, rarity: d.rarity,
+          color: d.color, tampo: d.tampo,
+          wheel_type: d.wheel_type,
+          condition_grade: d.condition_grade,
+          india_retail_inr: d.india_retail_inr,
+          india_collector_inr: d.india_collector_inr,
+          us_retail_usd: d.us_retail_usd,
+          us_collector_usd: d.us_collector_usd,
+          investment: d.investment,
+          investment_reason: d.investment_reason,
+          fun_fact: d.fun_fact,
+          india_insight: d.india_insight,
+          purchase_price: d.purchase_price,
+          purchase_platform: d.purchase_platform,
+          notes: d.notes,
+          image: d.image_thumb,
+          added: d.added_at
+        }
+      })
+      localStorage.setItem('hs_col', JSON.stringify(collection))
+      renderCol()
+      return true
+    }
+  } catch(e) { console.warn('Cloud sync error:', e) }
+  return false
+}
+
+// ── Add a single car to collection (used by multi-scan) ──
+function addCarToCollection(car, thumb) {
+  var item = {
+    id: Date.now() + Math.random(),
+    name: car.name, series: car.series,
+    casting_year: car.casting_year,
+    rarity: car.rarity, color: car.color,
+    tampo: car.tampo, wheel_type: car.wheel_type,
+    india_retail_inr: car.india_retail_inr,
+    india_collector_inr: car.india_collector_inr,
+    us_retail_usd: car.us_retail_usd,
+    us_collector_usd: car.us_collector_usd,
+    investment: car.investment,
+    investment_reason: car.investment_reason,
+    fun_fact: car.fun_fact,
+    india_insight: car.india_insight,
+    image: thumb || imgThumb,
+    added: new Date().toISOString()
+  }
+  collection.unshift(item)
+  localStorage.setItem('hs_col', JSON.stringify(collection))
+  if (_sb && currentUser) saveToCloud(item)
+  renderCol()
+  return item
+}
+
 // ── Reset scan ──
 function resetScan() {
-  img64 = null; imgThumb = null; fakeImg64 = null; lastResult = null
+  img64 = null; imgThumb = null; fakeImg64 = null; lastResult = null; multiImages = []
   document.getElementById('preview-img').src = ''
   document.getElementById('preview-wrap').style.display = 'none'
   document.getElementById('scan-ph').style.display = 'block'
@@ -1619,6 +1941,8 @@ function resetScan() {
   try { document.getElementById('price-submit').style.display = 'none' } catch(e) {}
   document.getElementById('fc').value = ''
   document.getElementById('fg').value = ''
+  try { document.getElementById('fg-multi').value = '' } catch(e) {}
+  try { document.getElementById('multi-preview').style.display = 'none'; document.getElementById('multi-thumbs').innerHTML = '' } catch(e) {}
   window.scrollTo({top:0, behavior:'smooth'})
 }
 
@@ -1635,7 +1959,7 @@ async function initAuth() {
     if (user) {
       currentUser = {id:user.id, email:user.primaryEmailAddress?.emailAddress||'', name:user.firstName||user.primaryEmailAddress?.emailAddress?.split('@')[0]||''}
       await loadProfile()
-      await syncCollectionFromCloud()
+      await fullCloudSync()
       renderProfilePage()
     }
     window.Clerk.addListener(async function(resources) {
@@ -1643,7 +1967,7 @@ async function initAuth() {
       if (u) {
         currentUser = {id:u.id, email:u.primaryEmailAddress?.emailAddress||'', name:u.firstName||u.primaryEmailAddress?.emailAddress?.split('@')[0]||''}
         await loadProfile()
-        await syncCollectionFromCloud()
+        await fullCloudSync()
       } else {
         currentUser = null; userProfile = null
         localStorage.removeItem('hs_pro')
@@ -1659,18 +1983,29 @@ async function initAuth() {
 async function loadProfile() {
   if (!currentUser || !_sb) return
   try {
-    var res = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
-    if (res.error && res.error.code === 'PGRST116') {
-      await _sb.from('profiles').insert({id:currentUser.id, email:currentUser.email})
-      res = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
-    }
-    userProfile = res.data
-    if (currentUser.email === DEV_EMAIL && !(userProfile && userProfile.is_developer)) {
-      await _sb.from('profiles').update({is_pro:true, is_developer:true, pro_since:new Date().toISOString()}).eq('id', currentUser.id)
-      userProfile = Object.assign({}, userProfile, {is_pro:true, is_developer:true})
+    // Use the upsert_profile function for clean profile management
+    var res = await _sb.rpc('upsert_profile', {
+      p_id: currentUser.id,
+      p_email: currentUser.email,
+      p_name: currentUser.name || null
+    })
+    if (res.data) {
+      userProfile = res.data
+    } else {
+      // Fallback to direct query
+      var q = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
+      userProfile = q.data
     }
     if (userProfile && userProfile.is_pro) localStorage.setItem('hs_pro', 'true')
-  } catch(e) { console.warn('loadProfile error:', e) }
+  } catch(e) {
+    console.warn('loadProfile error:', e)
+    // Fallback: try direct upsert
+    try {
+      await _sb.from('profiles').upsert({id:currentUser.id, email:currentUser.email}, {onConflict:'id'})
+      var q = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
+      userProfile = q.data
+    } catch(e2) { console.warn('Profile fallback error:', e2) }
+  }
 }
 
 function updateHeaderUI() {
@@ -1848,7 +2183,28 @@ async function syncCollectionFromCloud() {
 }
 async function saveToCloud(item) {
   if (!currentUser || !_sb) return
-  try { await _sb.from('collection').insert({user_id:currentUser.id, name:item.name, series:item.series, rarity:item.rarity, color:item.color, india_collector_inr:item.india_collector_inr, investment:item.investment, image_thumb:item.image?item.image.substring(0,5000):null, added_at:item.added}) } catch(e) {}
+  try {
+    await _sb.from('collection').insert({
+      user_id: currentUser.id,
+      name: item.name,
+      series: item.series,
+      casting_year: item.casting_year,
+      rarity: item.rarity,
+      color: item.color,
+      tampo: item.tampo,
+      wheel_type: item.wheel_type,
+      india_retail_inr: item.india_retail_inr,
+      india_collector_inr: item.india_collector_inr,
+      us_retail_usd: item.us_retail_usd,
+      us_collector_usd: item.us_collector_usd,
+      investment: item.investment,
+      investment_reason: item.investment_reason,
+      fun_fact: item.fun_fact,
+      india_insight: item.india_insight,
+      image_thumb: item.image ? item.image.substring(0, 4000) : null,
+      added_at: item.added
+    })
+  } catch(e) { console.warn('Cloud save error:', e) }
 }
 async function deleteFromCloud(id) {
   if (!currentUser || !_sb) return
