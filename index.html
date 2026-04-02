@@ -1136,10 +1136,59 @@ function parseJSON(raw) {
 
 // ── Identify car ──
 async function identifyCar(imageData) {
-  var sys = 'You are the world\'s most accurate Hot Wheels identification AI with knowledge of every casting 1968-2025.\nSuper TH signs: Spectraflame paint + Real Riders rubber tires + TH logo = ₹3000-15000 India.\nTH signs: Metalflake paint + flame logo = ₹1000-3000 India.\nReal Riders = Premium/TH. Vintage Redlines (pre-1977) have red line on tires.'
-  var usr = 'Identify this Hot Wheels car. Return ONLY valid JSON:\n{"identified":true,"confidence":90,"name":"exact model name","series":"series year","casting_year":"year","color":"color","tampo":"graphics","wheel_type":"wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"visual evidence","condition":"Mint on Card|Near Mint|Very Good|Good","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","is_authentic":true,"authenticity_notes":"notes"}'
+  var sys = [
+    'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2025.',
+    '',
+    'IDENTIFICATION RULES — follow precisely:',
+    '1. CASTING: Identify the exact vehicle model (e.g. "69 Camaro" not just "Camaro"). Note year of car, make, model.',
+    '2. SERIES: Name exact series e.g. "Hot Wheels 2023 Mainline #087/250" or "Car Culture Japan Historics 3".',
+    '3. COLOR: Exact color e.g. "Spectraflame Blue", "Pearl White", "Matte Black", "Kmart Exclusive Red".',
+    '4. TAMPO: Every graphic/decoration visible — sponsor logos, racing numbers, flames, stripes, text.',
+    '5. WHEELS: Exact wheel type — "5-Spoke", "OH5 (Open Hole 5-Spoke)", "Real Riders rubber", "PR5", "10-Spoke", "MC5", "Gold Lace".',
+    '6. BASE: Look for Malaysia/China/Thailand/Thailand+China base — indicates era and variation.',
+    '',
+    'RARITY DETECTION — critical:',
+    '- Super Treasure Hunt (STH): Spectraflame metallic paint + Real Riders rubber tires + TH logo = VERY RARE ₹4000-15000 India',
+    '- Treasure Hunt (TH): Metalflake/special paint + TH flame logo on card = RARE ₹1000-3000 India',
+    '- Real Riders without TH = Premium series ₹500-1200 India',
+    '- Error Car: wrong tampo/color/part = EXTREMELY VALUABLE ₹5000-50000 India',
+    '- Vintage Redlines (pre-1977): Red stripe on tires = ₹3000-20000 India',
+    '- Basic mainline: Standard 5-spoke plastic wheels = Common ₹150-200 India',
+    '',
+    'AUTHENTICITY: Check Hot Wheels logo sharpness, Mattel base markings, wheel quality, paint consistency.',
+    'CONFIDENCE: Be precise. 95%+ only if you can clearly read tampo/series. 70-80% if partially visible.'
+  ].join('\n')
+
+  var usr = [
+    'Examine this Hot Wheels car image with extreme precision.',
+    'Look at: casting shape, color, ALL tampo graphics, wheel type, base plate, card if visible.',
+    'Return ONLY valid JSON — no explanation, no markdown:',
+    '{"identified":true,',
+    '"confidence":92,',
+    '"name":"EXACT Hot Wheels model name e.g. 69 Dodge Charger Daytona",',
+    '"series":"EXACT series e.g. Hot Wheels 2023 Mainline #142/250",',
+    '"casting_year":"first year this casting was produced",',
+    '"color":"exact color name e.g. Spectraflame Blue",',
+    '"tampo":"describe every graphic visible e.g. #5 racing number, sponsor logos, flames on hood",',
+    '"wheel_type":"exact wheel type e.g. Real Riders rubber 5-spoke",',
+    '"base_color":"color of the base plate",',
+    '"base_origin":"Malaysia|China|Thailand|Unknown",',
+    '"rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",',
+    '"rarity_reason":"specific visual evidence for this rarity rating",',
+    '"condition":"Mint on Card|Near Mint|Very Good|Good|Fair",',
+    '"investment":"Low|Medium|High|Very High",',
+    '"investment_reason":"specific market reasoning",',
+    '"fun_fact":"one specific interesting fact about this exact casting",',
+    '"india_insight":"specific Indian collector demand for this car",',
+    '"us_retail_usd":"1.49",',
+    '"us_collector_usd":"5-12",',
+    '"is_authentic":true,',
+    '"authenticity_confidence":"High|Medium|Low",',
+    '"authenticity_notes":"specific authenticity observations"}'
+  ].join('')
+
   var d = await groqVision(imageData, sys, usr)
-  if (!d.identified) throw new Error('Could not identify. Try: white surface · bright light · side view')
+  if (!d.identified) throw new Error('Could not identify. Try: white surface · bright light · side view · include card')
   return d
 }
 
@@ -1156,7 +1205,39 @@ async function searchPrices(carName, rarity, castingYear) {
     'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}
   }
   var p = rp[rarity] || rp['Common']
-  var prompt = 'India Hot Wheels market expert. Price this for Indian collectors:\nCar: "' + carName + '" | Rarity: ' + rarity + ' | Year: ' + castingYear + '\nBase India range: Retail ₹' + p.r + ', Collector ₹' + p.c + '\nReturn ONLY valid JSON:\n{"india_retail_inr":"' + p.r + '","india_collector_inr":"' + p.c + '","us_retail_usd":"' + p.ur + '","us_collector_usd":"' + p.uc + '","price_trend":"Rising|Stable|Falling","price_trend_reason":"why for this model","india_insight":"2-3 sentences about Indian demand for this specific car"}'
+  var prompt = [
+    'You are India top Hot Wheels market analyst with deep knowledge of:',
+    '- OLX India pricing trends',
+    '- Instagram collector group prices in India',
+    '- Mumbai, Delhi, Bangalore, Chennai swap meet prices',
+    '- Amazon India and Flipkart availability',
+    '- Maido.in and other specialty retailers',
+    '- Import duty impact on US models coming to India',
+    '',
+    'Price this specific car for Indian collectors:',
+    'Car: "' + carName + '"',
+    'Rarity: ' + rarity,
+    'Casting Year: ' + castingYear,
+    'Base India price range: Retail ₹' + p.r + ', Collector ₹' + p.c,
+    '',
+    'Consider:',
+    '1. How popular is this specific model with Indian collectors?',
+    '2. JDM cars (Skyline, Supra, RX-7) and muscle cars (Camaro, Charger) = high demand India',
+    '3. How rare is it to find in India? (most cars never make it to Indian stores)',
+    '4. Has its Indian OLX price been going up or down recently?',
+    '5. Are there active Indian Instagram sellers listing this car?',
+    '',
+    'Return ONLY valid JSON:',
+    '{"india_retail_inr":"' + p.r + '",',
+    '"india_collector_inr":"' + p.c + '",',
+    '"us_retail_usd":"' + p.ur + '",',
+    '"us_collector_usd":"' + p.uc + '",',
+    '"price_trend":"Rising|Stable|Falling",',
+    '"price_trend_reason":"specific reason for this car trend in India",',
+    '"india_insight":"2-3 specific sentences about Indian collector demand for this exact model, why they want it, market activity",',
+    '"sell_platforms":["OLX","Instagram collector groups","Maido"],',
+    '"buy_tip":"best way to find this car in India at good price"}'
+  ].join('\n')
   try { return await groqText(prompt) } catch(e) { return null }
 }
 
@@ -1173,7 +1254,36 @@ async function analyzePhoto() {
   resetSteps(); startTimer('Identifying car...')
   try {
     setStep(1, 'active')
-    var carData = await identifyCar(img64)
+    // Always run multi-car detection on single photos too
+    // This catches cases where user uploads a shelf/display photo
+    var multiResult = await identifyMultipleCars(img64)
+    var carData
+
+    if (multiResult && multiResult.cars && multiResult.cars.length > 1) {
+      // Multiple cars found — show multi-car results
+      setStep(1, 'done'); setStep(2, 'active')
+      document.getElementById('timer-lbl').textContent = 'Found ' + multiResult.cars.length + ' cars — fetching prices...'
+      var pricePromises = multiResult.cars.map(function(car) {
+        return searchPrices(car.name, car.rarity, car.casting_year)
+      })
+      var prices = await Promise.all(pricePromises)
+      var allCars = multiResult.cars.map(function(car, i) {
+        car._sourceImage = imgThumb
+        return Object.assign({}, car, prices[i] || {})
+      })
+      setStep(2, 'done'); setStep(3, 'done')
+      stopTimer()
+      incScans()
+      allCars.forEach(function(c) { saveToHist(c) })
+      showMultiResults(allCars)
+      return
+    }
+
+    // Single car — use detailed single-car identifier
+    carData = (multiResult && multiResult.cars && multiResult.cars.length === 1)
+      ? Object.assign({identified: true}, multiResult.cars[0])
+      : await identifyCar(img64)
+
     setStep(1, 'done'); setStep(2, 'active')
     document.getElementById('timer-lbl').textContent = 'Fetching Indian prices...'
     var priceData = await searchPrices(carData.name, carData.rarity, carData.casting_year)
@@ -1262,7 +1372,29 @@ async function analyzeFake() {
   btn.disabled = true; btn.textContent = '⏳ Checking...'
   document.getElementById('err-box').style.display = 'none'
   startTimer('Checking authenticity...')
-  var sys = 'You are a Hot Wheels authentication expert. Check logo quality, wheel quality, paint finish, tampo sharpness, base markings.'
+  var sys = [
+    'You are the world leading Hot Wheels authentication specialist with 25 years experience.',
+    'You have examined thousands of genuine and counterfeit Hot Wheels cars.',
+    '',
+    'GENUINE Hot Wheels signs:',
+    '- Hot Wheels logo: crisp, clean, exact font with the red/yellow flame design',
+    '- Mattel logo on base: sharp, properly spaced',
+    '- Base markings: "HOT WHEELS MATTEL INC." with country of origin',
+    '- Wheels: consistent, smooth rolling, proper fitment',
+    '- Paint: even, no drips, proper metallic flake if applicable',
+    '- Tampo: sharp edges, correct colors, properly aligned',
+    '- Windshield/interior: proper plastic color, correctly fitted',
+    '',
+    'FAKE Hot Wheels signs:',
+    '- Blurry or wrong font on Hot Wheels logo',
+    '- Missing or incorrect Mattel markings on base',
+    '- Wheels that look different from standard Hot Wheels',
+    '- Paint drips, bubbles, uneven coverage',
+    '- Tampo with fuzzy edges or wrong colors',
+    '- Wrong proportions or plastic quality',
+    '- Generic base without proper markings',
+    '- Very common in India: Chinese counterfeits, "Motor Wheels" or "Speed Wheels" brands'
+  ].join('\n')
   var usr = 'Authenticate this Hot Wheels. Return ONLY valid JSON:\n{"identified":true,"is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":[],"good_signs":[],"recommendation":"advice","india_fake_note":"note about fakes in India"}'
   try {
     var d = await groqVision(fakeImg64, sys, usr)
@@ -1696,20 +1828,56 @@ async function handleMultiFiles(files) {
 async function identifyMultipleCars(imageData) {
   var b64 = imageData.split(',')[1]
   var mime = imageData.split(';')[0].split(':')[1]
-  var sys = "You are the world's most precise Hot Wheels identification AI. When given an image with MULTIPLE Hot Wheels cars, you MUST identify EACH car separately with full precision. Never group them or summarize. Each car gets its own complete entry."
+
+  var sys = [
+    'You are the world most precise Hot Wheels multi-car identification expert.',
+    'When shown an image with MULTIPLE Hot Wheels cars you MUST:',
+    '1. Count every single car visible, even partially',
+    '2. Identify EACH car individually with complete precision',
+    '3. Never group or generalize — each car gets its own detailed entry',
+    '4. Scan systematically: top-left to bottom-right, or front-to-back',
+    '',
+    'For EACH car identify:',
+    '- Exact casting name and model year',
+    '- Color (Spectraflame/metallic = higher value)',
+    '- Wheel type (Real Riders rubber = Premium or TH)',
+    '- Any visible tampo/graphics',
+    '- Rarity: STH > TH > Vintage > Rare > Premium > Uncommon > Common',
+    '',
+    'RARITY CLUES:',
+    '- Spectraflame paint + rubber wheels + TH logo = Super Treasure Hunt (STH)',
+    '- Metalflake paint + TH logo = Treasure Hunt (TH)',
+    '- Real Riders rubber tires = at minimum Premium',
+    '- Red line on tires = Vintage Redline (pre-1977), very valuable',
+    '- Obvious paint/tampo error = Error Car, extremely valuable'
+  ].join('\n')
+
   var usr = [
-    'Identify every Hot Wheels car in the image precisely.',
-    'Return ONLY valid JSON:',
-    '{"cars":[',
-    '{"name":"exact model name","series":"series year","casting_year":"year",',
-    '"color":"color","tampo":"decorations","wheel_type":"wheel type",',
+    'Carefully examine this image. Count and identify EVERY Hot Wheels car you can see.',
+    'For each car provide complete identification. Return ONLY valid JSON:',
+    '{"total_cars_found":N,',
+    '"scan_notes":"brief note about image quality and what you see",',
+    '"cars":[{',
+    '"car_number":1,',
+    '"name":"EXACT model name",',
+    '"series":"series name and year",',
+    '"casting_year":"year first made",',
+    '"color":"exact color",',
+    '"tampo":"all visible graphics and decorations",',
+    '"wheel_type":"exact wheel type",',
     '"rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",',
-    '"rarity_reason":"why","condition":"Mint on Card|Near Mint|Very Good|Good",',
-    '"investment":"Low|Medium|High|Very High","investment_reason":"why",',
-    '"fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12",',
-    '"india_retail_inr":"150-200","india_collector_inr":"300-600",',
-    '"confidence":90,"is_authentic":true}',
-    '],"total_cars_found":1,"notes":"image observations"}'
+    '"rarity_reason":"specific visual evidence",',
+    '"condition":"Mint on Card|Near Mint|Very Good|Good",',
+    '"investment":"Low|Medium|High|Very High",',
+    '"investment_reason":"why",',
+    '"india_retail_inr":"150-200",',
+    '"india_collector_inr":"300-600",',
+    '"us_retail_usd":"1.49",',
+    '"us_collector_usd":"5-12",',
+    '"confidence":90,',
+    '"is_authentic":true,',
+    '"fun_fact":"one interesting fact about this casting"',
+    '}]}'
   ].join('')
 
   var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
