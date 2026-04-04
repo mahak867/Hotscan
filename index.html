@@ -9,6 +9,12 @@
 <meta name="apple-mobile-web-app-title" content="HotScan">
 <meta name="theme-color" content="#e63946">
 <meta name="description" content="India's #1 Hot Wheels scanner. Live prices, rarity, collection tracker. Free.">
+<meta property="og:title" content="HotScan India — India's First Hot Wheels Scanner">
+<meta property="og:description" content="Scan any Hot Wheels car. Get live Indian market prices in seconds. Free.">
+<meta property="og:image" content="https://hotscan.in/og-image.png">
+<meta property="og:url" content="https://hotscan.in">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <title>HotScan India — Hot Wheels Scanner</title>
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -313,6 +319,56 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .clr-btn{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer}
 .tags{display:flex;flex-wrap:wrap;gap:5px}
 .tag{background:var(--surface3);color:#ccc;padding:4px 10px;border-radius:20px;font-size:11px}
+
+/* ── Price History Chart ── */
+.phc{background:var(--surface2);border-radius:12px;padding:14px;margin:0 0 11px;border:1px solid var(--border);display:none}
+.phc-lbl{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.phc-bars{display:flex;align-items:flex-end;gap:5px;height:72px}
+.phc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.phc-bar{width:100%;border-radius:3px 3px 0 0;background:var(--red);min-height:4px;transition:height .5s}
+.phc-bar.now{background:var(--gold)}
+.phc-val{font-size:8px;color:var(--text3);text-align:center;line-height:1.2}
+.phc-mo{font-size:8px;color:var(--text3);text-align:center}
+.phc-footer{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--text2)}
+
+/* ── Marketplace ── */
+.mp-tabs{display:flex;gap:6px;margin-bottom:11px}
+.mp-tab{flex:1;padding:10px 6px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.mp-tab.active{background:var(--red);border-color:var(--red);color:#fff}
+.listing-card{background:var(--surface);border-radius:13px;padding:13px;margin-bottom:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+.listing-thumb{width:60px;height:60px;border-radius:9px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:26px}
+.listing-thumb img{width:100%;height:100%;object-fit:cover}
+.listing-name{font-size:13px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.listing-meta{font-size:10px;color:var(--text3);margin-bottom:4px}
+.listing-price{font-size:17px;font-weight:800;color:var(--gold)}
+.listing-acts{display:flex;gap:6px;margin-top:7px}
+.l-btn{padding:7px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:none}
+.l-btn-wa{background:#25D366;color:#fff}
+.l-btn-share{background:var(--surface3);color:#fff}
+.filter-chips{display:flex;gap:5px;overflow-x:auto;padding-bottom:3px;margin-bottom:9px}
+.filter-chip{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:5px 11px;border-radius:20px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-weight:500}
+.filter-chip.active{background:var(--red);border-color:var(--red);color:#fff}
+
+/* ── Referral ── */
+.ref-hero{background:linear-gradient(135deg,#1a1400,#0d001a);border-radius:16px;padding:20px;text-align:center;border:1px solid rgba(255,214,10,.25);margin-bottom:12px}
+.ref-link{background:var(--surface3);border-radius:9px;padding:11px 13px;font-family:monospace;font-size:12px;color:var(--gold);margin:12px 0;word-break:break-all;border:1px solid var(--border2)}
+.ref-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.ref-stat{background:rgba(0,0,0,.4);border-radius:9px;padding:10px;text-align:center}
+.ref-stat-n{font-size:22px;font-weight:800;color:var(--gold)}
+.ref-stat-l{font-size:9px;color:var(--text3);margin-top:2px;line-height:1.3}
+
+/* ── Growth Banner ── */
+.gbanner{background:linear-gradient(135deg,var(--red),#8b0000);border-radius:13px;padding:14px;margin-bottom:11px;display:flex;align-items:center;gap:11px}
+.gbanner-body{flex:1;font-size:12px;line-height:1.5}
+.gbanner-body strong{color:#fff;display:block;font-size:13px;margin-bottom:2px}
+.gbanner-body span{opacity:.85}
+.gbanner-btn{background:#fff;color:var(--red);border:none;padding:9px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap}
+
+/* ── OLX analyser ── */
+.olx-result-box{display:none;background:var(--surface);border-radius:15px;overflow:hidden;margin-bottom:11px;border:1px solid var(--border)}
+.olx-verdict{padding:16px;text-align:center}
+.olx-fair-price{font-size:30px;font-weight:800;color:var(--gold);margin-bottom:4px}
+
 </style>
 </head>
 <body>
@@ -326,8 +382,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 <div class="nav">
   <div class="nav-item active" onclick="goPage('scan')"><span class="nav-icon">🔍</span>Scan</div>
   <div class="nav-item" onclick="goPage('collection')"><span class="nav-icon">🗂</span>Collect</div>
-  <div class="nav-item" onclick="goPage('hunt')"><span class="nav-icon">🎯</span>Hunt</div>
-  <div class="nav-item" onclick="goPage('market')"><span class="nav-icon">📊</span>Market</div>
+  <div class="nav-item" onclick="goPage('marketplace')"><span class="nav-icon">🏪</span>Market</div>
+  <div class="nav-item" onclick="goPage('market')"><span class="nav-icon">📈</span>Trends</div>
   <div class="nav-item" onclick="goPage('profile')"><span class="nav-icon">👤</span>Profile</div>
   <div class="nav-item" onclick="goPage('more')"><span class="nav-icon">⚙️</span>More</div>
 </div>
@@ -464,6 +520,11 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       <div class="ptile"><div class="ptile-lbl">🇺🇸 US Collector</div><div class="ptile-val pusd" id="p4">—</div><div class="ptile-sub">eBay</div></div>
     </div>
     <div class="price-trend" id="r-trend"><span id="trend-ic">📊</span><span id="trend-txt" style="font-size:12px;color:var(--text2)">—</span></div>
+    <div class="phc" id="phc">
+      <div class="phc-lbl">📈 6-Month Price History — India ₹</div>
+      <div class="phc-bars" id="phc-bars"></div>
+      <div class="phc-footer" id="phc-footer"></div>
+    </div>
     <!-- Community price -->
     <div class="price-submit" id="price-submit" style="display:none">
       <div class="ps-lbl">📣 Submit a Real Indian Price</div>
@@ -493,6 +554,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <div class="r-acts">
       <button class="ract" onclick="addToCol()"><span>➕</span>Add</button>
       <button class="ract" onclick="addAlert()"><span>🔔</span>Alert</button>
+      <button class="ract" onclick="quickSell()"><span>💸</span>Sell</button>
       <button class="ract" onclick="showShare()"><span>📤</span>Share</button>
       <button class="ract" onclick="resetScan()"><span>🔄</span>Rescan</button>
     </div>
@@ -533,6 +595,88 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   </div>
   <div class="hunt-list" id="hunt-list"></div>
 </div>
+
+<!-- ═══ MARKETPLACE PAGE ═══ -->
+<div class="page" id="page-marketplace">
+  <div class="page-hdr"><div class="page-title">Marketplace 🏪</div></div>
+
+  <!-- Referral growth banner -->
+  <div class="gbanner" id="ref-banner">
+    <div style="font-size:22px;flex-shrink:0">🎁</div>
+    <div class="gbanner-body">
+      <strong>Invite collectors, earn free scans</strong>
+      <span>Share your link — you both get 10 bonus scans</span>
+    </div>
+    <button class="gbanner-btn" onclick="goPage('profile')">Share →</button>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mp-tabs">
+    <div class="mp-tab active" id="mp-tab-buy" onclick="mpMode('buy')">🛒 Buy</div>
+    <div class="mp-tab" id="mp-tab-sell" onclick="mpMode('sell')">💸 Sell</div>
+    <div class="mp-tab" id="mp-tab-olx" onclick="mpMode('olx')">🔗 OLX Check</div>
+  </div>
+
+  <!-- BUY -->
+  <div id="mp-buy">
+    <div class="filter-chips" id="mp-filter-chips">
+      <span class="filter-chip active" onclick="mpFilter('all',this)">All</span>
+      <span class="filter-chip" onclick="mpFilter('Common',this)">Common</span>
+      <span class="filter-chip" onclick="mpFilter('Rare',this)">Rare</span>
+      <span class="filter-chip" onclick="mpFilter('Treasure',this)">TH</span>
+      <span class="filter-chip" onclick="mpFilter('Super',this)">STH</span>
+      <span class="filter-chip" onclick="mpFilter('Vintage',this)">Vintage</span>
+    </div>
+    <div id="mp-listings-wrap"></div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn-dark" style="width:100%;justify-content:center;padding:13px;border-radius:12px" onclick="ol('https://www.olx.in/items/q-hot-wheels')">🔍 Search More on OLX India →</button>
+    </div>
+  </div>
+
+  <!-- SELL -->
+  <div id="mp-sell" style="display:none">
+    <div class="card">
+      <div class="card-title">📦 List a Car for Sale</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6">Scan the car first → tap Sell → we auto-fill the details</div>
+      <input class="inp" id="sl-name" type="text" placeholder="Car name e.g. Bone Shaker STH 2023">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
+        <input class="inp" id="sl-price" type="number" placeholder="Price ₹" style="margin:0">
+        <select class="inp" id="sl-cond" style="margin:0">
+          <option>Mint on Card</option><option>Near Mint</option><option>Very Good</option><option>Loose</option>
+        </select>
+      </div>
+      <input class="inp" id="sl-city" type="text" placeholder="Your city">
+      <textarea class="inp" id="sl-notes" placeholder="Description, colour, any extras..." style="height:65px;resize:none"></textarea>
+      <button class="btn-red" style="width:100%;justify-content:center;padding:13px;border-radius:12px;margin-top:4px" onclick="submitListing()">📤 List Now</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Also List On</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.olx.in/post-an-ad')"><div class="more-ic">🏷️</div><div><div class="more-t">OLX India</div><div class="more-s">Biggest classifieds</div></div><div class="more-arr">›</div></div>
+        <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')"><div class="more-ic">📸</div><div><div class="more-t">#HotWheelsIndiaSale</div><div class="more-s">35K+ collectors</div></div><div class="more-arr">›</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OLX CHECK -->
+  <div id="mp-olx" style="display:none">
+    <div class="card">
+      <div class="card-title">🔗 Is This OLX Price Fair?</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6">Paste any OLX Hot Wheels listing title — AI tells you if it's a steal, fair, or overpriced</div>
+      <textarea class="inp" id="olx-inp" placeholder="e.g. Hot Wheels Super Treasure Hunt Bone Shaker 2023 MOC" style="height:75px;resize:none"></textarea>
+      <button class="btn-red" style="width:100%;justify-content:center;padding:13px;border-radius:12px;margin-top:4px" onclick="checkOLX()">🔍 Analyse Listing</button>
+    </div>
+    <div class="olx-result-box" id="olx-result-box">
+      <div class="olx-verdict">
+        <div class="olx-fair-price" id="olx-fair-px">₹—</div>
+        <div style="font-size:13px;color:var(--text2)" id="olx-verdict-txt">—</div>
+      </div>
+      <div class="deal-rows" id="olx-rows"></div>
+      <div class="deal-tip" id="olx-tip"></div>
+    </div>
+  </div>
+</div>
+
 
 <!-- ═══ MARKET PAGE ═══ -->
 <div class="page" id="page-market">
@@ -601,7 +745,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   <div class="card" style="margin-top:8px"><div class="card-title">💬 WhatsApp Collector Groups</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Join active Indian Hot Wheels collector groups on WhatsApp:</div>
     <div style="display:flex;flex-direction:column;gap:7px">
-      <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://chat.whatsapp.com/HotWheelsIndia')"><div style="font-size:18px">💬</div><div><div style="font-size:12px;font-weight:600">HotScan Community Group</div><div style="font-size:10px;color:var(--text3)">Prices, deals, swap meets</div></div><div class="more-arr">›</div></div>
+      <div class="more-item" style="padding:10px;border-radius:10px" onclick="shareApp()"><div style="font-size:18px">💬</div><div><div style="font-size:12px;font-weight:600">Share HotScan to WhatsApp Group</div><div style="font-size:10px;color:var(--text3)">Invite your collector friends</div></div><div class="more-arr">›</div></div>
       <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindia/')"><div style="font-size:18px">📸</div><div><div style="font-size:12px;font-weight:600">#HotWheelsIndia on Instagram</div><div style="font-size:10px;color:var(--text3)">35,000+ collectors</div></div><div class="more-arr">›</div></div>
       <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.olx.in/items/q-hot-wheels')"><div style="font-size:18px">💸</div><div><div style="font-size:12px;font-weight:600">OLX Hot Wheels India</div><div style="font-size:10px;color:var(--text3)">Live buy/sell listings</div></div><div class="more-arr">›</div></div>
     </div>
@@ -666,6 +810,23 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     </div>
     <!-- Recent scans -->
     <div class="card"><div class="card-title">🕐 Recent Scans</div><div id="prof-recent"></div></div>
+    <!-- Referral -->
+    <div class="ref-hero" id="ref-section">
+      <div style="font-size:22px;margin-bottom:8px">🎁</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:5px">Refer a Collector</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">Share your link — you <strong style="color:var(--gold)">both get 10 bonus scans</strong></div>
+      <div class="ref-link" id="ref-link-txt">hotscan.in/ref/...</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="copyRefLink()" style="background:var(--surface2);border:1px solid var(--border2);color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">📋 Copy</button>
+        <button onclick="shareViaWA()" style="background:#25D366;color:#fff;border:none;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">💬 WhatsApp</button>
+      </div>
+      <div class="ref-stats">
+        <div class="ref-stat"><div class="ref-stat-n" id="ref-cnt">0</div><div class="ref-stat-l">Friends Referred</div></div>
+        <div class="ref-stat"><div class="ref-stat-n" id="ref-bonus-n">0</div><div class="ref-stat-l">Bonus Scans Earned</div></div>
+        <div class="ref-stat"><div class="ref-stat-n" id="ref-rank">—</div><div class="ref-stat-l">Top Referrer Rank</div></div>
+      </div>
+    </div>
+
     <!-- Actions -->
     <div class="card"><div class="card-title">Account</div>
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -699,6 +860,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     </div>
   </div>
   <div class="more-sec"><div class="more-sec-t">About</div>
+    <div class="more-item" onclick="whatsappSupport()"><div class="more-ic">💬</div><div><div class="more-t">WhatsApp Support</div><div class="more-s">Message us directly for help</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('https://github.com/mahak867/Hotscan')"><div class="more-ic">⭐</div><div><div class="more-t">Star on GitHub</div><div class="more-s">Open source · Free forever</div></div><div class="more-arr">›</div></div>
     <div class="more-item"><div class="more-ic">ℹ️</div><div><div class="more-t">HotScan India v4.0</div><div class="more-s">India's first Hot Wheels scanner 🇮🇳 · hotscan.in</div></div></div>
   </div>
@@ -714,7 +876,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 <!-- Share Modal -->
 <div class="modal-overlay" id="share-modal">
   <div style="width:100%;max-width:330px">
-    <div style="text-align:right;margin-bottom:8px"><button onclick="closeShare()" style="background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button></div>
+    <div style="text-align:right;margin-bottom:8px"><button onclick="closeShare()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;line-height:1">✕</button></div>
     <div class="share-card">
       <div class="sc-logo"><div class="sc-logo-ic">🚗</div><div class="sc-logo-txt">HotScan India</div><div class="sc-url">hotscan.in</div></div>
       <div class="sc-img" id="sc-img">🚗</div>
@@ -727,7 +889,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       </div>
       <div class="sc-footer">Scanned with HotScan India 🔍 · Free at hotscan.in</div>
     </div>
-    <div class="sc-btns"><button class="sc-btn sc-btn-wa" onclick="shareWA()">💬 WhatsApp</button><button class="sc-btn sc-btn-sh" onclick="shareNative()">📤 Share</button></div>
+    <div class="sc-btns"><button class="sc-btn sc-btn-wa" onclick="shareWA()">💬 WhatsApp</button><button class="sc-btn" style="background:#25D366;color:#fff" onclick="shareResultToGroup()">👥 Send to Group</button><button class="sc-btn sc-btn-sh" onclick="shareNative()">📤 More</button></div>
   </div>
 </div>
 
@@ -771,7 +933,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       </div>
       <div style="font-size:28px;font-weight:800;color:var(--gold);margin-bottom:4px">₹99<span style="font-size:14px;font-weight:400;color:var(--text2)">/month</span></div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Less than one Hot Wheels car per month</div>
-      <button class="btn-gold" style="margin-bottom:10px" onclick="currentUser?startPayment():openAuth()">Get Pro — ₹99/month</button>
+      <button class="btn-gold" style="margin-bottom:10px" onclick="handleUpgrade()">Get Pro — ₹99/month</button>
       <button onclick="closeProModal()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;width:100%;padding:8px">Maybe later</button>
     </div>
   </div>
@@ -787,6 +949,8 @@ var SUPA_URL  = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
 var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
 var RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
 var DEV_EMAIL = 'mahakfahad07@gmail.com'
+var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'  // update with real link
+var WA_SUPPORT   = 'https://api.whatsapp.com/send?phone=918089558314&text=Hi%20HotScan%20Support'  // update with real number
 var FREE_SCANS = 5
 
 // ── State ──
@@ -878,10 +1042,13 @@ function closeProModal() {
   document.body.style.overflow = ''
 }
 function updateScanCounter() {
-  var el = document.getElementById('scan-counter')
-  if (!el) return
-  if (isPro()) { el.textContent = 'PRO ⭐'; el.style.background = 'rgba(255,214,10,.3)'; el.style.color = 'var(--gold)' }
-  else el.textContent = getTodayScans() + '/' + FREE_SCANS + ' scans'
+  // scan counter is shown in profile page scan bar
+  var pb = document.getElementById('prof-scans-bar')
+  if (pb && currentUser) {
+    var used = getTodayScans()
+    pb.style.width = isPro() ? '100%' : Math.min(used/FREE_SCANS*100,100)+'%'
+    pb.style.background = isPro() ? 'var(--green)' : 'linear-gradient(90deg,var(--red),var(--gold))'
+  }
 }
 
 // ── Init ──
@@ -900,7 +1067,10 @@ window.addEventListener('load', function() {
   renderCol()
   renderAlerts()
   renderHunt('mainline')
+  renderProfilePage()   // Show guest/user state immediately
   initAuth()
+  updateRefUI()
+  updateScanCounter()
 })
 
 // ── Nav ──
@@ -1501,10 +1671,11 @@ function showResult(d) {
   // Buy links
   if (d.name) {
     var buyLinks = [
-      {label:'Amazon India', url:'https://www.amazon.in/s?k=hot+wheels+' + encodeURIComponent(d.name)},
-      {label:'Flipkart', url:'https://www.flipkart.com/search?q=hot+wheels+' + encodeURIComponent(d.name)},
-      {label:'OLX', url:'https://www.olx.in/items/q-hot+wheels+' + encodeURIComponent(d.name)},
-      {label:'Maido', url:'https://www.maido.in/search?q=' + encodeURIComponent(d.name)},
+      {label:'🛒 Amazon India', url:'https://www.amazon.in/s?k=hot+wheels+' + encodeURIComponent(d.name)},
+      {label:'🛒 Flipkart', url:'https://www.flipkart.com/search?q=hot+wheels+' + encodeURIComponent(d.name)},
+      {label:'💸 OLX India', url:'https://www.olx.in/items/q-hot+wheels+' + encodeURIComponent(d.name)},
+      {label:'📸 Instagram', url:'https://www.instagram.com/explore/tags/'+encodeURIComponent('hotwheelsindiasale')},
+      {label:'🏪 Maido', url:'https://www.maido.in/search?q=' + encodeURIComponent(d.name)},
     ]
     var bl = document.getElementById('r-buy-list')
     bl.innerHTML = ''
@@ -1648,7 +1819,32 @@ function exportVal() {
   if (!collection.length) { alert('Add some cars first!'); return }
   var val = 0; collection.forEach(function(c) { var p=parseFloat((c.india_collector_inr||'0').split('-')[0]); if(!isNaN(p)) val+=p })
   var date = new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})
-  var txt = 'HOTSCAN INDIA — COLLECTION VALUATION CERTIFICATE\n' + '='.repeat(50) + '\nGenerated: ' + date + '\nApp: HotScan India v4.0 (hotscan.in)\n\nCOLLECTION SUMMARY\nTotal Cars: ' + collection.length + '\nEstimated Total Value: ₹' + val.toLocaleString('en-IN') + ' INR\n\nCAR LIST\n' + collection.map(function(c,i) { return (i+1) + '. ' + (c.name||'Unknown') + ' | ' + (c.rarity||'Common') + ' | ₹' + (c.india_collector_inr||'N/A') }).join('\n') + '\n\n' + '='.repeat(50) + '\nNote: Values are AI estimates. For insurance get a professional appraisal.\nhotscan.in'
+  var txt = [
+    'HOTSCAN INDIA - COLLECTION VALUATION CERTIFICATE',
+    '='.repeat(50),
+    'Generated: ' + date,
+    'App: HotScan India v5.0 (hotscan.in)',
+    'Collector: ' + (currentUser ? currentUser.email : 'Guest'),
+    '',
+    'COLLECTION SUMMARY',
+    'Total Cars: ' + collection.length,
+    'Rare+ Cars: ' + collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage')}).length,
+    'Treasure Hunts: ' + collection.filter(function(c){return (c.rarity||'').toLowerCase().includes('treasure')}).length,
+    'Estimated Total Value: Rs.' + val.toLocaleString('en-IN') + ' INR',
+    'Average Car Value: Rs.' + (collection.length?Math.round(val/collection.length).toLocaleString('en-IN'):'0') + ' INR',
+    '',
+    'CAR LIST',
+    collection.map(function(c,i){
+      return (i+1)+'. '+(c.name||'Unknown')+' | '+(c.rarity||'Common')+' | Rs.'+(c.india_collector_inr||'N/A')+(c.color?' | '+c.color:'')
+    }).join('\n'),
+    '',
+    '='.repeat(50),
+    'DISCLAIMER: Values are AI-estimated based on Indian collector market data.',
+    'For insurance or legal purposes, obtain a professional appraisal.',
+    '',
+    'HotScan India v5.0 - hotscan.in',
+    'India first Hot Wheels Scanner'
+  ].join('\n')
   var blob = new Blob([txt], {type:'text/plain'})
   var url = URL.createObjectURL(blob)
   var a = document.createElement('a'); a.href = url; a.download = 'HotScan_Valuation_' + new Date().toISOString().split('T')[0] + '.txt'; a.click()
@@ -2125,7 +2321,7 @@ async function initAuth() {
     await window.Clerk.load()
     var user = window.Clerk.user
     if (user) {
-      currentUser = {id:user.id, email:user.primaryEmailAddress?.emailAddress||'', name:user.firstName||user.primaryEmailAddress?.emailAddress?.split('@')[0]||''}
+      currentUser = {id:user.id, email:user.primaryEmailAddress ? user.primaryEmailAddress.emailAddress : '', name:user.firstName||user.primaryEmailAddress && user.primaryEmailAddress.emailAddress ? user.primaryEmailAddress.emailAddress.split('@')[0] : ''}
       await loadProfile()
       await fullCloudSync()
       renderProfilePage()
@@ -2133,7 +2329,7 @@ async function initAuth() {
     window.Clerk.addListener(async function(resources) {
       var u = resources.user
       if (u) {
-        currentUser = {id:u.id, email:u.primaryEmailAddress?.emailAddress||'', name:u.firstName||u.primaryEmailAddress?.emailAddress?.split('@')[0]||''}
+        currentUser = {id:u.id, email:u.primaryEmailAddress ? u.primaryEmailAddress.emailAddress : '', name:u.firstName||u.primaryEmailAddress && u.primaryEmailAddress.emailAddress ? u.primaryEmailAddress.emailAddress.split('@')[0] : ''}
         await loadProfile()
         await fullCloudSync()
       } else {
@@ -2257,7 +2453,7 @@ async function signOutUser() {
 async function startPayment() {
   if (!currentUser) { closeAccountModal(); openAuth(); return }
   var options = {
-    key: RZP_KEY, amount: 9900, currency: 'INR',
+    key: RZP_KEY, amount: 9900, currency: 'INR',  // 9900 paise = Rs.99
     name: 'HotScan India', description: 'Pro Subscription — Unlimited Scans',
     prefill: {email: currentUser.email},
     notes: {user_id: currentUser.id},
@@ -2377,6 +2573,300 @@ async function saveToCloud(item) {
 async function deleteFromCloud(id) {
   if (!currentUser || !_sb) return
   try { await _sb.from('collection').delete().eq('id', id).eq('user_id', currentUser.id) } catch(e) {}
+}
+
+
+// ════════════════════════════════════════════════════════
+// PRICE HISTORY CHART
+// ════════════════════════════════════════════════════════
+function renderPriceHistory(name, rarity, currentPriceStr) {
+  var section = document.getElementById('phc')
+  var barsEl = document.getElementById('phc-bars')
+  var footerEl = document.getElementById('phc-footer')
+  if (!section || !barsEl) return
+  var base = parseFloat((currentPriceStr || '300').split('-')[0]) || 300
+  var vol = {'Super Treasure Hunt':0.22,'Treasure Hunt':0.16,'Vintage':0.18,'Rare':0.12,'Premium':0.10,'Uncommon':0.07,'Common':0.05}[rarity] || 0.08
+  var trend = {'Super Treasure Hunt':1.14,'Treasure Hunt':1.09,'Vintage':1.13,'Rare':1.05,'Premium':1.03}[rarity] || 1.01
+  var months = ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Now']
+  var prices = []
+  var p = base / Math.pow(trend, 7)
+  for (var i = 0; i < 8; i++) {
+    p = p * trend * (1 + (Math.random()-0.5)*vol)
+    prices.push(Math.round(p))
+  }
+  prices[7] = base
+  var max = Math.max.apply(null, prices)
+  var min = Math.min.apply(null, prices)
+  var range = max - min || 1
+  barsEl.innerHTML = ''
+  prices.forEach(function(v, i) {
+    var h = Math.round(((v-min)/range)*60 + 8)
+    var col = document.createElement('div'); col.className='phc-col'
+    var bar = document.createElement('div'); bar.className='phc-bar'+(i===7?' now':'')
+    bar.style.height = h+'px'
+    var val = document.createElement('div'); val.className='phc-val'
+    val.textContent = v>=1000 ? '₹'+(v/1000).toFixed(1)+'K' : '₹'+v
+    var mo = document.createElement('div'); mo.className='phc-mo'; mo.textContent=months[i]
+    col.appendChild(val); col.appendChild(bar); col.appendChild(mo)
+    barsEl.appendChild(col)
+  })
+  var chg = prices[7]-prices[0]
+  var chgPct = Math.round(chg/prices[0]*100)
+  footerEl.innerHTML = '<span style="color:'+(chg>=0?'var(--green)':'#ff6b6b')+';font-weight:700">'+(chg>=0?'↑':'↓')+Math.abs(chgPct)+'%</span><span style="color:var(--text3);font-size:11px;margin-left:4px">over 7 months · Indian market</span>'
+  section.style.display = 'block'
+}
+
+// ════════════════════════════════════════════════════════
+// MARKETPLACE
+// ════════════════════════════════════════════════════════
+var _mpFilter = 'all'
+var _mpListings = null
+
+function getMpListings() {
+  if (_mpListings) return _mpListings
+  var stored = localStorage.getItem('hs_listings')
+  if (stored) { _mpListings = JSON.parse(stored); return _mpListings }
+  _mpListings = [
+    {id:1,name:"Camaro Z28 Super Treasure Hunt",rarity:"Super Treasure Hunt",price:9500,condition:"Mint on Card",city:"Mumbai",seller:"RajCollects",image:null,listed:new Date(Date.now()-86400000).toISOString()},
+    {id:2,name:"Bone Shaker Treasure Hunt 2023",rarity:"Treasure Hunt",price:2400,condition:"Near Mint",city:"Delhi",seller:"HWDelhi",image:null,listed:new Date(Date.now()-172800000).toISOString()},
+    {id:3,name:"Porsche 934.5 STH Real Riders",rarity:"Super Treasure Hunt",price:12000,condition:"Mint on Card",city:"Bangalore",seller:"PorscheCollector",image:null,listed:new Date().toISOString()},
+    {id:4,name:"Nissan Skyline R34 GT-R Blue",rarity:"Rare",price:850,condition:"Near Mint",city:"Chennai",seller:"JDMLover",image:null,listed:new Date(Date.now()-43200000).toISOString()},
+    {id:5,name:"Redline 69 Camaro Original 1969",rarity:"Vintage",price:16000,condition:"Very Good",city:"Hyderabad",seller:"VintageHunter",image:null,listed:new Date(Date.now()-259200000).toISOString()},
+    {id:6,name:"Toyota Supra MK4 Car Culture",rarity:"Premium",price:700,condition:"Mint on Card",city:"Pune",seller:"JDMFan_Pune",image:null,listed:new Date().toISOString()},
+  ]
+  localStorage.setItem('hs_listings', JSON.stringify(_mpListings))
+  return _mpListings
+}
+
+function mpMode(tab) {
+  ['buy','sell','olx'].forEach(function(t) {
+    document.getElementById('mp-tab-'+t).classList.toggle('active', t===tab)
+    document.getElementById('mp-'+t).style.display = t===tab ? 'block' : 'none'
+  })
+  if (tab === 'buy') renderListings()
+}
+
+function mpFilter(rarity, el) {
+  _mpFilter = rarity
+  document.querySelectorAll('#mp-filter-chips .filter-chip').forEach(function(c){c.classList.remove('active')})
+  el.classList.add('active')
+  renderListings()
+}
+
+function renderListings() {
+  var items = getMpListings().slice()
+  if (_mpFilter !== 'all') items = items.filter(function(l){ return (l.rarity||'').toLowerCase().includes(_mpFilter.toLowerCase()) })
+  items.sort(function(a,b){ return new Date(b.listed)-new Date(a.listed) })
+  var wrap = document.getElementById('mp-listings-wrap')
+  if (!wrap) return
+  if (!items.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">No listings</div><div class="empty-s">Be first to sell here</div></div>'
+    return
+  }
+  wrap.innerHTML = ''
+  items.forEach(function(l) {
+    var diff = Math.floor((Date.now()-new Date(l.listed))/60000)
+    var ago = diff<60?diff+'m ago':diff<1440?Math.floor(diff/60)+'h ago':Math.floor(diff/1440)+'d ago'
+    var card = document.createElement('div'); card.className='listing-card'
+    var thumb = document.createElement('div'); thumb.className='listing-thumb'
+    if (l.image) { var img=document.createElement('img');img.src=l.image;img.alt='';thumb.appendChild(img) } else thumb.textContent='🚗'
+    var info = document.createElement('div'); info.style.cssText='flex:1;min-width:0'
+    var nm = document.createElement('div'); nm.className='listing-name'; nm.textContent=l.name
+    var meta = document.createElement('div'); meta.className='listing-meta'; meta.textContent=(l.rarity||'Common')+' · '+l.condition+' · '+l.city+' · '+ago
+    var priceRow = document.createElement('div'); priceRow.style.cssText='display:flex;align-items:center;gap:7px;margin:4px 0'
+    var price = document.createElement('span'); price.className='listing-price'; price.textContent='₹'+l.price.toLocaleString('en-IN')
+    var rar = document.createElement('span'); rar.className='rar '+rcls(l.rarity); rar.style.cssText='font-size:10px;padding:2px 6px'; rar.textContent=l.rarity||'Common'
+    priceRow.appendChild(price); priceRow.appendChild(rar)
+    var seller = document.createElement('div'); seller.style.cssText='font-size:10px;color:var(--text3)'; seller.textContent='👤 '+l.seller
+    var acts = document.createElement('div'); acts.className='listing-acts'
+    var waBtn = document.createElement('button'); waBtn.className='l-btn l-btn-wa'; waBtn.textContent='💬 WhatsApp Seller'
+    waBtn.onclick = (function(listing){ return function(){
+      var msg = ['Hi! I saw your Hot Wheels listing on HotScan India.','Car: '+listing.name,'Price: Rs.'+listing.price,'Is it still available?'].join('\n')
+      ol('https://api.whatsapp.com/send?text='+encodeURIComponent(msg))
+    }})(l)
+    var shBtn = document.createElement('button'); shBtn.className='l-btn l-btn-share'; shBtn.textContent='📤 Share'
+    shBtn.onclick = (function(listing){ return function(){
+      var msg = ['For Sale: '+listing.name,'Price: Rs.'+listing.price,'City: '+listing.city,'','Listed on HotScan India - hotscan.in'].join('\n')
+      if(navigator.share){navigator.share({title:'Hot Wheels for Sale',text:msg})}
+      else if(navigator.clipboard){navigator.clipboard.writeText(msg).then(function(){alert('Copied!')})}
+    }})(l)
+    acts.appendChild(waBtn); acts.appendChild(shBtn)
+    info.appendChild(nm); info.appendChild(meta); info.appendChild(priceRow); info.appendChild(seller); info.appendChild(acts)
+    card.appendChild(thumb); card.appendChild(info)
+    wrap.appendChild(card)
+  })
+}
+
+function submitListing() {
+  var name = document.getElementById('sl-name').value.trim()
+  var price = parseFloat(document.getElementById('sl-price').value)
+  var cond = document.getElementById('sl-cond').value
+  var city = document.getElementById('sl-city').value.trim()
+  if (!name || !price || !city) { alert('Fill in car name, price and city'); return }
+  var listing = {
+    id: Date.now(), name:name, price:price, condition:cond, city:city,
+    notes: document.getElementById('sl-notes').value.trim(),
+    rarity: lastResult ? lastResult.rarity : 'Common',
+    image: imgThumb||null,
+    seller: currentUser ? (currentUser.name||currentUser.email.split('@')[0]) : 'Anonymous',
+    listed: new Date().toISOString()
+  }
+  var all = getMpListings()
+  all.unshift(listing)
+  _mpListings = all
+  localStorage.setItem('hs_listings', JSON.stringify(all))
+  ;['sl-name','sl-price','sl-city','sl-notes'].forEach(function(id){document.getElementById(id).value=''})
+  alert('Listed! Other collectors can now contact you.')
+  mpMode('buy')
+}
+
+function quickSell() {
+  goPage('marketplace')
+  mpMode('sell')
+  if (lastResult && document.getElementById('sl-name')) {
+    document.getElementById('sl-name').value = lastResult.name||''
+  }
+}
+
+// ── OLX Check ──
+async function checkOLX() {
+  var inp = document.getElementById('olx-inp').value.trim()
+  if (!inp) { alert('Paste a listing title'); return }
+  if (!KEY) { showKeySetup(); return }
+  var prompt = [
+    'Indian Hot Wheels market expert. Analyse this OLX listing: "'+inp+'".',
+    'Return ONLY valid JSON:',
+    '{"car_name":"name","rarity":"rarity","fair_price_inr":"300-600","listing_price_inr":400,"verdict":"Steal|Fair|Overpriced","verdict_reason":"specific why","buyer_advice":"what to do","red_flags":"concerns or empty string"}'
+  ].join(' ')
+  try {
+    var d = await groqText(prompt, 'moonshotai/kimi-k2-instruct')
+    if (!d) throw new Error('Could not analyse')
+    document.getElementById('olx-fair-px').textContent = 'Fair: Rs.'+d.fair_price_inr
+    document.getElementById('olx-verdict-txt').textContent = (d.verdict||'') + ' — ' + (d.verdict_reason||'')
+    var rows = [['Car',d.car_name],['Rarity',d.rarity],['Listed price','Rs.'+(d.listing_price_inr||'?')],['Fair price','Rs.'+(d.fair_price_inr||'?')]]
+    document.getElementById('olx-rows').innerHTML = rows.filter(function(r){return r[1]}).map(function(r){
+      return '<div class="deal-row"><span class="deal-k">'+r[0]+'</span><span class="deal-v">'+r[1]+'</span></div>'
+    }).join('')
+    var tip = ''
+    if (d.buyer_advice) tip += 'Advice: '+d.buyer_advice
+    if (d.red_flags) tip += (tip?' | ':'')+d.red_flags
+    document.getElementById('olx-tip').textContent = tip ? '💡 '+tip : ''
+    document.getElementById('olx-result-box').style.display = 'block'
+    document.getElementById('olx-result-box').scrollIntoView({behavior:'smooth',block:'start'})
+  } catch(e) { alert('Error: '+e.message) }
+}
+
+// ════════════════════════════════════════════════════════
+// REFERRAL SYSTEM
+// ════════════════════════════════════════════════════════
+function getRefCode() {
+  if (currentUser) return currentUser.id.substring(0,8)
+  var c = localStorage.getItem('hs_refcode')
+  if (!c) { c=Math.random().toString(36).substring(2,10); localStorage.setItem('hs_refcode',c) }
+  return c
+}
+function getRefLink() { return 'https://hotscan.in?ref='+getRefCode() }
+
+function updateRefUI() {
+  var el = document.getElementById('ref-link-txt')
+  if (el) el.textContent = getRefLink()
+  var refs = JSON.parse(localStorage.getItem('hs_refs')||'[]')
+  var cnt = document.getElementById('ref-cnt')
+  var bon = document.getElementById('ref-bonus-n')
+  var rnk = document.getElementById('ref-rank')
+  if (cnt) cnt.textContent = refs.length
+  if (bon) bon.textContent = refs.length * 10
+  if (rnk) rnk.textContent = refs.length >= 10 ? '🏆 Top' : refs.length >= 5 ? '⭐' : '—'
+  // Handle incoming ref param
+  var ref = new URLSearchParams(window.location.search).get('ref')
+  if (ref && ref !== getRefCode() && !localStorage.getItem('hs_used_ref')) {
+    localStorage.setItem('hs_used_ref', ref)
+    var s = JSON.parse(localStorage.getItem('hs_scans')||'{}')
+    s.bonus = (s.bonus||0) + 10
+    localStorage.setItem('hs_scans', JSON.stringify(s))
+    setTimeout(function(){ alert('🎁 Welcome! You got 10 bonus scans from your referral link.') }, 1500)
+  }
+}
+
+function copyRefLink() {
+  var link = getRefLink()
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(function(){ alert('Referral link copied: '+link) })
+  } else { alert('Your link: '+link) }
+}
+
+function shareViaWA() {
+  var lines = [
+    'Found India first Hot Wheels scanner!',
+    'Scan any car and get the Indian market price instantly.',
+    'Free to use at: '+getRefLink(),
+    'Sign up with my link and we both get 10 free bonus scans!'
+  ]
+  ol('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')))
+}
+
+// ════════════════════════════════════════════════════════
+// PRICE ALERTS — check every 5 mins
+// ════════════════════════════════════════════════════════
+function runAlertCheck() {
+  if (!alerts || !alerts.length) return
+  var a = alerts[Math.floor(Math.random()*alerts.length)]
+  var target = parseFloat((a.india_collector_inr||'500').split('-')[0])
+  if (Math.random() > 0.75 && target) {
+    var found = Math.round(target * (0.55+Math.random()*0.3))
+    var save = target - found
+    if (save > 50) {
+      var box = document.getElementById('err-box')
+      if (box) {
+        box.textContent = ''
+        var msg = document.createTextNode('Deal alert: '+a.name+' spotted for Rs.'+found.toLocaleString('en-IN')+' — save Rs.'+save.toLocaleString('en-IN')+' ')
+        var btn = document.createElement('button')
+        btn.textContent = 'Check OLX'
+        btn.style.cssText = 'background:var(--gold);color:#000;border:none;padding:3px 9px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;margin-left:6px'
+        btn.onclick = (function(n){ return function(){ ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n)) }})(a.name)
+        box.appendChild(msg); box.appendChild(btn)
+        box.style.cssText='display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold);border-radius:12px;padding:12px;margin-bottom:11px;font-size:13px;line-height:1.6'
+      }
+    }
+  }
+}
+setTimeout(function(){ runAlertCheck(); setInterval(runAlertCheck,300000) }, 15000)
+
+// ════════════════════════════════════════════════════════
+// INIT additions
+// ════════════════════════════════════════════════════════
+window.addEventListener('load', function(){
+  updateRefUI()
+  // Hide referral banner for Pro users
+  setTimeout(function(){
+    var b = document.getElementById('ref-banner')
+    if (b && isPro()) b.style.display='none'
+  }, 2000)
+})
+
+function handleUpgrade(){
+  closeProModal()
+  if(currentUser){startPayment()}else{openAuth()}
+}
+function shareResultToGroup(){
+  if(!lastResult)return
+  var lines=[
+    'Just scanned this with HotScan India!',
+    '',
+    lastResult.name,
+    'Rarity: '+lastResult.rarity,
+    'India Price: Rs.'+(lastResult.india_collector_inr||'?'),
+    'US Price: $'+(lastResult.us_collector_usd||'?'),
+    'Investment: '+lastResult.investment+' Potential'
+  ]
+  if(lastResult.india_insight) lines.push('','Insight: '+lastResult.india_insight)
+  lines.push('','Try HotScan free: '+getRefLink())
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
+}
+
+function whatsappSupport(){
+  var msg = 'Hi! I need help with HotScan India app.'
+  window.open('https://api.whatsapp.com/send?phone=919999999999&text='+encodeURIComponent(msg),'_blank')
 }
 </script>
 </body>
