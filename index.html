@@ -1245,7 +1245,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   </div>
 </div>
 
-<script>
+<script>// ── OAuth callback — catches Google redirect token ──
+if(window.location.hash && window.location.hash.includes('access_token')){
+  window.history.replaceState(null,'',window.location.pathname+window.location.search)
+}
+
+
 // ════════════════════════════════════════════════════════
 // CUSTOM AUTH FLOW — Clean UI over Clerk backend
 // ════════════════════════════════════════════════════════
@@ -1434,9 +1439,17 @@ document.addEventListener('keydown', function(e){
 // ── Social Auth ──
 function signInWithGoogle(){
   if(_sb){
+    // Redirect back to the app root — Supabase will handle the token in the hash
+    var redirectTo = window.location.origin + '/'
     _sb.auth.signInWithOAuth({
       provider:'google',
-      options:{redirectTo:window.location.origin}
+      options:{
+        redirectTo: redirectTo,
+        queryParams:{
+          access_type: 'offline',
+          prompt: 'consent'
+        }
+      }
     })
   } else {
     showAuthErr('Google sign-in not configured yet. Use email/password.')
@@ -1465,6 +1478,8 @@ async function sendPasswordReset(){
 
 // ── SUCCESS CELEBRATION — Drifting Hot Wheels cars ──
 function showSuccessCelebration(){
+  // Only show if user just actively signed in (not page reload)
+  if(!currentUser) return
   var overlay = document.getElementById('auth-success-overlay')
   var nameEl = document.getElementById('auth-success-name')
   if(!overlay) return
@@ -1550,6 +1565,15 @@ var DEV_EMAIL = 'mahakfahad07@gmail.com'
 var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'  // update with real link
 var WA_SUPPORT   = 'https://api.whatsapp.com/send?phone=919999999999&text=Hi%20HotScan%20Support'  // update with real number
 var FREE_SCANS = 5
+
+// ── OAuth callback handler — MUST be first ──
+// When Google OAuth completes, Supabase redirects back with #access_token in URL
+// Supabase JS v2 detects this automatically via onAuthStateChange
+// But we need to ensure the hash is processed before anything else
+if (window.location.hash && window.location.hash.includes('access_token')) {
+  // Supabase will pick this up in onAuthStateChange — just clean the URL
+  window.history.replaceState(null, '', window.location.pathname + window.location.search)
+}
 
 // ── State ──
 var KEY        = localStorage.getItem('hs_key') || ''
@@ -2916,22 +2940,11 @@ function ol(url) { if (url && url !== '#') window.open(url, '_blank') }
 async function initAuth(){
   if(!_sb){ updateHeaderUI(); return }
   try{
-    var session = await _sb.auth.getSession()
-    if(session.data && session.data.session && session.data.session.user){
-      var u = session.data.session.user
-      currentUser = {
-        id: u.id,
-        email: u.email || '',
-        name: (u.user_metadata && u.user_metadata.full_name) ? u.user_metadata.full_name :
-              (u.user_metadata && u.user_metadata.name) ? u.user_metadata.name :
-              (u.email ? u.email.split('@')[0] : 'Collector')
-      }
-      await loadProfile()
-      await fullCloudSync()
-      renderProfilePage()
-    }
-
+    // ── Step 1: Set up auth state listener FIRST ──
+    // This fires for: initial session restore, Google OAuth callback, sign in, sign out
     _sb.auth.onAuthStateChange(async function(event, session){
+      console.log('Auth event:', event, session ? session.user.email : 'null')
+
       if(session && session.user){
         var u = session.user
         currentUser = {
@@ -2943,44 +2956,71 @@ async function initAuth(){
         }
         await loadProfile()
         await fullCloudSync()
-        if(event === 'SIGNED_IN'){ closeAuth(); showSuccessCelebration() }
+
+        // Only show celebration on actual sign-in events, not page restore
+        if(event === 'SIGNED_IN'){
+          closeAuth()
+          showSuccessCelebration()
+        }
       } else {
-        currentUser = null; userProfile = null
+        currentUser = null
+        userProfile = null
         localStorage.removeItem('hs_pro')
       }
+
       updateHeaderUI()
       renderProfilePage()
+      updateScanCounter()
     })
+
+    // ── Step 2: Check existing session (restore on page load) ──
+    var sessionResult = await _sb.auth.getSession()
+    if(sessionResult.data && sessionResult.data.session && sessionResult.data.session.user){
+      // onAuthStateChange will fire INITIAL_SESSION — which we handle above
+      // But sometimes it doesn't fire on first load, so handle it here too
+      var u = sessionResult.data.session.user
+      if(!currentUser){
+        currentUser = {
+          id: u.id,
+          email: u.email || '',
+          name: (u.user_metadata && u.user_metadata.full_name) ? u.user_metadata.full_name :
+                (u.user_metadata && u.user_metadata.name) ? u.user_metadata.name :
+                (u.email ? u.email.split('@')[0] : 'Collector')
+        }
+        await loadProfile()
+        await fullCloudSync()
+        renderProfilePage()
+      }
+    }
+
   } catch(e){ console.warn('Auth init error:', e) }
+
   updateHeaderUI()
 }
 
-async function loadProfile() {
-  if (!currentUser || !_sb) return
-  try {
-    // Use the upsert_profile function for clean profile management
-    var res = await _sb.rpc('upsert_profile', {
-      p_id: currentUser.id,
-      p_email: currentUser.email,
-      p_name: currentUser.name || null
-    })
-    if (res.data) {
-      userProfile = res.data
+async function loadProfile(){
+  if(!currentUser||!_sb) return
+  try{
+    // Try RPC first
+    var rpc = await _sb.rpc('upsert_profile',{p_id:currentUser.id,p_email:currentUser.email,p_name:currentUser.name||null})
+    if(rpc.data) userProfile = rpc.data
+  }catch(e){}
+  try{
+    var q = await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+    if(q.data){
+      userProfile = q.data
     } else {
-      // Fallback to direct query
-      var q = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
-      userProfile = q.data
+      await _sb.from('profiles').insert({id:currentUser.id,email:currentUser.email,display_name:currentUser.name||currentUser.email.split('@')[0]})
+      var q2 = await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+      if(q2.data) userProfile = q2.data
     }
-    if (userProfile && userProfile.is_pro) localStorage.setItem('hs_pro', 'true')
-  } catch(e) {
-    console.warn('loadProfile error:', e)
-    // Fallback: try direct upsert
-    try {
-      await _sb.from('profiles').upsert({id:currentUser.id, email:currentUser.email}, {onConflict:'id'})
-      var q = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
-      userProfile = q.data
-    } catch(e2) { console.warn('Profile fallback error:', e2) }
-  }
+    // Auto-grant dev access
+    if(currentUser.email===DEV_EMAIL && userProfile && !userProfile.is_developer){
+      await _sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',currentUser.id)
+      userProfile = Object.assign({},userProfile,{is_pro:true,is_developer:true})
+    }
+    if(userProfile && userProfile.is_pro) localStorage.setItem('hs_pro','true')
+  }catch(e){ console.warn('loadProfile:',e) }
 }
 
 function updateHeaderUI() {
