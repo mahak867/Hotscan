@@ -27,21 +27,66 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:#080808;color:#fff;overflow-x:hidden}
 :root{
-  --red:#e63946;--red2:#c1121f;--gold:#ffd60a;--green:#2dc653;
-  --blue:#4cc9f0;--purple:#c77dff;--orange:#ff9f1c;
-  --surface:#141414;--surface2:#1e1e1e;--surface3:#282828;
-  --border:#252525;--border2:#333;--text2:#aaa;--text3:#555
+  /* Brand */
+  --red:#c8102e;--red-soft:#e8294a;
+  --gold:#c8960c;--green:#2a9d5c;--blue:#2a7dd4;
+  /* Surfaces - true dark, not fake dark */
+  --bg:#0c0c0b;--surface:#111110;--surface2:#171716;--surface3:#1e1e1c;
+  --surface4:#252523;
+  /* Borders */
+  --border:#1f1f1d;--border2:#2a2a28;--border3:#333330;
+  /* Typography */
+  --text:#f0ede8;--text2:#8a8880;--text3:#504e4a;
+  /* Semantic */
+  --ink-gold:#c8960c;--ink-green:#2a9d5c;
 }
 /* ── Layout ── */
-.nav{display:flex;background:#0a0a0a;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
-.nav-item{flex:1;padding:9px 1px 7px;text-align:center;cursor:pointer;font-size:8px;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s}
-.nav-item.active{color:var(--red);border-bottom-color:var(--red)}
-.nav-icon{font-size:16px;display:block;margin-bottom:2px}
-.header{background:linear-gradient(135deg,#e63946,#c1121f);padding:13px 16px 11px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 20px rgba(230,57,70,.5)}
-.logo{width:34px;height:34px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
-.header h1{font-size:17px;font-weight:800}
-.header p{font-size:10px;opacity:.85}
-.page{display:none;padding:13px;max-width:500px;margin:0 auto;padding-bottom:60px}
+.nav{
+  display:flex;
+  background:rgba(12,12,11,.92);
+  border-top:1px solid var(--border);
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  backdrop-filter:blur(16px) saturate(1.2);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.nav-item{
+  flex:1;padding:8px 2px 7px;text-align:center;cursor:pointer;
+  font-size:9px;font-weight:500;color:var(--text3);letter-spacing:.03em;
+  text-transform:uppercase;border-top:1px solid transparent;
+  transition:all .2s;
+}
+.nav-item.active{color:var(--text);border-top-color:var(--red)}
+.nav-icon{font-size:18px;display:block;margin-bottom:3px}
+.nav-icon-new{font-size:16px;display:block;margin-bottom:3px;font-style:normal}
+
+/* push page content above fixed nav */
+.page{padding-bottom:80px !important}
+.app-header{
+  background:rgba(12,12,11,.95);
+  border-bottom:1px solid var(--border);
+  padding:0 16px;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:300;
+  backdrop-filter:blur(16px);
+}
+.app-header-left{display:flex;align-items:baseline;gap:6px}
+.app-wordmark{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+  font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.5px;
+}
+.app-wordmark span{color:var(--red)}
+.app-tagline{
+  font-size:10px;font-weight:500;color:var(--text3);
+  letter-spacing:.1em;text-transform:uppercase;
+}
+.app-user-btn{cursor:pointer}
+.app-user-inner{
+  font-size:12px;font-weight:600;color:var(--text2);
+  padding:6px 14px;border:1px solid var(--border2);border-radius:20px;
+  transition:all .2s;
+}
+.app-user-inner:hover{border-color:var(--border3);color:var(--text)}
+.page{display:none;padding:13px;max-width:500px;margin:0 auto;padding-bottom:85px}
 .page.active{display:block}
 .page-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
 .page-title{font-size:18px;font-weight:800}
@@ -54,34 +99,54 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .btn-gold{background:var(--gold);color:#000;border:none;padding:12px;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;width:100%}
 .btn-red:active,.btn-dark:active,.btn-gold:active{opacity:.85}
 /* ── Key card ── */
-.key-card{background:var(--surface);border:1px solid rgba(255,214,10,.2);border-radius:15px;padding:15px;margin-bottom:11px}
-.key-label{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:3px}
-.key-sub{font-size:12px;color:var(--text3);margin-bottom:11px;line-height:1.5}
+.key-card{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:12px;padding:16px;margin-bottom:11px;
+}
+.key-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.key-sub{font-size:12px;color:var(--text2);margin-bottom:11px;line-height:1.6}
 .key-sub a{color:var(--blue);text-decoration:none}
 .inp{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:#fff;outline:none;margin-bottom:9px}
 .inp:focus{border-color:var(--gold)}
 .inp::placeholder{color:var(--text3)}
 /* ── Mode tabs ── */
 .mode-tabs{display:flex;gap:5px;margin-bottom:12px}
-.mode-tab{flex:1;padding:9px 4px;border-radius:11px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .15s}
-.mode-tab span{font-size:18px}
-.mode-tab.active{background:var(--red);border-color:var(--red);color:#fff}
+.mode-tab{
+  flex:1;padding:9px 4px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--text3);font-size:10px;font-weight:600;cursor:pointer;
+  text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;
+  transition:all .15s;letter-spacing:.02em;
+}
+.mode-tab span{font-size:16px;filter:grayscale(0.6)}
+.mode-tab.active{background:var(--surface3);border-color:var(--border2);color:var(--text)}
+.mode-tab.active span{filter:none}
 /* ── Scan area ── */
-.scan-area{background:var(--surface);border:2px dashed var(--border2);border-radius:17px;margin-bottom:11px;overflow:hidden;transition:border-color .2s}
-.scan-area.has-img{border-style:solid;border-color:var(--red)}
-.scan-ph{padding:24px 16px;text-align:center}
-.scan-emoji{font-size:44px;margin-bottom:8px}
-.scan-title{font-size:16px;font-weight:700;margin-bottom:5px}
-.scan-sub{font-size:12px;color:var(--text2);margin-bottom:17px;line-height:1.5}
+.scan-area{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;margin-bottom:11px;overflow:hidden;
+  transition:border-color .2s;
+}
+.scan-area.has-img{border-color:var(--border2)}
+.scan-ph{padding:32px 16px;text-align:center}
+.scan-emoji{font-size:40px;margin-bottom:10px;filter:grayscale(.3)}
+.scan-title{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.scan-sub{font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.6}
 .scan-btns{display:flex;gap:7px;justify-content:center}
 #preview-wrap{display:none;position:relative}
 #preview-img{width:100%;max-height:250px;object-fit:cover;display:block}
 .retake-btn{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.75);color:#fff;border:none;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer}
 #fc,#fg,#fc-fake,#fg-fake{display:none}
 /* ── Analyze ── */
-.analyze-btn{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;padding:14px;border-radius:13px;font-size:15px;font-weight:800;cursor:pointer;width:100%;margin-bottom:11px;display:none;box-shadow:0 4px 16px rgba(230,57,70,.3)}
+.analyze-btn{
+  background:var(--red);color:#fff;border:none;
+  padding:14px;border-radius:10px;font-size:14px;font-weight:700;
+  cursor:pointer;width:100%;margin-bottom:11px;display:none;
+  letter-spacing:.02em;transition:all .2s;
+}
+.analyze-btn:hover{background:#a00d24}
 .analyze-btn:active{transform:scale(.98)}
-.analyze-btn:disabled{opacity:.6;pointer-events:none}
+.analyze-btn:disabled{opacity:.5;pointer-events:none}
 /* ── Pipeline ── */
 .pipeline{background:var(--surface2);border-radius:13px;padding:14px;margin-bottom:11px;display:none}
 .pip-step{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
@@ -104,20 +169,26 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 /* ── Error ── */
 .err-box{background:#180808;border:1px solid #4a1a1a;border-radius:12px;padding:12px;margin-bottom:11px;display:none;font-size:13px;color:#ff8080;line-height:1.6}
 /* ── Result ── */
-.result{display:none;background:var(--surface);border-radius:17px;overflow:hidden;margin-bottom:11px;border:1px solid var(--border)}
-.r-hero{background:linear-gradient(135deg,#0d0b18,#180b0b);padding:15px;display:flex;gap:12px}
+.result{
+  display:none;background:var(--surface);border-radius:12px;
+  overflow:hidden;margin-bottom:11px;border:1px solid var(--border2);
+}
+.r-hero{background:var(--surface2);padding:16px;display:flex;gap:12px}
 .r-thumb{width:80px;height:80px;border-radius:11px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:34px}
 .r-thumb img{width:100%;height:100%;object-fit:cover}
 .r-name{font-size:16px;font-weight:800;line-height:1.2;margin-bottom:2px}
 .r-series{font-size:11px;color:var(--text2);margin-bottom:7px}
-.rar{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:5px}
-.rc{background:#1e1e1e;color:#666}
-.ru{background:#0a1a0a;color:var(--green)}
-.rr{background:#0a0a1a;color:var(--blue)}
-.rt{background:#1a1000;color:var(--gold)}
-.rs{background:linear-gradient(135deg,#251600,#180000);color:var(--gold);animation:sglow 2s infinite}
-.re{background:#1a0808;color:#ff6b6b}
-@keyframes sglow{0%,100%{box-shadow:0 0 5px rgba(255,214,10,.2)}50%{box-shadow:0 0 15px rgba(255,214,10,.5)}}
+.rar{
+  display:inline-flex;padding:2px 8px;border-radius:3px;
+  font-size:10px;font-weight:700;margin-bottom:5px;
+  font-family:-apple-system,monospace;letter-spacing:.04em;
+}
+.rc{background:var(--surface3);color:var(--text3);border:1px solid var(--border)}
+.ru{background:rgba(42,157,92,.08);color:#4db87a;border:1px solid rgba(42,157,92,.2)}
+.rr{background:rgba(42,125,212,.08);color:#5b9fe8;border:1px solid rgba(42,125,212,.2)}
+.rt{background:rgba(200,150,12,.08);color:#e8b040;border:1px solid rgba(200,150,12,.2)}
+.rs{background:rgba(200,16,46,.08);color:#e8406a;border:1px solid rgba(200,16,46,.25)}
+.re{background:rgba(200,16,46,.15);color:#ff6060;border:1px solid rgba(200,16,46,.3)}
 .conf{font-size:10px;color:var(--text3);margin-top:4px}
 .conf-bar{height:2px;background:var(--surface3);border-radius:2px;margin-top:3px;overflow:hidden}
 .conf-fill{height:100%;background:var(--green);transition:width .5s}
@@ -250,8 +321,19 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 /* ── Auth ── */
 .auth-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;align-items:center;justify-content:center;padding:20px}
 .auth-modal.open{display:flex}
-.auth-box{background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:360px;border:1px solid var(--border2)}
-.auth-btn{width:100%;padding:13px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;border:none;margin-bottom:8px}
+.auth-box{
+  background:var(--surface);border-radius:16px;padding:28px;
+  width:100%;max-width:380px;border:1px solid var(--border2);
+}
+.auth-box-title{
+  font-size:20px;font-weight:800;margin-bottom:4px;
+}
+.auth-box-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.5}
+.auth-btn{
+  width:100%;padding:13px;border-radius:10px;font-size:14px;
+  font-weight:700;cursor:pointer;border:none;margin-bottom:8px;
+  letter-spacing:.01em;
+}
 .auth-btn-primary{background:var(--red);color:#fff}
 .auth-btn-secondary{background:var(--surface2);color:var(--text2)}
 /* ── Profile ── */
@@ -369,31 +451,184 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .olx-verdict{padding:16px;text-align:center}
 .olx-fair-price{font-size:30px;font-weight:800;color:var(--gold);margin-bottom:4px}
 
+
+/* ══ AUTH MODAL — Clean Custom UI ══ */
+.auth-modal{
+  display:none;position:fixed;inset:0;z-index:600;
+  align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
+}
+.auth-modal.open{display:flex}
+
+/* Bottom sheet on mobile, centered on desktop */
+.auth-sheet{
+  background:var(--surface);
+  width:100%;max-width:420px;
+  border-radius:20px 20px 0 0;
+  padding:28px 28px 40px;
+  position:relative;
+  border:1px solid var(--border2);
+  border-bottom:none;
+  animation:slideUp .3s cubic-bezier(.4,0,.2,1);
+}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+
+@media(min-width:500px){
+  .auth-modal{align-items:center}
+  .auth-sheet{
+    border-radius:16px;border:1px solid var(--border2);
+    padding:36px;max-height:90vh;overflow-y:auto;
+  }
+}
+
+.auth-close{
+  position:absolute;top:16px;right:16px;
+  width:32px;height:32px;border-radius:50%;
+  background:var(--surface2);border:none;color:var(--text2);
+  font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.auth-close:hover{background:var(--surface3);color:var(--text)}
+
+.auth-brand{
+  display:flex;align-items:center;gap:8px;margin-bottom:24px;
+}
+.auth-brand-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--red);
+}
+.auth-brand-name{
+  font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.01em;
+}
+
+.auth-headline{
+  font-size:26px;font-weight:800;color:var(--text);
+  letter-spacing:-.02em;margin-bottom:6px;
+}
+.auth-subline{
+  font-size:14px;color:var(--text2);margin-bottom:28px;line-height:1.5;font-weight:300;
+}
+
+/* Social buttons */
+.auth-socials{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.auth-social-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px;border-radius:10px;
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-size:14px;font-weight:600;cursor:pointer;
+  transition:all .15s;letter-spacing:.01em;
+}
+.auth-social-btn:hover{background:var(--surface3);border-color:var(--border3)}
+.auth-social-btn:active{transform:scale(.98)}
+
+.auth-divider{
+  display:flex;align-items:center;gap:12px;margin-bottom:20px;
+}
+.auth-divider::before,.auth-divider::after{
+  content:'';flex:1;height:1px;background:var(--border2);
+}
+.auth-divider span{font-size:12px;color:var(--text3);font-weight:500}
+
+/* Form */
+.auth-field{margin-bottom:14px;position:relative}
+.auth-label{
+  display:block;font-size:12px;font-weight:600;
+  color:var(--text2);margin-bottom:7px;letter-spacing:.02em;
+}
+.auth-input{
+  width:100%;background:var(--surface2);
+  border:1px solid var(--border2);border-radius:10px;
+  padding:12px 14px;font-size:14px;color:var(--text);
+  outline:none;transition:border-color .15s;font-family:inherit;
+}
+.auth-input:focus{border-color:var(--red)}
+.auth-input::placeholder{color:var(--text3)}
+.auth-forgot{
+  position:absolute;right:0;top:0;
+  font-size:11px;color:var(--text3);background:none;border:none;
+  cursor:pointer;font-weight:500;transition:color .15s;padding:0;
+}
+.auth-forgot:hover{color:var(--text)}
+
+.auth-err-msg{
+  font-size:12px;color:#ff6060;margin-bottom:12px;
+  min-height:0;line-height:1.4;
+}
+
+.auth-continue-btn{
+  width:100%;padding:14px;border-radius:10px;
+  background:var(--red);color:#fff;
+  border:none;font-size:15px;font-weight:700;
+  cursor:pointer;letter-spacing:.01em;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .15s;font-family:inherit;margin-bottom:16px;
+}
+.auth-continue-btn:hover{background:#a00d24}
+.auth-continue-btn:active{transform:scale(.98)}
+
+.auth-spinner{
+  width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.auth-switch-row{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:13px;color:var(--text2);
+}
+.auth-switch-btn{
+  background:none;border:none;color:var(--text);font-size:13px;
+  font-weight:600;cursor:pointer;padding:0;transition:color .15s;
+}
+.auth-switch-btn:hover{color:var(--red)}
+
+.auth-legal{
+  font-size:11px;color:var(--text3);text-align:center;
+  margin-top:20px;line-height:1.5;
+}
+
+/* User badge in header */
+.user-avatar-badge{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+}
+.uab-circle{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:var(--text);
+  transition:border-color .15s;
+}
+.uab-circle:hover{border-color:var(--border3)}
+.uab-plan{
+  font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:3px;
+  background:var(--red);color:#fff;letter-spacing:.03em;
+}
+
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="logo">🚗</div>
-  <div><h1>HotScan India</h1><p>Hot Wheels · Live Prices · Rarity</p></div>
-  <div id="user-hdr-btn" class="user-badge" onclick="currentUser?openAccountModal():openAuth()">
-    <div style="background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600">Sign In</div>
+<div class="app-header">
+  <div class="app-header-left">
+    <div class="app-wordmark">HotScan<span>.</span></div>
+    <div class="app-tagline">India</div>
+  </div>
+  <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
+    <div class="app-user-inner">Sign In</div>
   </div>
 </div>
 <div class="nav">
-  <div class="nav-item active" onclick="goPage('scan')"><span class="nav-icon">🔍</span>Scan</div>
-  <div class="nav-item" onclick="goPage('collection')"><span class="nav-icon">🗂</span>Collect</div>
-  <div class="nav-item" onclick="goPage('marketplace')"><span class="nav-icon">🏪</span>Market</div>
-  <div class="nav-item" onclick="goPage('market')"><span class="nav-icon">📈</span>Trends</div>
-  <div class="nav-item" onclick="goPage('profile')"><span class="nav-icon">👤</span>Profile</div>
-  <div class="nav-item" onclick="goPage('more')"><span class="nav-icon">⚙️</span>More</div>
+  <div class="nav-item active" onclick="goPage('scan')"><span class="nav-icon-new">⌖</span>Scan</div>
+  <div class="nav-item" onclick="goPage('collection')"><span class="nav-icon-new">▤</span>Collect</div>
+  <div class="nav-item" onclick="goPage('marketplace')"><span class="nav-icon-new">◈</span>Market</div>
+  <div class="nav-item" onclick="goPage('market')"><span class="nav-icon-new">◎</span>Trends</div>
+  <div class="nav-item" onclick="goPage('profile')"><span class="nav-icon-new">◉</span>Profile</div>
+  <div class="nav-item" onclick="goPage('more')"><span class="nav-icon-new">⋯</span>More</div>
 </div>
 
 <!-- ═══ SCAN PAGE ═══ -->
 <div class="page active" id="page-scan">
-  <div class="install-banner" id="ib">
-    <div style="font-size:20px;flex-shrink:0">📲</div>
-    <div class="ib-txt"><strong>Add to Home Screen</strong>Share → "Add to Home Screen" for the full app</div>
-  </div>
+<!-- install banner removed -->
   <div class="key-card" id="key-card">
     <div class="key-label">🔑 Free Groq API Key Required</div>
     <div class="key-sub">Get free at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — 2 min. Stays on your device only.</div>
@@ -481,7 +716,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <input type="file" id="fg-fake" accept="image/*">
   </div>
   <!-- Analyze button -->
-  <button class="analyze-btn" id="analyze-btn" onclick="runAnalyze()">🔎 Identify &amp; Get Live Prices</button>
+  <button class="analyze-btn" id="analyze-btn" onclick="runAnalyze()">Identify this Car</button>
   <!-- Pipeline -->
   <div class="pipeline" id="pipeline">
     <div class="pip-step"><div class="pip-ic">👁</div><div class="pip-lbl">Identifying car<div class="pip-sub">Llama 4 Scout vision</div></div><div class="pip-st" id="ps1">Waiting</div></div>
@@ -565,7 +800,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 <!-- ═══ COLLECTION PAGE ═══ -->
 <div class="page" id="page-collection">
-  <div class="page-hdr"><div class="page-title">My Collection</div><button class="btn-red" onclick="goPage('scan')" style="padding:7px 12px;font-size:12px">+ Add</button></div>
+  <div class="page-hdr"><div class="page-title">Collection</div><button class="btn-red" onclick="goPage('scan')" style="padding:7px 12px;font-size:12px">+ Add</button></div>
   <div class="val-card">
     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
@@ -585,7 +820,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 <!-- ═══ HUNT PAGE ═══ -->
 <div class="page" id="page-hunt">
-  <div class="page-hdr"><div class="page-title">Hunt Mode 🎯</div></div>
+  <div class="page-hdr"><div class="page-title">Hunt Mode</div></div>
   <div class="card"><div class="card-title">How to use</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Select a series → see every car, its Indian price, and what to prioritise. Check off cars as you find them at stores.</div></div>
   <div class="hunt-series">
     <div class="hunt-series-item selected" id="hs-mainline" onclick="selectSeries('mainline',this)"><div class="hunt-ic">🚗</div><div class="hunt-nm">Mainline 2024</div><div class="hunt-sb">All basic cars</div></div>
@@ -598,7 +833,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 <!-- ═══ MARKETPLACE PAGE ═══ -->
 <div class="page" id="page-marketplace">
-  <div class="page-hdr"><div class="page-title">Marketplace 🏪</div></div>
+  <div class="page-hdr"><div class="page-title">Marketplace</div></div>
 
   <!-- Referral growth banner -->
   <div class="gbanner" id="ref-banner">
@@ -680,7 +915,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 <!-- ═══ MARKET PAGE ═══ -->
 <div class="page" id="page-market">
-  <div class="page-hdr"><div class="page-title">Market 📊</div></div>
+  <div class="page-hdr"><div class="page-title">Trends</div></div>
 
   <!-- Condition Guide -->
   <div class="card"><div class="card-title">🔍 Condition Grading Guide</div>
@@ -762,7 +997,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 <!-- ═══ PROFILE PAGE ═══ -->
 <div class="page" id="page-profile">
-  <div class="page-hdr"><div class="page-title">My Profile</div></div>
+  <div class="page-hdr"><div class="page-title">Profile</div></div>
   <!-- Guest state -->
   <div id="profile-guest" style="display:none">
     <div style="background:var(--surface);border-radius:16px;padding:30px 20px;text-align:center;border:1px solid var(--border);margin-bottom:12px">
@@ -868,7 +1103,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 <!-- ═══ ALERTS PAGE (hidden, accessible via collection) ═══ -->
 <div class="page" id="page-alerts">
-  <div class="page-hdr"><div class="page-title">Deal Alerts 🔔</div><button class="clr-btn" onclick="clearAlerts()">Clear</button></div>
+  <div class="page-hdr"><div class="page-title">Deal Alerts</div><button class="clr-btn" onclick="clearAlerts()">Clear</button></div>
   <div class="card"><div class="card-title">How it works</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Scan a car → tap Alert → we add it to your watchlist with direct OLX and Instagram search links.</div></div>
   <div id="alerts-list"></div>
 </div>
@@ -893,11 +1128,75 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   </div>
 </div>
 
-<!-- Auth Modal (Clerk) -->
+<!-- Auth Modal — Clean Custom UI over Clerk -->
 <div class="auth-modal" id="auth-modal">
-  <div class="auth-box">
-    <div id="clerk-auth-container" style="min-height:200px;display:flex;align-items:center;justify-content:center"><div style="color:var(--text3);font-size:13px">Loading...</div></div>
-    <button class="auth-btn auth-btn-secondary" style="margin-top:12px" onclick="closeAuth()">Maybe later</button>
+  <div class="auth-sheet">
+    <!-- Close -->
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+
+    <!-- Branding -->
+    <div class="auth-brand">
+      <div class="auth-brand-dot"></div>
+      <div class="auth-brand-name">HotScan India</div>
+    </div>
+
+    <h2 class="auth-headline">Sign in</h2>
+    <p class="auth-subline">Save your collection. Sync across devices.</p>
+
+    <!-- Social buttons -->
+    <div class="auth-socials">
+      <button class="auth-social-btn" onclick="signInWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button class="auth-social-btn" onclick="signInWithApple()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        Continue with Apple
+      </button>
+    </div>
+
+    <div class="auth-divider"><span>or</span></div>
+
+    <!-- Email form -->
+    <div class="auth-email-form" id="auth-email-form">
+      <div class="auth-field">
+        <label class="auth-label">Email address</label>
+        <input class="auth-input" type="email" id="auth-email-inp" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="auth-field" id="auth-pass-field" style="display:none">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" type="password" id="auth-pass-inp" placeholder="••••••••" autocomplete="current-password">
+        <button class="auth-forgot" onclick="sendPasswordReset()">Forgot password?</button>
+      </div>
+      <div class="auth-err-msg" id="auth-err-msg"></div>
+      <button class="auth-continue-btn" id="auth-continue-btn" onclick="authContinue()">
+        <span id="auth-btn-txt">Continue</span>
+        <div class="auth-spinner" id="auth-spinner" style="display:none"></div>
+      </button>
+      <div class="auth-switch-row">
+        <span id="auth-switch-txt">No account?</span>
+        <button class="auth-switch-btn" id="auth-switch-btn" onclick="toggleAuthMode()">Sign up</button>
+      </div>
+    </div>
+
+    <!-- Verify email step -->
+    <div id="auth-verify-step" style="display:none;text-align:center;padding:20px 0">
+      <div style="font-size:48px;margin-bottom:16px">📬</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:8px">Check your email</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">We sent a verification link to your email. Click it to activate your account, then come back and sign in.</div>
+      <button class="auth-continue-btn" style="margin-top:20px" onclick="closeAuth()">Got it</button>
+    </div>
+
+    <div class="auth-legal">By continuing you agree to our Terms of Service</div>
+  </div>
+</div>
+
+<!-- SUCCESS CELEBRATION OVERLAY -->
+<div id="auth-success-overlay" style="display:none;position:fixed;inset:0;z-index:9999;pointer-events:none">
+  <canvas id="cars-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+  <div id="auth-success-msg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+    <div style="font-size:18px;font-weight:800;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.8)">Welcome back</div>
+    <div id="auth-success-name" style="font-size:28px;font-weight:900;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.8)"></div>
   </div>
 </div>
 
@@ -941,6 +1240,257 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 <script>
 // ════════════════════════════════════════════════════════
+// CUSTOM AUTH FLOW — Clean UI over Clerk backend
+// ════════════════════════════════════════════════════════
+var _authMode = 'signin' // 'signin' | 'signup'
+var _authStep = 'email'  // 'email' | 'password'
+var _authEmail = ''
+
+function openAuth(){
+  _authMode = 'signin'
+  _authStep = 'email'
+  _authEmail = ''
+  document.getElementById('auth-modal').classList.add('open')
+  document.body.style.overflow = 'hidden'
+  resetAuthForm()
+  setTimeout(function(){ var inp=document.getElementById('auth-email-inp'); if(inp) inp.focus() }, 300)
+}
+
+function closeAuth(){
+  document.getElementById('auth-modal').classList.remove('open')
+  document.body.style.overflow = ''
+  // Also unmount Clerk if it was mounted
+  try{
+    var c=document.getElementById('clerk-auth-container')
+    if(c && window.Clerk) window.Clerk.unmountSignIn(c)
+  }catch(e){}
+}
+
+function resetAuthForm(){
+  document.getElementById('auth-email-inp').value = ''
+  document.getElementById('auth-pass-inp').value = ''
+  document.getElementById('auth-pass-field').style.display = 'none'
+  document.getElementById('auth-err-msg').textContent = ''
+  document.getElementById('auth-verify-step').style.display = 'none'
+  document.getElementById('auth-email-form').style.display = 'block'
+  document.getElementById('auth-btn-txt').textContent = 'Continue'
+  document.getElementById('auth-spinner').style.display = 'none'
+  document.getElementById('auth-continue-btn').disabled = false
+  updateAuthSwitchUI()
+}
+
+function toggleAuthMode(){
+  _authMode = _authMode === 'signin' ? 'signup' : 'signin'
+  _authStep = 'email'
+  document.getElementById('auth-pass-field').style.display = 'none'
+  document.getElementById('auth-err-msg').textContent = ''
+  document.getElementById('auth-btn-txt').textContent = 'Continue'
+  updateAuthSwitchUI()
+}
+
+function updateAuthSwitchUI(){
+  var switchTxt = document.getElementById('auth-switch-txt')
+  var switchBtn = document.getElementById('auth-switch-btn')
+  var headline = document.querySelector('.auth-headline')
+  if(_authMode === 'signin'){
+    if(switchTxt) switchTxt.textContent = 'No account?'
+    if(switchBtn) switchBtn.textContent = 'Sign up free'
+    if(headline) headline.textContent = 'Sign in'
+  } else {
+    if(switchTxt) switchTxt.textContent = 'Already have an account?'
+    if(switchBtn) switchBtn.textContent = 'Sign in'
+    if(headline) headline.textContent = 'Create account'
+  }
+}
+
+function setAuthLoading(loading){
+  var btn = document.getElementById('auth-continue-btn')
+  var txt = document.getElementById('auth-btn-txt')
+  var spin = document.getElementById('auth-spinner')
+  btn.disabled = loading
+  txt.style.display = loading ? 'none' : 'block'
+  spin.style.display = loading ? 'block' : 'none'
+}
+
+function showAuthErr(msg){
+  document.getElementById('auth-err-msg').textContent = msg
+}
+
+async function authContinue(){
+  var email = document.getElementById('auth-email-inp').value.trim()
+  if(!email){ showAuthErr('Enter your email address'); return }
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showAuthErr('Enter a valid email'); return }
+
+  if(_authStep === 'email'){
+    // Move to password step
+    _authEmail = email
+    _authStep = 'password'
+    document.getElementById('auth-pass-field').style.display = 'block'
+    document.getElementById('auth-btn-txt').textContent = _authMode === 'signin' ? 'Sign In' : 'Create Account'
+    document.getElementById('auth-err-msg').textContent = ''
+    setTimeout(function(){ document.getElementById('auth-pass-inp').focus() }, 100)
+    return
+  }
+
+  // Password step — do auth
+  var pass = document.getElementById('auth-pass-inp').value
+  if(!pass){ showAuthErr('Enter your password'); return }
+  if(_authMode === 'signup' && pass.length < 6){ showAuthErr('Password must be at least 6 characters'); return }
+  if(!_sb){ showAuthErr('Auth service unavailable. Please try Google sign in.'); return }
+
+  setAuthLoading(true)
+  showAuthErr('')
+
+  try{
+    var result
+    if(_authMode === 'signin'){
+      result = await _sb.auth.signInWithPassword({email:email, password:pass})
+    } else {
+      result = await _sb.auth.signUp({
+        email:email, password:pass,
+        options:{emailRedirectTo:'https://hotscan.in'}
+      })
+    }
+
+    if(result.error){
+      var msg = result.error.message
+      if(msg.includes('Invalid login')) msg = 'Wrong email or password'
+      if(msg.includes('already registered')) msg = 'Account exists. Sign in instead.'
+      if(msg.includes('Email not confirmed')) msg = 'Check your email to verify your account first'
+      showAuthErr(msg)
+      setAuthLoading(false)
+      return
+    }
+
+    if(_authMode === 'signup' && !result.data.session){
+      // Email verification needed
+      setAuthLoading(false)
+      document.getElementById('auth-email-form').style.display = 'none'
+      document.getElementById('auth-verify-step').style.display = 'block'
+      return
+    }
+
+    // Success!
+    setAuthLoading(false)
+    closeAuth()
+    showSuccessCelebration()
+
+  } catch(e){
+    showAuthErr('Something went wrong. Try again.')
+    setAuthLoading(false)
+  }
+}
+
+// Handle Enter key
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    var modal = document.getElementById('auth-modal')
+    if(modal && modal.classList.contains('open')) authContinue()
+  }
+})
+
+// ── Social Auth ──
+function signInWithGoogle(){
+  if(!_sb){ alert('Google sign-in requires Supabase auth setup'); return }
+  _sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{redirectTo: window.location.origin}
+  })
+}
+
+function signInWithApple(){
+  if(!_sb){ alert('Apple sign-in requires Supabase auth setup'); return }
+  _sb.auth.signInWithOAuth({
+    provider:'apple',
+    options:{redirectTo: window.location.origin}
+  })
+}
+
+async function sendPasswordReset(){
+  var email = document.getElementById('auth-email-inp').value.trim() || _authEmail
+  if(!email){ showAuthErr('Enter your email first'); return }
+  if(!_sb){ showAuthErr('Auth unavailable'); return }
+  var r = await _sb.auth.resetPasswordForEmail(email,{redirectTo:'https://hotscan.in'})
+  if(r.error){ showAuthErr(r.error.message) }
+  else { showAuthErr(''); document.getElementById('auth-err-msg').style.color='var(--green)'; document.getElementById('auth-err-msg').textContent = 'Reset link sent! Check your inbox.' }
+}
+
+// ── SUCCESS CELEBRATION — Drifting Hot Wheels cars ──
+function showSuccessCelebration(){
+  var overlay = document.getElementById('auth-success-overlay')
+  var nameEl = document.getElementById('auth-success-name')
+  if(!overlay) return
+
+  if(nameEl) nameEl.textContent = currentUser ? (currentUser.name || currentUser.email.split('@')[0]) : ''
+
+  overlay.style.display = 'block'
+  overlay.style.background = 'rgba(0,0,0,.75)'
+
+  var canvas = document.getElementById('cars-canvas')
+  if(!canvas) return
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
+  var ctx = canvas.getContext('2d')
+
+  // Car emojis to float across
+  var emojis = ['🚗','🏎️','🚕','🏁','🚗','🏎️','🚗']
+  var cars = []
+  for(var i=0; i<18; i++){
+    cars.push({
+      x: -100 - Math.random()*window.innerWidth,
+      y: Math.random()*window.innerHeight,
+      speed: 3 + Math.random()*5,
+      size: 20 + Math.random()*28,
+      emoji: emojis[Math.floor(Math.random()*emojis.length)],
+      opacity: 0.4 + Math.random()*0.6,
+      wave: Math.random()*Math.PI*2,
+      waveSpeed: 0.02 + Math.random()*0.03,
+    })
+  }
+
+  var frame = 0
+  var startTime = Date.now()
+  var duration = 2800
+
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    var elapsed = Date.now() - startTime
+    var progress = elapsed / duration
+
+    if(progress >= 1){
+      overlay.style.display = 'none'
+      return
+    }
+
+    // Fade out near end
+    var alpha = progress > 0.7 ? 1 - (progress-0.7)/0.3 : 1
+
+    cars.forEach(function(car){
+      car.x += car.speed
+      car.wave += car.waveSpeed
+      var yOffset = Math.sin(car.wave) * 12
+
+      ctx.save()
+      ctx.globalAlpha = car.opacity * alpha
+      ctx.font = car.size + 'px serif'
+      ctx.fillText(car.emoji, car.x, car.y + yOffset)
+      ctx.restore()
+
+      // Wrap around
+      if(car.x > canvas.width + 100){
+        car.x = -120
+        car.y = Math.random()*canvas.height
+      }
+    })
+
+    requestAnimationFrame(animate)
+  }
+  animate()
+}
+
+// ── Override openAccountModal to show cleaner modal ──
+
+// ════════════════════════════════════════════════════════
 // HOTSCAN INDIA v4.0 — Clean single script
 // ════════════════════════════════════════════════════════
 
@@ -950,7 +1500,7 @@ var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 var RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
 var DEV_EMAIL = 'mahakfahad07@gmail.com'
 var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'  // update with real link
-var WA_SUPPORT   = 'https://api.whatsapp.com/send?phone=918089558314&text=Hi%20HotScan%20Support'  // update with real number
+var WA_SUPPORT   = 'https://api.whatsapp.com/send?phone=919999999999&text=Hi%20HotScan%20Support'  // update with real number
 var FREE_SCANS = 5
 
 // ── State ──
@@ -2315,32 +2865,63 @@ function ol(url) { if (url && url !== '#') window.open(url, '_blank') }
 // ════════════════════════════════════════════════════════
 // AUTH — Clerk + Supabase
 // ════════════════════════════════════════════════════════
-async function initAuth() {
-  try {
-    if (!window.Clerk) { setTimeout(initAuth, 500); return }
-    await window.Clerk.load()
-    var user = window.Clerk.user
-    if (user) {
-      currentUser = {id:user.id, email:user.primaryEmailAddress ? user.primaryEmailAddress.emailAddress : '', name:user.firstName||user.primaryEmailAddress && user.primaryEmailAddress.emailAddress ? user.primaryEmailAddress.emailAddress.split('@')[0] : ''}
-      await loadProfile()
-      await fullCloudSync()
-      renderProfilePage()
-    }
-    window.Clerk.addListener(async function(resources) {
-      var u = resources.user
-      if (u) {
-        currentUser = {id:u.id, email:u.primaryEmailAddress ? u.primaryEmailAddress.emailAddress : '', name:u.firstName||u.primaryEmailAddress && u.primaryEmailAddress.emailAddress ? u.primaryEmailAddress.emailAddress.split('@')[0] : ''}
+async function initAuth(){
+  // Use Supabase auth as primary (custom UI) + Clerk as fallback
+  if(_sb){
+    try{
+      var session = await _sb.auth.getSession()
+      if(session.data && session.data.session && session.data.session.user){
+        var u = session.data.session.user
+        currentUser = {
+          id: u.id,
+          email: u.email || '',
+          name: u.user_metadata && u.user_metadata.full_name ? u.user_metadata.full_name : (u.email ? u.email.split('@')[0] : 'Collector')
+        }
         await loadProfile()
         await fullCloudSync()
-      } else {
-        currentUser = null; userProfile = null
-        localStorage.removeItem('hs_pro')
+        renderProfilePage()
       }
-      updateHeaderUI()
-      renderProfilePage()
-      closeAuth()
-    })
-  } catch(e) { console.warn('Clerk init error:', e) }
+
+      _sb.auth.onAuthStateChange(async function(event, session){
+        if(session && session.user){
+          var u = session.user
+          currentUser = {
+            id: u.id,
+            email: u.email || '',
+            name: u.user_metadata && u.user_metadata.full_name ? u.user_metadata.full_name : (u.email ? u.email.split('@')[0] : 'Collector')
+          }
+          await loadProfile()
+          await fullCloudSync()
+          if(event === 'SIGNED_IN') showSuccessCelebration()
+        } else {
+          currentUser = null; userProfile = null
+          localStorage.removeItem('hs_pro')
+        }
+        updateHeaderUI()
+        renderProfilePage()
+        closeAuth()
+      })
+    }catch(e){ console.warn('Supabase auth error:', e) }
+  }
+
+  // Also try Clerk as secondary
+  try{
+    if(window.Clerk){
+      await window.Clerk.load()
+      var clerkUser = window.Clerk.user
+      if(clerkUser && !currentUser){
+        currentUser = {
+          id: clerkUser.id,
+          email: clerkUser.primaryEmailAddress ? clerkUser.primaryEmailAddress.emailAddress : '',
+          name: clerkUser.firstName || clerkUser.username || 'Collector'
+        }
+        await loadProfile()
+        await fullCloudSync()
+        renderProfilePage()
+      }
+    }
+  }catch(e){ console.warn('Clerk init error:', e) }
+
   updateHeaderUI()
 }
 
@@ -2378,10 +2959,10 @@ function updateHeaderUI() {
   btn.onclick = currentUser ? openAccountModal : openAuth
   if (currentUser) {
     var initials = (currentUser.name || currentUser.email || '?')[0].toUpperCase()
-    var planIcon = userProfile && userProfile.is_developer ? '👑' : userProfile && userProfile.is_pro ? '⭐' : ''
-    btn.innerHTML = '<div class="user-avatar">' + initials + '</div><div class="user-name">' + planIcon + ' ' + (currentUser.name || currentUser.email.split('@')[0]) + '</div>'
+    var planLabel = userProfile && userProfile.is_developer ? 'Dev' : userProfile && userProfile.is_pro ? 'Pro' : ''
+    btn.innerHTML = '<div style="display:flex;align-items:center;gap:7px;cursor:pointer"><div style="width:28px;height:28px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text)">' + initials + '</div>' + (planLabel ? '<div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:var(--red);color:#fff;letter-spacing:.03em">' + planLabel + '</div>' : '') + '</div>'
   } else {
-    btn.innerHTML = '<div style="background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600">Sign In</div>'
+    btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
   }
 }
 
