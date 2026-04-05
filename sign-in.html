@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HotScan India — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script async crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_bmljZS1mb3gtOS5jbGVyay5hY2NvdW50cy5kZXYk"
+  src="https://nice-fox-9.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js">
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1916;--ink2:#2e2c28;--ink3:#454340;
+  --paper:#faf8f4;--paper2:#f2efe8;--paper3:#e8e4db;
+  --red:#c8102e;--red-dark:#9e0c22;
+  --muted:#8a8680;--muted2:#b8b4ae;
+  --rule:#dedad2;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',monospace;
+}
+html,body{height:100%;font-family:var(--sans);background:var(--paper);color:var(--ink);overflow-x:hidden}
+
+/* ── LAYOUT ── */
+.page{display:grid;grid-template-columns:1fr 440px;min-height:100vh}
+@media(max-width:800px){.page{grid-template-columns:1fr}}
+
+/* ── LEFT PANEL ── */
+.left{
+  background:var(--ink);
+  padding:48px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;overflow:hidden;
+}
+@media(max-width:800px){.left{display:none}}
+
+/* Subtle grid texture */
+.left::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+}
+
+.left-logo{
+  display:flex;align-items:center;gap:10px;
+  position:relative;z-index:1;
+}
+.left-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+.left-logo-txt{
+  font-family:var(--serif);font-size:18px;font-weight:700;
+  color:#f0ede8;letter-spacing:-.02em;
+}
+
+.left-center{position:relative;z-index:1;max-width:400px}
+.left-overline{
+  font-family:var(--mono);font-size:10px;font-weight:400;
+  color:rgba(240,237,232,.3);letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:24px;display:flex;align-items:center;gap:10px;
+}
+.left-overline::before{content:'';width:24px;height:1px;background:var(--red)}
+.left-headline{
+  font-family:var(--serif);
+  font-size:clamp(36px,4vw,52px);
+  font-weight:900;line-height:1.05;
+  color:#f0ede8;letter-spacing:-.02em;
+  margin-bottom:20px;
+}
+.left-headline em{color:var(--red);font-style:italic}
+.left-body{
+  font-size:15px;color:rgba(240,237,232,.45);
+  line-height:1.75;font-weight:300;margin-bottom:40px;
+}
+
+.left-features{display:flex;flex-direction:column;gap:0}
+.feat-row{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.feat-row:first-child{border-top:1px solid rgba(255,255,255,.06)}
+.feat-num{
+  font-family:var(--mono);font-size:10px;
+  color:rgba(240,237,232,.2);width:24px;flex-shrink:0;
+}
+.feat-txt{font-size:14px;color:rgba(240,237,232,.55);font-weight:300}
+
+.left-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:rgba(255,255,255,.06);
+  position:relative;z-index:1;
+}
+.stat-cell{background:rgba(12,12,11,.6);padding:20px 16px}
+.stat-val{
+  font-family:var(--serif);font-size:28px;font-weight:900;
+  color:#f0ede8;line-height:1;margin-bottom:4px;
+}
+.stat-val span{color:var(--red)}
+.stat-lbl{font-family:var(--mono);font-size:9px;color:rgba(240,237,232,.3);letter-spacing:.1em;text-transform:uppercase}
+
+/* ── RIGHT PANEL ── */
+.right{
+  background:var(--paper);
+  padding:0;
+  display:flex;flex-direction:column;
+  border-left:1px solid var(--rule);
+}
+
+.right-header{
+  padding:24px 36px;
+  border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.rh-logo{
+  font-family:var(--serif);font-size:17px;font-weight:700;
+  color:var(--ink);letter-spacing:-.02em;display:flex;align-items:center;gap:8px;
+}
+.rh-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--red)}
+.rh-link{
+  font-size:13px;color:var(--muted);text-decoration:none;
+  border-bottom:1px solid transparent;padding-bottom:1px;
+  transition:all .2s;font-weight:400;
+}
+.rh-link:hover{color:var(--ink);border-bottom-color:var(--ink)}
+
+.right-body{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:40px 36px;
+}
+@media(max-width:800px){.right-body{padding:32px 24px}}
+
+/* Tabs */
+.auth-tabs{display:flex;gap:0;margin-bottom:32px;border-bottom:1px solid var(--rule)}
+.auth-tab{
+  padding:10px 0;margin-right:28px;
+  font-size:14px;font-weight:500;color:var(--muted);
+  cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-1px;transition:all .2s;
+}
+.auth-tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+
+/* Form elements */
+.form-field{margin-bottom:18px}
+.form-label{
+  display:block;font-size:11px;font-weight:600;
+  color:var(--ink2);margin-bottom:7px;letter-spacing:.03em;
+  text-transform:uppercase;
+}
+.form-row-label{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;
+}
+.form-input{
+  width:100%;background:var(--paper2);
+  border:1px solid var(--rule);border-radius:8px;
+  padding:12px 14px;font-size:14px;color:var(--ink);
+  outline:none;transition:all .15s;
+  font-family:var(--sans);
+}
+.form-input:focus{border-color:var(--ink2);background:var(--paper);box-shadow:0 0 0 3px rgba(26,25,22,.06)}
+.form-input::placeholder{color:var(--muted2)}
+
+.forgot-link{
+  font-size:12px;color:var(--muted);cursor:pointer;
+  text-decoration:none;border-bottom:1px solid transparent;
+  transition:all .15s;font-weight:400;
+}
+.forgot-link:hover{color:var(--ink);border-bottom-color:var(--rule)}
+
+/* Submit button */
+.form-submit{
+  width:100%;padding:14px;border-radius:8px;
+  background:var(--ink);color:var(--paper);
+  border:none;font-size:14px;font-weight:600;
+  cursor:pointer;letter-spacing:.02em;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .2s;font-family:var(--sans);
+  margin-bottom:14px;
+}
+.form-submit:hover{background:var(--red)}
+.form-submit:active{transform:scale(.99)}
+.form-submit:disabled{opacity:.5;pointer-events:none}
+
+/* Google button */
+.google-btn{
+  width:100%;padding:12px;border-radius:8px;
+  background:var(--paper);border:1px solid var(--rule);
+  color:var(--ink);font-size:14px;font-weight:500;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .15s;font-family:var(--sans);
+  margin-bottom:8px;
+}
+.google-btn:hover{background:var(--paper2);border-color:var(--paper3)}
+
+/* Divider */
+.divider{
+  display:flex;align-items:center;gap:12px;
+  margin:16px 0;
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--rule)}
+.divider span{font-size:12px;color:var(--muted2);font-weight:400}
+
+/* Error/success */
+.form-msg{
+  font-size:13px;padding:11px 14px;border-radius:7px;
+  margin-bottom:16px;display:none;line-height:1.4;
+}
+.form-msg.show{display:block}
+.form-msg.err{background:#fef1f2;border:1px solid #fcd4da;color:#9b1c1c}
+.form-msg.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d}
+
+/* Spinner */
+.spinner{
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid rgba(250,248,244,.3);border-top-color:var(--paper);
+  animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.right-footer{
+  padding:20px 36px;border-top:1px solid var(--rule);
+  font-size:11px;color:var(--muted2);line-height:1.6;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- LEFT PANEL -->
+  <div class="left">
+    <div class="left-logo">
+      <div class="left-logo-dot"></div>
+      <div class="left-logo-txt">HotScan India</div>
+    </div>
+    <div class="left-center">
+      <div class="left-overline">India's First · Est. 2025</div>
+      <h1 class="left-headline">
+        The intelligence<br>
+        layer for <em>Indian</em><br>
+        collectors.
+      </h1>
+      <p class="left-body">
+        Point your camera at any Hot Wheels car and get its Indian market value, rarity grade, and 6-month price history in under 10 seconds.
+      </p>
+      <div class="left-features">
+        <div class="feat-row"><div class="feat-num">01</div><div class="feat-txt">AI photo identification — any car, any angle</div></div>
+        <div class="feat-row"><div class="feat-num">02</div><div class="feat-txt">Live Indian prices from OLX, Instagram &amp; retailers</div></div>
+        <div class="feat-row"><div class="feat-num">03</div><div class="feat-txt">Fake detector — verify before you buy</div></div>
+        <div class="feat-row"><div class="feat-num">04</div><div class="feat-txt">Cloud collection — sync across all devices</div></div>
+        <div class="feat-row"><div class="feat-num">05</div><div class="feat-txt">Collector marketplace — buy and sell directly</div></div>
+      </div>
+    </div>
+    <div class="left-stats">
+      <div class="stat-cell">
+        <div class="stat-val"><span>2.5</span>M</div>
+        <div class="stat-lbl">Collectors</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val">₹<span>247</span>Cr</div>
+        <div class="stat-lbl">Market TAM</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val"><span>0</span></div>
+        <div class="stat-lbl">Competitors</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right">
+    <div class="right-header">
+      <div class="rh-logo"><div class="rh-logo-dot"></div>HotScan</div>
+      <a href="/" class="rh-link">← Back to app</a>
+    </div>
+
+    <div class="right-body">
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</div>
+        <div class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</div>
+      </div>
+
+      <!-- Message -->
+      <div class="form-msg" id="form-msg"></div>
+
+      <!-- SIGN IN VIEW -->
+      <div id="view-signin">
+        <!-- Google -->
+        <button class="google-btn" onclick="doGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <div class="divider"><span>or</span></div>
+
+        <div class="form-field">
+          <label class="form-label">Email address</label>
+          <input class="form-input" type="email" id="si-email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="form-field">
+          <div class="form-row-label">
+            <label class="form-label" style="margin:0">Password</label>
+            <a class="forgot-link" onclick="switchTab('forgot')">Forgot password?</a>
+          </div>
+          <input class="form-input" type="password" id="si-pass" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="form-submit" id="btn-signin" onclick="doSignIn()">
+          <span id="si-btn-txt">Sign In</span>
+          <div class="spinner" id="si-spin" style="display:none"></div>
+        </button>
+        <div style="text-align:center;font-size:13px;color:var(--muted)">
+          No account? <a onclick="switchTab('signup')" style="color:var(--ink);font-weight:600;cursor:pointer;text-decoration:underline">Create one free →</a>
+        </div>
+      </div>
+
+      <!-- SIGN UP VIEW -->
+      <div id="view-signup" style="display:none">
+        <button class="google-btn" onclick="doGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Sign up with Google
+        </button>
+        <div class="divider"><span>or</span></div>
+        <div class="form-field">
+          <label class="form-label">Email address</label>
+          <input class="form-input" type="email" id="su-email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="su-pass" placeholder="Minimum 8 characters" autocomplete="new-password">
+        </div>
+        <button class="form-submit" id="btn-signup" onclick="doSignUp()">
+          <span id="su-btn-txt">Create Account</span>
+          <div class="spinner" id="su-spin" style="display:none"></div>
+        </button>
+        <div style="text-align:center;font-size:13px;color:var(--muted)">
+          Already have an account? <a onclick="switchTab('signin')" style="color:var(--ink);font-weight:600;cursor:pointer;text-decoration:underline">Sign in →</a>
+        </div>
+      </div>
+
+      <!-- FORGOT PASSWORD VIEW -->
+      <div id="view-forgot" style="display:none">
+        <div style="margin-bottom:24px">
+          <div style="font-family:var(--serif);font-size:22px;font-weight:700;margin-bottom:6px">Reset your password</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.6">Enter your email and we'll send you a reset link.</div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Email address</label>
+          <input class="form-input" type="email" id="fp-email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <button class="form-submit" id="btn-forgot" onclick="doForgot()">
+          <span id="fp-btn-txt">Send Reset Link</span>
+          <div class="spinner" id="fp-spin" style="display:none"></div>
+        </button>
+        <div style="text-align:center;font-size:13px;color:var(--muted)">
+          <a onclick="switchTab('signin')" style="color:var(--ink);cursor:pointer;text-decoration:underline">← Back to sign in</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="right-footer">
+      By continuing you agree to HotScan India's Terms of Service and Privacy Policy. Your data is protected by Supabase and Clerk.
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
+const AFTER_LOGIN = '/'
+const CLERK_KEY = 'pk_test_bmljZS1mb3gtOS5jbGVyay5hY2NvdW50cy5kZXYk'
+const CLERK_DOMAIN = 'nice-fox-9.clerk.accounts.dev'
+
+// Init Supabase
+let sb = null
+window.addEventListener('load', async function() {
+  if (window.supabase) sb = window.supabase.createClient(SUPA_URL, SUPA_KEY)
+  
+  // Check if already logged in
+  if (sb) {
+    const { data } = await sb.auth.getSession()
+    if (data && data.session) window.location.href = AFTER_LOGIN
+  }
+
+  // Clerk init (for Google OAuth)
+  if (window.Clerk) {
+    await window.Clerk.load()
+    if (window.Clerk.user) window.location.href = AFTER_LOGIN
+  }
+  
+  // Check URL for tab param
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('tab') === 'signup') switchTab('signup')
+})
+
+// Keyboard
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return
+  const active = ['signin','signup','forgot'].find(v =>
+    document.getElementById('view-' + v).style.display !== 'none'
+  )
+  if (active === 'signin') doSignIn()
+  else if (active === 'signup') doSignUp()
+  else if (active === 'forgot') doForgot()
+})
+
+function switchTab(tab) {
+  // Hide all
+  ;['signin','signup','forgot'].forEach(function(v) {
+    document.getElementById('view-' + v).style.display = 'none'
+  })
+  // Show target
+  document.getElementById('view-' + tab).style.display = 'block'
+  
+  // Update tab styles
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin')
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup')
+  
+  clearMsg()
+}
+
+function showMsg(txt, isOk) {
+  const el = document.getElementById('form-msg')
+  el.textContent = txt
+  el.className = 'form-msg show ' + (isOk ? 'ok' : 'err')
+}
+function clearMsg() {
+  document.getElementById('form-msg').className = 'form-msg'
+}
+
+function setLoading(prefix, loading) {
+  const btn = document.getElementById('btn-' + prefix)
+  const txt = document.getElementById(prefix + '-btn-txt')
+  const spin = document.getElementById(prefix + '-spin')
+  if (btn) btn.disabled = loading
+  if (txt) txt.style.display = loading ? 'none' : 'block'
+  if (spin) spin.style.display = loading ? 'block' : 'none'
+}
+
+// ── SIGN IN ──
+async function doSignIn() {
+  const email = document.getElementById('si-email').value.trim()
+  const pw = document.getElementById('si-pass').value
+  if (!email || !pw) { showMsg('Please enter your email and password'); return }
+  
+  setLoading('si', true)
+  clearMsg()
+  
+  try {
+    // Try Clerk first
+    if (window.Clerk && window.Clerk.client) {
+      const res = await window.Clerk.client.signIn.create({ identifier: email, password: pw })
+      if (res.status === 'complete') {
+        await window.Clerk.setActive({ session: res.createdSessionId })
+        window.location.href = AFTER_LOGIN
+        return
+      }
+    }
+    
+    // Fallback: Supabase
+    if (sb) {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pw })
+      if (error) throw new Error(error.message)
+      window.location.href = AFTER_LOGIN
+      return
+    }
+    
+    showMsg('Auth not available. Try Google sign in.')
+    setLoading('si', false)
+  } catch(err) {
+    setLoading('si', false)
+    const m = (err.errors && err.errors[0] && err.errors[0].longMessage) || err.message || ''
+    if (m.toLowerCase().includes('password') || m.toLowerCase().includes('identifier') || m.toLowerCase().includes('invalid'))
+      showMsg('Wrong email or password. Try again.')
+    else if (m.toLowerCase().includes('verif') || m.toLowerCase().includes('confirm'))
+      showMsg('Please verify your email first — check your inbox.')
+    else
+      showMsg(m || 'Sign in failed. Please try again.')
+  }
+}
+
+// ── SIGN UP ──
+async function doSignUp() {
+  const email = document.getElementById('su-email').value.trim()
+  const pw = document.getElementById('su-pass').value
+  if (!email) { showMsg('Please enter your email address'); return }
+  if (pw.length < 8) { showMsg('Password must be at least 8 characters'); return }
+  
+  setLoading('su', true)
+  clearMsg()
+  
+  try {
+    // Try Clerk first
+    if (window.Clerk && window.Clerk.client) {
+      const res = await window.Clerk.client.signUp.create({ emailAddress: email, password: pw })
+      if (res.status === 'complete') {
+        await window.Clerk.setActive({ session: res.createdSessionId })
+        window.location.href = AFTER_LOGIN
+        return
+      } else {
+        // Email verification needed
+        await res.prepareEmailAddressVerification({ strategy: 'email_code' })
+        showMsg('Account created! Check your email for a verification link, then sign in.', true)
+        setLoading('su', false)
+        setTimeout(function() { switchTab('signin') }, 3000)
+        return
+      }
+    }
+    
+    // Fallback: Supabase
+    if (sb) {
+      const { data, error } = await sb.auth.signUp({
+        email, password: pw,
+        options: { emailRedirectTo: window.location.origin }
+      })
+      if (error) throw new Error(error.message)
+      if (!data.session) {
+        showMsg('Account created! Check your email to verify, then sign in.', true)
+        setLoading('su', false)
+        setTimeout(function() { switchTab('signin') }, 3000)
+      } else {
+        window.location.href = AFTER_LOGIN
+      }
+      return
+    }
+    
+    showMsg('Auth not available. Try Google sign in.')
+    setLoading('su', false)
+  } catch(err) {
+    setLoading('su', false)
+    const m = (err.errors && err.errors[0] && err.errors[0].longMessage) || err.message || ''
+    if (m.toLowerCase().includes('taken') || m.toLowerCase().includes('exist') || m.toLowerCase().includes('already'))
+      showMsg('An account with this email already exists. Sign in instead.')
+    else
+      showMsg(m || 'Sign up failed. Please try again.')
+  }
+}
+
+// ── GOOGLE ──
+async function doGoogle() {
+  clearMsg()
+  try {
+    if (window.Clerk && window.Clerk.client) {
+      await window.Clerk.client.signIn.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: 'https://' + CLERK_DOMAIN + '/sso-callback',
+        redirectUrlComplete: window.location.origin + AFTER_LOGIN
+      })
+      return
+    }
+    // Supabase fallback
+    if (sb) {
+      await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      })
+    }
+  } catch(err) {
+    const m = (err.errors && err.errors[0] && err.errors[0].message) || err.message || ''
+    showMsg(m || 'Google sign-in failed. Please try email/password.')
+  }
+}
+
+// ── FORGOT PASSWORD ──
+async function doForgot() {
+  const email = document.getElementById('fp-email').value.trim()
+  if (!email) { showMsg('Please enter your email address'); return }
+  
+  setLoading('fp', true)
+  clearMsg()
+  
+  try {
+    // Try Clerk
+    if (window.Clerk && window.Clerk.client) {
+      await window.Clerk.client.signIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: email
+      })
+      showMsg('Reset link sent! Check your inbox.', true)
+      setLoading('fp', false)
+      return
+    }
+    // Supabase fallback
+    if (sb) {
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password.html'
+      })
+      if (error) throw new Error(error.message)
+      showMsg('Reset link sent! Check your inbox.', true)
+      setLoading('fp', false)
+      return
+    }
+  } catch(err) {
+    setLoading('fp', false)
+    const m = (err.errors && err.errors[0] && err.errors[0].message) || err.message || ''
+    showMsg(m || 'Could not send reset email. Please try again.')
+  }
+}
+</script>
+</body>
+</html>
