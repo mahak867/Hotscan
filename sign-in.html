@@ -335,6 +335,10 @@ html,body{height:100%;font-family:var(--sans);background:var(--paper);color:var(
         </button>
         <div class="divider"><span>or</span></div>
         <div class="form-field">
+          <label class="form-label">Username <span style="font-weight:300;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted)">(optional)</span></label>
+          <input class="form-input" type="text" id="su-username" placeholder="e.g. HWCollector_Mumbai" autocomplete="username">
+        </div>
+        <div class="form-field">
           <label class="form-label">Email address</label>
           <input class="form-input" type="email" id="su-email" placeholder="you@example.com" autocomplete="email">
         </div>
@@ -525,7 +529,10 @@ async function doSignUp() {
     if (sb) {
       const { data, error } = await sb.auth.signUp({
         email, password: pw,
-        options: { emailRedirectTo: window.location.origin }
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: username || email.split('@')[0], username: username || null }
+        }
       })
       if (error) throw new Error(error.message)
       if (!data.session) {
