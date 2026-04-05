@@ -25,25 +25,25 @@
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:#080808;color:#fff;overflow-x:hidden}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
 :root{
-  /* Brand */
-  --red:#c8102e;--red-soft:#e8294a;
-  --gold:#b8860b;--green:#2a9d5c;--blue:#2a7dd4;
-  /* Surfaces — warm paper light theme */
-  --bg:#f7f4ee;--surface:#ffffff;--surface2:#f2efe8;--surface3:#e8e4db;
-  --surface4:#dedad2;
+  /* Hot Wheels Brand */
+  --red:#e63946;--red2:#c1121f;
+  --gold:#ffd60a;--green:#2dc653;--blue:#4cc9f0;
+  /* True Hot Wheels dark — premium black */
+  --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--surface3:#242424;
+  --surface4:#2c2c2c;
   /* Borders */
-  --border:#e8e4db;--border2:#dedad2;--border3:#d0cbc0;
+  --border:#1f1f1f;--border2:#2a2a2a;--border3:#363636;
   /* Typography */
-  --text:#1a1916;--text2:#6a6860;--text3:#a8a498;
+  --text:#f0ede8;--text2:#888580;--text3:#484440;
   /* Semantic */
-  --ink-gold:#b8860b;--ink-green:#2a9d5c;
+  --ink-gold:#ffd60a;--ink-green:#2dc653;
 }
 /* ── Layout ── */
 .nav{
   display:flex;
-  background:rgba(247,244,238,.95);
+  background:rgba(10,10,10,.96);
   border-top:1px solid var(--border);
   position:fixed;bottom:0;left:0;right:0;z-index:200;
   backdrop-filter:blur(16px) saturate(1.4);
@@ -62,19 +62,19 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 /* push page content above fixed nav */
 .page{padding-bottom:80px !important}
 .app-header{
-  background:rgba(247,244,238,.95);
+  background:rgba(10,10,10,.96);
   border-bottom:1px solid var(--border);
   padding:0 16px;height:52px;
   display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:300;
-  backdrop-filter:blur(16px) saturate(1.2);
+  backdrop-filter:blur(20px);
 }
 .app-header-left{display:flex;align-items:baseline;gap:6px}
 .app-wordmark{
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
   font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.5px;
 }
-.app-wordmark span{color:var(--red)}
+.app-wordmark span{color:var(--gold)}
 .app-tagline{
   font-size:10px;font-weight:500;color:var(--text3);
   letter-spacing:.1em;text-transform:uppercase;
@@ -140,13 +140,13 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 #fc,#fg,#fc-fake,#fg-fake{display:none}
 /* ── Analyze ── */
 .analyze-btn{
-  background:var(--text);color:var(--surface);border:none;
+  background:var(--red);color:#fff;border:none;
   padding:14px;border-radius:10px;font-size:14px;font-weight:700;
   cursor:pointer;width:100%;margin-bottom:11px;display:none;
   letter-spacing:.02em;transition:all .2s;
   box-shadow:0 2px 8px rgba(26,25,22,.15);
 }
-.analyze-btn:hover{background:var(--red);color:#fff}
+.analyze-btn:hover{background:var(--red2)}
 .analyze-btn:active{transform:scale(.98)}
 .analyze-btn:disabled{opacity:.5;pointer-events:none}
 /* ── Pipeline ── */
@@ -613,7 +613,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 <body>
 <div class="app-header">
   <div class="app-header-left">
-    <div class="app-wordmark">HotScan<span>.</span></div>
+    <div class="app-wordmark">Hot<span>Scan</span></div>
     <div class="app-tagline">India</div>
   </div>
   <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
@@ -640,10 +640,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   </div>
   <!-- Mode tabs -->
   <div class="mode-tabs">
-    <div class="mode-tab active" id="tab-photo" onclick="setMode('photo')"><span>📷</span>Photo</div>
-    <div class="mode-tab" id="tab-barcode" onclick="setMode('barcode')"><span>🔢</span>Barcode</div>
-    <div class="mode-tab" id="tab-deal" onclick="setMode('deal')"><span>💰</span>Deal?</div>
-    <div class="mode-tab" id="tab-fake" onclick="setMode('fake')"><span>🕵️</span>Fake?</div>
+    <div class="mode-tab active" id="tab-photo" onclick="setMode('photo')">Photo</div>
+    <div class="mode-tab" id="tab-barcode" onclick="setMode('barcode')">Barcode</div>
+    <div class="mode-tab" id="tab-deal" onclick="setMode('deal')">Deal?</div>
+    <div class="mode-tab" id="tab-fake" onclick="setMode('fake')">Fake?</div>
   </div>
   <!-- Photo mode -->
   <div id="mode-photo">
@@ -667,7 +667,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     </div>
     <input type="file" id="fc" accept="image/*" capture="environment">
     <input type="file" id="fg" accept="image/*">
-    <input type="file" id="fg-multi" accept="image/*" multiple>
+    <input type="file" id="fg-multi" accept="image/*" multiple style="display:none">
   </div>
   <!-- Barcode mode -->
   <div id="mode-barcode" style="display:none">
@@ -1166,6 +1166,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
         <label class="auth-label">Email address</label>
         <input class="auth-input" type="email" id="auth-email-inp" placeholder="you@example.com" autocomplete="email">
       </div>
+      <div class="auth-field" id="auth-username-field" style="display:none">
+        <label class="auth-label">Username <span style="color:var(--text3);font-size:10px;font-weight:400">(optional)</span></label>
+        <input class="auth-input" type="text" id="auth-username-inp" placeholder="e.g. HWCollector_Mumbai" autocomplete="username">
+      </div>
       <div class="auth-field" id="auth-pass-field" style="display:none">
         <label class="auth-label">Password</label>
         <input class="auth-input" type="password" id="auth-pass-inp" placeholder="••••••••" autocomplete="current-password">
@@ -1295,14 +1299,20 @@ function updateAuthSwitchUI(){
   var switchTxt = document.getElementById('auth-switch-txt')
   var switchBtn = document.getElementById('auth-switch-btn')
   var headline = document.querySelector('.auth-headline')
+  var usernameField = document.getElementById('auth-username-field')
+  var forgotBtn = document.querySelector('.auth-forgot')
   if(_authMode === 'signin'){
     if(switchTxt) switchTxt.textContent = 'No account?'
     if(switchBtn) switchBtn.textContent = 'Sign up free'
     if(headline) headline.textContent = 'Sign in'
+    if(usernameField && _authStep === 'password') usernameField.style.display = 'none'
+    if(forgotBtn) forgotBtn.style.display = 'block'
   } else {
     if(switchTxt) switchTxt.textContent = 'Already have an account?'
     if(switchBtn) switchBtn.textContent = 'Sign in'
     if(headline) headline.textContent = 'Create account'
+    if(usernameField && _authStep === 'password') usernameField.style.display = 'block'
+    if(forgotBtn) forgotBtn.style.display = 'none'
   }
 }
 
@@ -1322,63 +1332,92 @@ function showAuthErr(msg){
 async function authContinue(){
   var email = document.getElementById('auth-email-inp').value.trim()
   if(!email){ showAuthErr('Enter your email address'); return }
-  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showAuthErr('Enter a valid email'); return }
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showAuthErr('Enter a valid email address'); return }
 
   if(_authStep === 'email'){
-    // Move to password step
     _authEmail = email
     _authStep = 'password'
     document.getElementById('auth-pass-field').style.display = 'block'
     document.getElementById('auth-btn-txt').textContent = _authMode === 'signin' ? 'Sign In' : 'Create Account'
     document.getElementById('auth-err-msg').textContent = ''
-    setTimeout(function(){ document.getElementById('auth-pass-inp').focus() }, 100)
+    updateAuthSwitchUI()
+    setTimeout(function(){ document.getElementById('auth-pass-inp').focus() }, 80)
     return
   }
 
-  // Password step — do auth
   var pass = document.getElementById('auth-pass-inp').value
   if(!pass){ showAuthErr('Enter your password'); return }
   if(_authMode === 'signup' && pass.length < 6){ showAuthErr('Password must be at least 6 characters'); return }
-  if(!_sb){ showAuthErr('Auth service unavailable. Please try Google sign in.'); return }
 
   setAuthLoading(true)
   showAuthErr('')
 
-  try{
-    var result
+  try {
     if(_authMode === 'signin'){
-      result = await _sb.auth.signInWithPassword({email:email, password:pass})
+      // Try Supabase first
+      if(_sb){
+        var r = await _sb.auth.signInWithPassword({email:email, password:pass})
+        if(r.error){
+          var m = r.error.message
+          if(m.toLowerCase().includes('invalid') || m.toLowerCase().includes('password')) m='Wrong email or password'
+          if(m.toLowerCase().includes('confirm') || m.toLowerCase().includes('verif')) m='Please verify your email first — check your inbox'
+          showAuthErr(m)
+          setAuthLoading(false)
+          return
+        }
+        setAuthLoading(false)
+        closeAuth()
+        showSuccessCelebration()
+        return
+      }
+      // Clerk fallback
+      if(window.Clerk && window.Clerk.client){
+        var cr = await window.Clerk.client.signIn.create({identifier:email,password:pass})
+        if(cr.status==='complete'){
+          await window.Clerk.setActive({session:cr.createdSessionId})
+          setAuthLoading(false)
+          closeAuth()
+          showSuccessCelebration()
+          return
+        }
+      }
+      showAuthErr('Sign in unavailable. Try Google.')
+      setAuthLoading(false)
+
     } else {
-      result = await _sb.auth.signUp({
-        email:email, password:pass,
-        options:{emailRedirectTo:'https://hotscan.in'}
-      })
-    }
+      // SIGN UP
+      var username = document.getElementById('auth-username-inp') ? document.getElementById('auth-username-inp').value.trim() : ''
+      var displayName = username || email.split('@')[0]
 
-    if(result.error){
-      var msg = result.error.message
-      if(msg.includes('Invalid login')) msg = 'Wrong email or password'
-      if(msg.includes('already registered')) msg = 'Account exists. Sign in instead.'
-      if(msg.includes('Email not confirmed')) msg = 'Check your email to verify your account first'
-      showAuthErr(msg)
+      if(_sb){
+        var sr = await _sb.auth.signUp({
+          email:email, password:pass,
+          options:{
+            emailRedirectTo:window.location.origin,
+            data:{full_name:displayName, username:username||null}
+          }
+        })
+        if(sr.error){
+          var sm = sr.error.message
+          if(sm.toLowerCase().includes('already')) sm='Account exists. Sign in instead.'
+          showAuthErr(sm)
+          setAuthLoading(false)
+          return
+        }
+        setAuthLoading(false)
+        if(!sr.data.session){
+          document.getElementById('auth-email-form').style.display='none'
+          document.getElementById('auth-verify-step').style.display='block'
+        } else {
+          closeAuth()
+          showSuccessCelebration()
+        }
+        return
+      }
+      showAuthErr('Sign up unavailable. Try Google.')
       setAuthLoading(false)
-      return
     }
-
-    if(_authMode === 'signup' && !result.data.session){
-      // Email verification needed
-      setAuthLoading(false)
-      document.getElementById('auth-email-form').style.display = 'none'
-      document.getElementById('auth-verify-step').style.display = 'block'
-      return
-    }
-
-    // Success!
-    setAuthLoading(false)
-    closeAuth()
-    showSuccessCelebration()
-
-  } catch(e){
+  } catch(e) {
     showAuthErr('Something went wrong. Try again.')
     setAuthLoading(false)
   }
@@ -1394,19 +1433,25 @@ document.addEventListener('keydown', function(e){
 
 // ── Social Auth ──
 function signInWithGoogle(){
-  if(!_sb){ alert('Google sign-in requires Supabase auth setup'); return }
-  _sb.auth.signInWithOAuth({
-    provider:'google',
-    options:{redirectTo: window.location.origin}
-  })
+  if(_sb){
+    _sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo:window.location.origin}
+    })
+  } else {
+    showAuthErr('Google sign-in not configured yet. Use email/password.')
+  }
 }
 
 function signInWithApple(){
-  if(!_sb){ alert('Apple sign-in requires Supabase auth setup'); return }
-  _sb.auth.signInWithOAuth({
-    provider:'apple',
-    options:{redirectTo: window.location.origin}
-  })
+  if(_sb){
+    _sb.auth.signInWithOAuth({
+      provider:'apple',
+      options:{redirectTo:window.location.origin}
+    })
+  } else {
+    showAuthErr('Apple sign-in not configured yet. Use email/password.')
+  }
 }
 
 async function sendPasswordReset(){
@@ -2869,62 +2914,44 @@ function ol(url) { if (url && url !== '#') window.open(url, '_blank') }
 // AUTH — Clerk + Supabase
 // ════════════════════════════════════════════════════════
 async function initAuth(){
-  // Use Supabase auth as primary (custom UI) + Clerk as fallback
-  if(_sb){
-    try{
-      var session = await _sb.auth.getSession()
-      if(session.data && session.data.session && session.data.session.user){
-        var u = session.data.session.user
+  if(!_sb){ updateHeaderUI(); return }
+  try{
+    var session = await _sb.auth.getSession()
+    if(session.data && session.data.session && session.data.session.user){
+      var u = session.data.session.user
+      currentUser = {
+        id: u.id,
+        email: u.email || '',
+        name: (u.user_metadata && u.user_metadata.full_name) ? u.user_metadata.full_name :
+              (u.user_metadata && u.user_metadata.name) ? u.user_metadata.name :
+              (u.email ? u.email.split('@')[0] : 'Collector')
+      }
+      await loadProfile()
+      await fullCloudSync()
+      renderProfilePage()
+    }
+
+    _sb.auth.onAuthStateChange(async function(event, session){
+      if(session && session.user){
+        var u = session.user
         currentUser = {
           id: u.id,
           email: u.email || '',
-          name: u.user_metadata && u.user_metadata.full_name ? u.user_metadata.full_name : (u.email ? u.email.split('@')[0] : 'Collector')
+          name: (u.user_metadata && u.user_metadata.full_name) ? u.user_metadata.full_name :
+                (u.user_metadata && u.user_metadata.name) ? u.user_metadata.name :
+                (u.email ? u.email.split('@')[0] : 'Collector')
         }
         await loadProfile()
         await fullCloudSync()
-        renderProfilePage()
+        if(event === 'SIGNED_IN'){ closeAuth(); showSuccessCelebration() }
+      } else {
+        currentUser = null; userProfile = null
+        localStorage.removeItem('hs_pro')
       }
-
-      _sb.auth.onAuthStateChange(async function(event, session){
-        if(session && session.user){
-          var u = session.user
-          currentUser = {
-            id: u.id,
-            email: u.email || '',
-            name: u.user_metadata && u.user_metadata.full_name ? u.user_metadata.full_name : (u.email ? u.email.split('@')[0] : 'Collector')
-          }
-          await loadProfile()
-          await fullCloudSync()
-          if(event === 'SIGNED_IN') showSuccessCelebration()
-        } else {
-          currentUser = null; userProfile = null
-          localStorage.removeItem('hs_pro')
-        }
-        updateHeaderUI()
-        renderProfilePage()
-        closeAuth()
-      })
-    }catch(e){ console.warn('Supabase auth error:', e) }
-  }
-
-  // Also try Clerk as secondary
-  try{
-    if(window.Clerk){
-      await window.Clerk.load()
-      var clerkUser = window.Clerk.user
-      if(clerkUser && !currentUser){
-        currentUser = {
-          id: clerkUser.id,
-          email: clerkUser.primaryEmailAddress ? clerkUser.primaryEmailAddress.emailAddress : '',
-          name: clerkUser.firstName || clerkUser.username || 'Collector'
-        }
-        await loadProfile()
-        await fullCloudSync()
-        renderProfilePage()
-      }
-    }
-  }catch(e){ console.warn('Clerk init error:', e) }
-
+      updateHeaderUI()
+      renderProfilePage()
+    })
+  } catch(e){ console.warn('Auth init error:', e) }
   updateHeaderUI()
 }
 
