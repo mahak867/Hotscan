@@ -29,24 +29,24 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 :root{
   /* Brand */
   --red:#c8102e;--red-soft:#e8294a;
-  --gold:#c8960c;--green:#2a9d5c;--blue:#2a7dd4;
-  /* Surfaces - true dark, not fake dark */
-  --bg:#0c0c0b;--surface:#111110;--surface2:#171716;--surface3:#1e1e1c;
-  --surface4:#252523;
+  --gold:#b8860b;--green:#2a9d5c;--blue:#2a7dd4;
+  /* Surfaces — warm paper light theme */
+  --bg:#f7f4ee;--surface:#ffffff;--surface2:#f2efe8;--surface3:#e8e4db;
+  --surface4:#dedad2;
   /* Borders */
-  --border:#1f1f1d;--border2:#2a2a28;--border3:#333330;
+  --border:#e8e4db;--border2:#dedad2;--border3:#d0cbc0;
   /* Typography */
-  --text:#f0ede8;--text2:#8a8880;--text3:#504e4a;
+  --text:#1a1916;--text2:#6a6860;--text3:#a8a498;
   /* Semantic */
-  --ink-gold:#c8960c;--ink-green:#2a9d5c;
+  --ink-gold:#b8860b;--ink-green:#2a9d5c;
 }
 /* ── Layout ── */
 .nav{
   display:flex;
-  background:rgba(12,12,11,.92);
+  background:rgba(247,244,238,.95);
   border-top:1px solid var(--border);
   position:fixed;bottom:0;left:0;right:0;z-index:200;
-  backdrop-filter:blur(16px) saturate(1.2);
+  backdrop-filter:blur(16px) saturate(1.4);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 .nav-item{
@@ -62,12 +62,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 /* push page content above fixed nav */
 .page{padding-bottom:80px !important}
 .app-header{
-  background:rgba(12,12,11,.95);
+  background:rgba(247,244,238,.95);
   border-bottom:1px solid var(--border);
   padding:0 16px;height:52px;
   display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:300;
-  backdrop-filter:blur(16px);
+  backdrop-filter:blur(16px) saturate(1.2);
 }
 .app-header-left{display:flex;align-items:baseline;gap:6px}
 .app-wordmark{
@@ -123,9 +123,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .mode-tab.active span{filter:none}
 /* ── Scan area ── */
 .scan-area{
-  background:var(--surface);border:1px solid var(--border);
+  background:var(--surface);border:1px solid var(--border2);
   border-radius:12px;margin-bottom:11px;overflow:hidden;
   transition:border-color .2s;
+  box-shadow:0 1px 4px rgba(26,25,22,.04);
 }
 .scan-area.has-img{border-color:var(--border2)}
 .scan-ph{padding:32px 16px;text-align:center}
@@ -139,12 +140,13 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 #fc,#fg,#fc-fake,#fg-fake{display:none}
 /* ── Analyze ── */
 .analyze-btn{
-  background:var(--red);color:#fff;border:none;
+  background:var(--text);color:var(--surface);border:none;
   padding:14px;border-radius:10px;font-size:14px;font-weight:700;
   cursor:pointer;width:100%;margin-bottom:11px;display:none;
   letter-spacing:.02em;transition:all .2s;
+  box-shadow:0 2px 8px rgba(26,25,22,.15);
 }
-.analyze-btn:hover{background:#a00d24}
+.analyze-btn:hover{background:var(--red);color:#fff}
 .analyze-btn:active{transform:scale(.98)}
 .analyze-btn:disabled{opacity:.5;pointer-events:none}
 /* ── Pipeline ── */
@@ -172,6 +174,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .result{
   display:none;background:var(--surface);border-radius:12px;
   overflow:hidden;margin-bottom:11px;border:1px solid var(--border2);
+  box-shadow:0 2px 12px rgba(26,25,22,.06);
 }
 .r-hero{background:var(--surface2);padding:16px;display:flex;gap:12px}
 .r-thumb{width:80px;height:80px;border-radius:11px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:34px}
@@ -201,8 +204,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 @keyframes lp{0%,100%{opacity:1}50%{opacity:.4}}
 .live-lbl{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px}
 .live-upd{font-size:9px;color:var(--text3);margin-left:auto}
-.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
-.ptile{background:var(--surface);padding:11px;text-align:center}
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border2)}
+.ptile{background:var(--surface2);padding:11px;text-align:center}
 .ptile-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
 .ptile-val{font-size:19px;font-weight:800;margin-bottom:2px}
 .pinr{color:var(--gold)}
