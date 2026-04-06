@@ -6,10 +6,7 @@
 <title>HotScan India — Sign In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script async crossorigin="anonymous"
-  data-clerk-publishable-key="pk_test_bmljZS1mb3gtOS5jbGVyay5hY2NvdW50cy5kZXYk"
-  src="https://nice-fox-9.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js">
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -386,8 +383,8 @@ html,body{height:100%;font-family:var(--sans);background:var(--paper);color:var(
 const SUPA_URL = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
 const AFTER_LOGIN = '/'
-const CLERK_KEY = 'pk_test_bmljZS1mb3gtOS5jbGVyay5hY2NvdW50cy5kZXYk'
-const CLERK_DOMAIN = 'nice-fox-9.clerk.accounts.dev'
+
+
 
 // Init Supabase
 let sb = null
@@ -401,10 +398,7 @@ window.addEventListener('load', async function() {
   }
 
   // Clerk init (for Google OAuth)
-  if (window.Clerk) {
-    await window.Clerk.load()
-    if (window.Clerk.user) window.location.href = AFTER_LOGIN
-  }
+  // Clerk removed — Supabase only
   
   // Check URL for tab param
   const params = new URLSearchParams(window.location.search)
@@ -560,25 +554,14 @@ async function doSignUp() {
 // ── GOOGLE ──
 async function doGoogle() {
   clearMsg()
+  if(!sb){ showMsg('Service unavailable'); return }
   try {
-    if (window.Clerk && window.Clerk.client) {
-      await window.Clerk.client.signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: 'https://' + CLERK_DOMAIN + '/sso-callback',
-        redirectUrlComplete: window.location.origin + AFTER_LOGIN
-      })
-      return
-    }
-    // Supabase fallback
-    if (sb) {
-      await sb.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-      })
-    }
+    await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://hotscan.in' }
+    })
   } catch(err) {
-    const m = (err.errors && err.errors[0] && err.errors[0].message) || err.message || ''
-    showMsg(m || 'Google sign-in failed. Please try email/password.')
+    showMsg(err.message || 'Google sign-in failed. Please try email/password.')
   }
 }
 
