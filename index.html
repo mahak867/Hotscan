@@ -19,10 +19,7 @@
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script async crossorigin="anonymous"
-  data-clerk-publishable-key="pk_test_bmljZS1mb3gtOS5jbGVyay5hY2NvdW50cy5kZXYk"
-  src="https://nice-fox-9.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js">
-</script>
+<!-- Clerk removed — using Supabase auth only -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
@@ -1269,14 +1266,11 @@ function openAuth(){
 }
 
 function closeAuth(){
-  document.getElementById('auth-modal').classList.remove('open')
+  var modal = document.getElementById('auth-modal')
+  if(modal) modal.classList.remove('open')
   document.body.style.overflow = ''
-  // Also unmount Clerk if it was mounted
-  try{
-    var c=document.getElementById('clerk-auth-container')
-    if(c && window.Clerk) window.Clerk.unmountSignIn(c)
-  }catch(e){}
 }
+
 
 function resetAuthForm(){
   document.getElementById('auth-email-inp').value = ''
@@ -1337,15 +1331,16 @@ function showAuthErr(msg){
 async function authContinue(){
   var email = document.getElementById('auth-email-inp').value.trim()
   if(!email){ showAuthErr('Enter your email address'); return }
-  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showAuthErr('Enter a valid email address'); return }
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showAuthErr('Enter a valid email'); return }
 
   if(_authStep === 'email'){
     _authEmail = email
     _authStep = 'password'
     document.getElementById('auth-pass-field').style.display = 'block'
+    var usernameField = document.getElementById('auth-username-field')
+    if(usernameField && _authMode === 'signup') usernameField.style.display = 'block'
     document.getElementById('auth-btn-txt').textContent = _authMode === 'signin' ? 'Sign In' : 'Create Account'
     document.getElementById('auth-err-msg').textContent = ''
-    updateAuthSwitchUI()
     setTimeout(function(){ document.getElementById('auth-pass-inp').focus() }, 80)
     return
   }
@@ -1353,80 +1348,56 @@ async function authContinue(){
   var pass = document.getElementById('auth-pass-inp').value
   if(!pass){ showAuthErr('Enter your password'); return }
   if(_authMode === 'signup' && pass.length < 6){ showAuthErr('Password must be at least 6 characters'); return }
+  if(!_sb){ showAuthErr('Service unavailable — please try Google sign in'); return }
 
   setAuthLoading(true)
   showAuthErr('')
 
-  try {
+  try{
     if(_authMode === 'signin'){
-      // Try Supabase first
-      if(_sb){
-        var r = await _sb.auth.signInWithPassword({email:email, password:pass})
-        if(r.error){
-          var m = r.error.message
-          if(m.toLowerCase().includes('invalid') || m.toLowerCase().includes('password')) m='Wrong email or password'
-          if(m.toLowerCase().includes('confirm') || m.toLowerCase().includes('verif')) m='Please verify your email first — check your inbox'
-          showAuthErr(m)
-          setAuthLoading(false)
-          return
-        }
+      var r = await _sb.auth.signInWithPassword({email:email, password:pass})
+      if(r.error){
+        var m = r.error.message || ''
+        if(m.toLowerCase().includes('invalid') || m.toLowerCase().includes('wrong') || m.toLowerCase().includes('credentials')) m = 'Wrong email or password. Try again.'
+        if(m.toLowerCase().includes('confirm') || m.toLowerCase().includes('verif')) m = 'Please verify your email first — check your inbox'
+        if(m.toLowerCase().includes('not found') || m.toLowerCase().includes('no user')) m = 'No account found. Sign up first.'
+        showAuthErr(m)
         setAuthLoading(false)
-        closeAuth()
-        showSuccessCelebration()
-        return
       }
-      // Clerk fallback
-      if(window.Clerk && window.Clerk.client){
-        var cr = await window.Clerk.client.signIn.create({identifier:email,password:pass})
-        if(cr.status==='complete'){
-          await window.Clerk.setActive({session:cr.createdSessionId})
-          setAuthLoading(false)
-          closeAuth()
-          showSuccessCelebration()
-          return
-        }
-      }
-      showAuthErr('Sign in unavailable. Try Google.')
-      setAuthLoading(false)
+      // Success handled by onAuthStateChange
 
     } else {
-      // SIGN UP
       var username = document.getElementById('auth-username-inp') ? document.getElementById('auth-username-inp').value.trim() : ''
       var displayName = username || email.split('@')[0]
-
-      if(_sb){
-        var sr = await _sb.auth.signUp({
-          email:email, password:pass,
-          options:{
-            emailRedirectTo:window.location.origin,
-            data:{full_name:displayName, username:username||null}
-          }
-        })
-        if(sr.error){
-          var sm = sr.error.message
-          if(sm.toLowerCase().includes('already')) sm='Account exists. Sign in instead.'
-          showAuthErr(sm)
-          setAuthLoading(false)
-          return
+      var sr = await _sb.auth.signUp({
+        email: email,
+        password: pass,
+        options:{
+          emailRedirectTo: window.location.origin,
+          data:{ full_name: displayName, username: username || null }
         }
+      })
+      if(sr.error){
+        var sm = sr.error.message || ''
+        if(sm.toLowerCase().includes('already') || sm.toLowerCase().includes('registered')) sm = 'Account already exists. Sign in instead.'
+        showAuthErr(sm)
         setAuthLoading(false)
-        if(!sr.data.session){
-          document.getElementById('auth-email-form').style.display='none'
-          document.getElementById('auth-verify-step').style.display='block'
-        } else {
-          closeAuth()
-          showSuccessCelebration()
-        }
         return
       }
-      showAuthErr('Sign up unavailable. Try Google.')
       setAuthLoading(false)
+      if(!sr.data || !sr.data.session){
+        // Email verification required
+        document.getElementById('auth-email-form').style.display = 'none'
+        document.getElementById('auth-verify-step').style.display = 'block'
+      }
+      // If session exists, onAuthStateChange handles it
     }
-  } catch(e) {
-    showAuthErr('Something went wrong. Try again.')
+  } catch(e){
+    showAuthErr('Something went wrong. Please try again.')
     setAuthLoading(false)
   }
 }
+
 
 // Handle Enter key
 document.addEventListener('keydown', function(e){
@@ -1438,43 +1409,39 @@ document.addEventListener('keydown', function(e){
 
 // ── Social Auth ──
 function signInWithGoogle(){
-  if(_sb){
-    // Redirect back to the app root — Supabase will handle the token in the hash
-    var redirectTo = window.location.origin + '/'
-    _sb.auth.signInWithOAuth({
-      provider:'google',
-      options:{
-        redirectTo: redirectTo,
-        queryParams:{
-          access_type: 'offline',
-          prompt: 'consent'
-        }
-      }
-    })
-  } else {
-    showAuthErr('Google sign-in not configured yet. Use email/password.')
-  }
+  if(!_sb){ showAuthErr('Auth not available. Please refresh.'); return }
+  _sb.auth.signInWithOAuth({
+    provider: 'google',
+    options:{
+      redirectTo: 'https://www.hotscan.in/index.html',
+      queryParams:{ access_type:'offline', prompt:'consent' }
+    }
+  })
 }
 
+
 function signInWithApple(){
-  if(_sb){
-    _sb.auth.signInWithOAuth({
-      provider:'apple',
-      options:{redirectTo:window.location.origin}
-    })
-  } else {
-    showAuthErr('Apple sign-in not configured yet. Use email/password.')
-  }
+  if(!_sb){ showAuthErr('Service unavailable'); return }
+  _sb.auth.signInWithOAuth({
+    provider: 'apple',
+    options:{ redirectTo: 'https://hotscan.in' }
+  })
 }
+
 
 async function sendPasswordReset(){
   var email = document.getElementById('auth-email-inp').value.trim() || _authEmail
-  if(!email){ showAuthErr('Enter your email first'); return }
-  if(!_sb){ showAuthErr('Auth unavailable'); return }
-  var r = await _sb.auth.resetPasswordForEmail(email,{redirectTo:'https://hotscan.in'})
+  if(!email){ showAuthErr('Enter your email address first'); return }
+  if(!_sb){ showAuthErr('Service unavailable'); return }
+  var r = await _sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://hotscan.in/reset-password.html' })
   if(r.error){ showAuthErr(r.error.message) }
-  else { showAuthErr(''); document.getElementById('auth-err-msg').style.color='var(--green)'; document.getElementById('auth-err-msg').textContent = 'Reset link sent! Check your inbox.' }
+  else{
+    var errEl = document.getElementById('auth-err-msg')
+    errEl.style.color = 'var(--green)'
+    errEl.textContent = '✓ Reset link sent! Check your email inbox.'
+  }
 }
+
 
 // ── SUCCESS CELEBRATION — Drifting Hot Wheels cars ──
 function showSuccessCelebration(){
@@ -3036,36 +3003,10 @@ function updateHeaderUI() {
   }
 }
 
-function openAuth() {
-  if (!window.Clerk) return
-  var container = document.getElementById('clerk-auth-container')
-  if (container) container.innerHTML = ''
-  document.getElementById('auth-modal').classList.add('open')
-  document.body.style.overflow = 'hidden'
-  try {
-    window.Clerk.mountSignIn(container, {
-      appearance:{
-        layout:{logoPlacement:'none', socialButtonsVariant:'iconButton', socialButtonsPlacement:'top'},
-        variables:{colorPrimary:'#e63946', colorBackground:'#141414', colorText:'#ffffff', colorTextSecondary:'#aaaaaa', colorInputBackground:'#1e1e1e', colorInputText:'#ffffff', colorNeutral:'#555555', borderRadius:'12px', fontFamily:'-apple-system,BlinkMacSystemFont,SF Pro Display,sans-serif'},
-        elements:{
-          rootBox:{width:'100%'},
-          card:{background:'transparent', boxShadow:'none', border:'none', padding:'0'},
-          headerTitle:{color:'#fff', fontSize:'18px', fontWeight:'800'},
-          headerSubtitle:{color:'#aaa', fontSize:'12px'},
-          socialButtonsBlockButton:{background:'#1e1e1e', border:'1px solid #333', color:'#fff', borderRadius:'10px'},
-          formFieldInput:{background:'#1e1e1e', border:'1px solid #333', color:'#fff', borderRadius:'10px', fontSize:'14px'},
-          formButtonPrimary:{background:'linear-gradient(135deg,#e63946,#c1121f)', borderRadius:'10px', fontSize:'14px', fontWeight:'700'},
-          footerActionLink:{color:'#4cc9f0'},
-        }
-      }
-    })
-  } catch(e) { console.warn('Clerk mount error:', e) }
-}
-function closeAuth() {
-  try { if(window.Clerk) { var c=document.getElementById('clerk-auth-container'); if(c) window.Clerk.unmountSignIn(c) } } catch(e) {}
-  document.getElementById('auth-modal').classList.remove('open')
-  document.body.style.overflow = ''
-}
+
+
+
+
 
 function openAccountModal() {
   document.getElementById('account-modal').classList.add('open')
@@ -3092,13 +3033,16 @@ function openAccountModal() {
 }
 function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); document.body.style.overflow = '' }
 
-async function signOutUser() {
-  try { if (window.Clerk) await window.Clerk.signOut() } catch(e) {}
-  if (_sb) try { await _sb.auth.signOut() } catch(e) {}
-  currentUser = null; userProfile = null
+async function signOutUser(){
+  currentUser = null
+  userProfile = null
   localStorage.removeItem('hs_pro')
-  closeAccountModal(); closeProModal()
-  updateHeaderUI(); renderProfilePage()
+  closeAccountModal()
+  closeProModal()
+  try{ if(_sb) await _sb.auth.signOut() }catch(e){}
+  updateHeaderUI()
+  renderProfilePage()
+  updateScanCounter()
 }
 
 async function startPayment() {
