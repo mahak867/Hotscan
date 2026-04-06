@@ -1411,10 +1411,10 @@ document.addEventListener('keydown', function(e){
 function signInWithGoogle(){
   if(!_sb){ showAuthErr('Auth not available. Please refresh.'); return }
   _sb.auth.signInWithOAuth({
-    provider: 'google',
+    provider:'google',
     options:{
-      redirectTo: 'https://www.hotscan.in/index.html',
-      queryParams:{ access_type:'offline', prompt:'consent' }
+      redirectTo:'https://www.hotscan.in/index.html',
+      queryParams:{access_type:'offline',prompt:'consent'}
     }
   })
 }
@@ -1651,7 +1651,7 @@ window.addEventListener('load', function() {
   if (KEY) document.getElementById('key-card').style.display = 'none'
   var ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
   var sa = window.matchMedia('(display-mode:standalone)').matches
-  if (!ios || sa) document.getElementById('ib').style.display = 'none'
+  var _ibEl=document.getElementById('ib'); if(_ibEl&&(!ios||sa)) _ibEl.style.display='none'
 
   renderCol()
   renderAlerts()
