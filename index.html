@@ -610,8 +610,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 <body>
 <div class="app-header">
   <div class="app-header-left">
-    <div class="app-wordmark">Hot<span>Scan</span></div>
-    <div class="app-tagline">India</div>
+    <div class="app-wordmark" style="font-size:19px;font-weight:900;letter-spacing:-0.5px">🔥Hot<span style="color:var(--gold)">Scan</span></div>
+    <div class="app-tagline" style="color:var(--red);font-weight:700;letter-spacing:.15em;font-size:9px">INDIA 🇮🇳</div>
   </div>
   <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
     <div class="app-user-inner">Sign In</div>
@@ -1363,8 +1363,13 @@ async function authContinue(){
         if(m.toLowerCase().includes('not found') || m.toLowerCase().includes('no user')) m = 'No account found. Sign up first.'
         showAuthErr(m)
         setAuthLoading(false)
+      } else {
+        // Success — stop spinner, close modal, celebrate
+        setAuthLoading(false)
+        closeAuth()
+        sessionStorage.removeItem('hs_celebrated')
+        showSuccessCelebration()
       }
-      // Success handled by onAuthStateChange
 
     } else {
       var username = document.getElementById('auth-username-inp') ? document.getElementById('auth-username-inp').value.trim() : ''
@@ -1445,16 +1450,24 @@ async function sendPasswordReset(){
 
 // ── SUCCESS CELEBRATION — Drifting Hot Wheels cars ──
 function showSuccessCelebration(){
-  // Only show if user just actively signed in (not page reload)
   if(!currentUser) return
+
   var overlay = document.getElementById('auth-success-overlay')
-  var nameEl = document.getElementById('auth-success-name')
+  var nameEl  = document.getElementById('auth-success-name')
   if(!overlay) return
 
-  if(nameEl) nameEl.textContent = currentUser ? (currentUser.name || currentUser.email.split('@')[0]) : ''
+  var isDev = userProfile && userProfile.is_developer
+  var isPro = userProfile && userProfile.is_pro
+
+  // Name + badge in celebration
+  var displayName = currentUser.name || currentUser.email.split('@')[0]
+  if(nameEl){
+    nameEl.innerHTML = displayName
+      + (isDev ? ' <span style="font-size:16px;vertical-align:middle">👑</span>' : isPro ? ' <span style="font-size:16px;vertical-align:middle">⭐</span>' : '')
+  }
 
   overlay.style.display = 'block'
-  overlay.style.background = 'rgba(0,0,0,.75)'
+  overlay.style.background = 'rgba(0,0,0,.85)'
 
   var canvas = document.getElementById('cars-canvas')
   if(!canvas) return
@@ -1462,55 +1475,108 @@ function showSuccessCelebration(){
   canvas.height = window.innerHeight
   var ctx = canvas.getContext('2d')
 
-  // Car emojis to float across
-  var emojis = ['🚗','🏎️','🚕','🏁','🚗','🏎️','🚗']
+  // Hot Wheels themed emojis — multiple lanes
+  var lanes = [
+    {y:0.15, speed:8+Math.random()*4, size:32, emojis:['🏎️','🏎️','🏁','🏎️']},
+    {y:0.35, speed:6+Math.random()*4, size:40, emojis:['🚗','⚡','🚗','🔥']},
+    {y:0.55, speed:10+Math.random()*4, size:28, emojis:['🏎️','🏁','🏎️','🏁']},
+    {y:0.72, speed:7+Math.random()*4, size:36, emojis:['🚗','🚗','⭐','🚗']},
+    {y:0.88, speed:9+Math.random()*4, size:30, emojis:['🔥','🏎️','🔥','🏎️']},
+  ]
+
   var cars = []
-  for(var i=0; i<18; i++){
-    cars.push({
-      x: -100 - Math.random()*window.innerWidth,
-      y: Math.random()*window.innerHeight,
-      speed: 3 + Math.random()*5,
-      size: 20 + Math.random()*28,
-      emoji: emojis[Math.floor(Math.random()*emojis.length)],
-      opacity: 0.4 + Math.random()*0.6,
-      wave: Math.random()*Math.PI*2,
-      waveSpeed: 0.02 + Math.random()*0.03,
+  lanes.forEach(function(lane, li){
+    for(var i=0; i<6; i++){
+      cars.push({
+        x: -80 - i * 180 - li*30,
+        y: lane.y * canvas.height + (Math.random()-0.5)*30,
+        speed: lane.speed + Math.random()*2,
+        size: lane.size + Math.random()*8,
+        emoji: lane.emojis[i % lane.emojis.length],
+        opacity: 0.7 + Math.random()*0.3,
+        wave: Math.random()*Math.PI*2,
+        waveAmp: 4 + Math.random()*6,
+        waveSpeed: 0.04 + Math.random()*0.03,
+        trail: []
+      })
+    }
+  })
+
+  // Sparks / confetti
+  var sparks = []
+  for(var s=0; s<60; s++){
+    sparks.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      vx: (Math.random()-0.5)*3,
+      vy: -2 - Math.random()*4,
+      size: 3+Math.random()*5,
+      color: ['#ffd60a','#e63946','#ff6a00','#fff','#4cc9f0'][Math.floor(Math.random()*5)],
+      life: 1, decay: 0.012+Math.random()*0.015
     })
   }
 
-  var frame = 0
   var startTime = Date.now()
-  var duration = 2800
+  var duration = 3500
 
   function animate(){
-    ctx.clearRect(0,0,canvas.width,canvas.height)
     var elapsed = Date.now() - startTime
     var progress = elapsed / duration
+    if(progress >= 1){ overlay.style.display='none'; return }
 
-    if(progress >= 1){
-      overlay.style.display = 'none'
-      return
+    var alpha = progress > 0.75 ? 1-(progress-0.75)/0.25 : 1
+
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+
+    // Speed lines background
+    ctx.save()
+    ctx.globalAlpha = 0.06 * alpha
+    for(var l=0; l<20; l++){
+      var ly = (l/20)*canvas.height
+      ctx.fillStyle = '#ffd60a'
+      ctx.fillRect(0, ly, canvas.width * (0.3+Math.random()*0.7), 1.5)
     }
+    ctx.restore()
 
-    // Fade out near end
-    var alpha = progress > 0.7 ? 1 - (progress-0.7)/0.3 : 1
-
+    // Cars with motion blur trail
     cars.forEach(function(car){
       car.x += car.speed
       car.wave += car.waveSpeed
-      var yOffset = Math.sin(car.wave) * 12
+      var yOff = Math.sin(car.wave)*car.waveAmp
 
+      // Trail
       ctx.save()
-      ctx.globalAlpha = car.opacity * alpha
-      ctx.font = car.size + 'px serif'
-      ctx.fillText(car.emoji, car.x, car.y + yOffset)
+      ctx.globalAlpha = 0.12 * car.opacity * alpha
+      ctx.font = (car.size*0.7)+'px serif'
+      ctx.fillText(car.emoji, car.x - car.speed*3, car.y+yOff)
+      ctx.globalAlpha = 0.06 * car.opacity * alpha
+      ctx.fillText(car.emoji, car.x - car.speed*6, car.y+yOff)
       ctx.restore()
 
-      // Wrap around
-      if(car.x > canvas.width + 100){
+      // Main car
+      ctx.save()
+      ctx.globalAlpha = car.opacity * alpha
+      ctx.font = car.size+'px serif'
+      ctx.fillText(car.emoji, car.x, car.y+yOff)
+      ctx.restore()
+
+      if(car.x > canvas.width+120){
         car.x = -120
-        car.y = Math.random()*canvas.height
+        car.y = car.y + (Math.random()-0.5)*20
       }
+    })
+
+    // Sparks
+    sparks.forEach(function(sp){
+      sp.x += sp.vx; sp.y += sp.vy; sp.vy += 0.08; sp.life -= sp.decay
+      if(sp.life <= 0) return
+      ctx.save()
+      ctx.globalAlpha = sp.life * alpha
+      ctx.fillStyle = sp.color
+      ctx.beginPath()
+      ctx.arc(sp.x, sp.y, sp.size*sp.life, 0, Math.PI*2)
+      ctx.fill()
+      ctx.restore()
     })
 
     requestAnimationFrame(animate)
@@ -2982,11 +3048,12 @@ async function loadProfile(){
       if(q2.data) userProfile = q2.data
     }
     // Auto-grant dev access
-    if(currentUser.email===DEV_EMAIL && userProfile && !userProfile.is_developer){
+    if(currentUser.email===DEV_EMAIL && userProfile){
       await _sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',currentUser.id)
       userProfile = Object.assign({},userProfile,{is_pro:true,is_developer:true})
     }
     if(userProfile && userProfile.is_pro) localStorage.setItem('hs_pro','true')
+    updateHeaderUI()
   }catch(e){ console.warn('loadProfile:',e) }
 }
 
@@ -2995,9 +3062,23 @@ function updateHeaderUI() {
   if (!btn) return
   btn.onclick = currentUser ? openAccountModal : openAuth
   if (currentUser) {
-    var initials = (currentUser.name || currentUser.email || '?')[0].toUpperCase()
-    var planLabel = userProfile && userProfile.is_developer ? 'Dev' : userProfile && userProfile.is_pro ? 'Pro' : ''
-    btn.innerHTML = '<div style="display:flex;align-items:center;gap:7px;cursor:pointer"><div style="width:28px;height:28px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text)">' + initials + '</div>' + (planLabel ? '<div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:var(--red);color:#fff;letter-spacing:.03em">' + planLabel + '</div>' : '') + '</div>'
+    var name = currentUser.name || currentUser.email.split('@')[0]
+    var initials = name[0].toUpperCase()
+    var isDev = userProfile && userProfile.is_developer
+    var isPr  = !isDev && userProfile && userProfile.is_pro
+    var avatarBg = isDev
+      ? 'linear-gradient(135deg,#7c3aed,#4f46e5)'
+      : 'linear-gradient(135deg,var(--red),var(--gold))'
+    var badge = isDev
+      ? '<div style="font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;letter-spacing:.04em;white-space:nowrap">👑 Dev</div>'
+      : isPr
+      ? '<div style="font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;background:linear-gradient(90deg,var(--red),var(--gold));color:#000;letter-spacing:.04em;white-space:nowrap">⭐ Pro</div>'
+      : ''
+    btn.innerHTML = '<div style="display:flex;align-items:center;gap:7px;cursor:pointer">'
+      + '<div style="width:30px;height:30px;border-radius:50%;background:'+avatarBg+';border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.5)">'+initials+'</div>'
+      + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>'
+      + badge
+      + '</div>'
   } else {
     btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
   }
