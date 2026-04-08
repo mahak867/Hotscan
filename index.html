@@ -25,14 +25,13 @@
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
 :root{
   --red:#e63946;--red2:#c1121f;--red3:#ff4757;
-  --gold:#ffd60a;--gold2:#ffaa00;--green:#2dc653;--blue:#4cc9f0;
-  --orange:#ff6a00;--purple:#7c3aed;
-  --bg:#080808;--surface:#111111;--surface2:#181818;--surface3:#222222;--surface4:#2a2a2a;
-  --border:#1a1a1a;--border2:#252525;--border3:#333333;
+  --gold:#ffd60a;--gold2:#ffaa00;
+  --green:#2dc653;--blue:#4cc9f0;--orange:#ff6a00;--purple:#7c3aed;
+  --bg:#080808;--surface:#111;--surface2:#181818;--surface3:#222;--surface4:#2a2a2a;
+  --border:#1a1a1a;--border2:#252525;--border3:#333;
   --text:#f5f0e8;--text2:#7a7570;--text3:#404040;
   --ink-gold:#ffd60a;--ink-green:#2dc653;
-  --hw-stripe:repeating-linear-gradient(90deg,var(--red) 0 20px,var(--gold) 20px 40px,#111 40px 60px);
-  --hw-glow:0 0 20px rgba(230,57,70,.4),0 0 40px rgba(255,214,10,.2);
+  --hw-glow:0 0 20px rgba(230,57,70,.35),0 0 40px rgba(255,214,10,.15);
   --card-shadow:0 4px 24px rgba(0,0,0,.6);
 }
 /* ── Layout ── */
@@ -392,119 +391,94 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .empty-t{font-size:14px;font-weight:600;color:#444;margin-bottom:5px}
 .empty-s{font-size:12px}
 
-/* ══ HOT WHEELS GLOBAL ANIMATIONS ══ */
-@keyframes hwStripe{from{background-position:0 0}to{background-position:60px 0}}
-@keyframes hwPulse{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,.4)}50%{box-shadow:0 0 0 8px rgba(230,57,70,0)}}
-@keyframes hwSlideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes hwSlideIn{from{transform:translateX(-20px);opacity:0}to{transform:translateX(0);opacity:1}}
+/* ══ HOT WHEELS ANIMATIONS ══ */
+@keyframes hwSlideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes hwSlideIn{from{transform:translateX(-16px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes hwPulse{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,.4)}70%{box-shadow:0 0 0 8px rgba(230,57,70,0)}}
 @keyframes hwShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes hwGlow{0%,100%{text-shadow:0 0 8px var(--gold)}50%{text-shadow:0 0 18px var(--gold),0 0 30px var(--orange)}}
+@keyframes hwBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes hwFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes hwSpin{to{transform:rotate(360deg)}}
-@keyframes hwBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-@keyframes hwGlow{0%,100%{text-shadow:0 0 10px var(--gold)}50%{text-shadow:0 0 20px var(--gold),0 0 40px var(--orange)}}
-@keyframes hwRaceStripe{from{transform:translateX(-100%)}to{transform:translateX(100vw)}}
-@keyframes hwFlamePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
 
 /* Page transitions */
-.page{animation:hwSlideUp .25s ease both}
-.page.active{display:block}
+.page.active{animation:hwSlideUp .22s ease both}
 
-/* Card hover effects */
-.card{transition:transform .2s ease,box-shadow .2s ease;cursor:default}
-.card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.5)}
-
-/* Hot Wheels stripe header accent */
-.hw-stripe-bar{
-  height:3px;
-  background:var(--hw-stripe);
-  background-size:60px 100%;
-  animation:hwStripe 1s linear infinite;
+/* Card hover */
+.card,.col-item,.listing-card,.alert-item{
+  transition:transform .18s ease,box-shadow .18s ease;
 }
+.card:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(0,0,0,.5)}
+.col-item:hover,.listing-card:hover{transform:translateY(-1px)}
 
-/* Shimmer effect for scan button */
+/* Scan button shimmer */
 .analyze-btn{position:relative;overflow:hidden}
 .analyze-btn::after{
   content:'';position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.15) 50%,transparent 100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
   background-size:200% 100%;
-  animation:hwShimmer 2s ease infinite;
+  animation:hwShimmer 2.2s ease infinite;
 }
 
-/* Result card entrance */
-.result{animation:hwSlideUp .3s ease both}
-.multi-car-result{animation:hwSlideIn .3s ease both}
-
-/* Rarity badge pulse for STH */
+/* STH badge pulse */
 .rs{animation:hwPulse 2s ease infinite}
 
-/* Nav item active indicator */
-.nav-item.active .nav-icon-new{animation:hwBounce 1s ease infinite}
+/* Nav active bounce */
+.nav-item.active .nav-icon-new{animation:hwBounce 2s ease infinite}
 
-/* Gold glow on scan title for TH/STH results */
-.r-name-sth{animation:hwGlow 2s ease infinite}
+/* Result entrance */
+.result{animation:hwSlideUp .28s ease both}
+.multi-car-result{animation:hwSlideIn .25s ease both}
 
-/* ══ WHATSAPP CARD ══ */
-.wa-share-card{
-  background:linear-gradient(135deg,#0d1f0d,#1a3a1a);
-  border:1px solid rgba(37,211,102,.3);
-  border-radius:15px;padding:16px;margin-bottom:11px;
+/* R-hero HW styling */
+.r-hero{
+  background:linear-gradient(135deg,#0d0b18 0%,#180b0b 50%,#1a0d00 100%);
+  position:relative;overflow:hidden;
 }
-.wa-btn-full{
-  width:100%;padding:13px;border-radius:12px;
-  background:linear-gradient(135deg,#25D366,#128C7E);
-  color:#fff;border:none;font-size:14px;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-  transition:all .2s;box-shadow:0 4px 15px rgba(37,211,102,.3);
-  margin-bottom:8px;
+.r-hero::before{
+  content:'🏁';font-size:70px;opacity:.05;
+  position:absolute;right:-5px;top:-5px;pointer-events:none;
 }
-.wa-btn-full:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,211,102,.4)}
-.wa-btn-full:active{transform:scale(.98)}
 
-/* ══ LEADERBOARD ══ */
+/* Gold glow for STH result name */
+.r-name-sth{animation:hwGlow 2.5s ease infinite}
+
+/* Leaderboard */
 .lb-item{
   background:var(--surface2);border-radius:12px;padding:12px 14px;
   margin-bottom:7px;border:1px solid var(--border2);
   display:flex;align-items:center;gap:10px;
-  animation:hwSlideIn .3s ease both;
-  transition:transform .15s;
+  transition:transform .15s;animation:hwSlideIn .25s ease both;
 }
 .lb-item:hover{transform:translateX(3px)}
 .lb-rank{font-size:18px;font-weight:900;min-width:32px;text-align:center}
-.lb-rank-1{color:var(--gold);text-shadow:0 0 10px rgba(255,214,10,.5)}
-.lb-rank-2{color:#c0c0c0}
-.lb-rank-3{color:#cd7f32}
+.lb-gold{color:var(--gold);text-shadow:0 0 10px rgba(255,214,10,.5)}
+.lb-silver{color:#c0c0c0}
+.lb-bronze{color:#cd7f32}
 
-/* ══ PORTFOLIO CHART ══ */
+/* Portfolio */
 .portfolio-card{
   background:linear-gradient(135deg,#0d0d1a,#1a1300);
   border:1px solid rgba(255,214,10,.2);border-radius:16px;
   padding:18px;margin-bottom:11px;
 }
 
-/* ══ SCAN PULSE ══ */
-.scan-pulse-ring{
-  position:absolute;inset:-4px;border-radius:inherit;
-  border:2px solid var(--red);opacity:0;
-  animation:hwPulse 2s ease infinite;
+/* WA buttons */
+.wa-btn{
+  width:100%;padding:13px;border-radius:12px;
+  background:linear-gradient(135deg,#25D366,#128C7E);
+  color:#fff;border:none;font-size:14px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .2s;box-shadow:0 4px 15px rgba(37,211,102,.25);
+  margin-bottom:8px;
 }
-
-/* ══ HOT WHEELS THEMED RESULT HERO ══ */
-.r-hero{
-  background:linear-gradient(135deg,#0d0b18 0%,#180b0b 50%,#1a0d00 100%);
-  position:relative;overflow:hidden;
-}
-.r-hero::before{
-  content:'🏁';font-size:80px;opacity:.04;
-  position:absolute;right:-10px;top:-10px;
-}
-
-/* ══ SMOOTH MODAL ══ */
-.auth-modal{transition:opacity .2s ease}
-.auth-sheet{transition:transform .3s cubic-bezier(.4,0,.2,1)}
-
-/* ══ SPEED LINES on scan area ══ */
-.scan-area::after{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(-55deg,transparent 0 30px,rgba(255,255,255,.008) 30px 31px);
+.wa-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,211,102,.35)}
+.wa-btn:active{transform:scale(.98)}
+.wa-btn-sm{
+  padding:9px 14px;border-radius:9px;
+  background:linear-gradient(135deg,#25D366,#128C7E);
+  color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;
+  transition:all .15s;
 }
 
 /* ── Install banner ── */
@@ -727,11 +701,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <div class="app-wordmark" style="font-size:20px;font-weight:900;letter-spacing:-0.5px">🔥Hot<span style="color:var(--gold)">Scan</span></div>
     <div class="app-tagline" style="color:var(--red);font-weight:700;letter-spacing:.15em;font-size:9px">INDIA 🇮🇳</div>
   </div>
-  <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
+  <div id="user-hdr-btn" class="app-user-btn">
     <div class="app-user-inner">Sign In</div>
   </div>
 </div>
-<div class="hw-stripe-bar"></div>
 <div class="nav">
   <div class="nav-item active" onclick="goPage('scan')"><span class="nav-icon-new">⌖</span>Scan</div>
   <div class="nav-item" onclick="goPage('collection')"><span class="nav-icon-new">▤</span>Collect</div>
@@ -904,7 +877,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <div class="r-acts" style="grid-template-columns:repeat(5,1fr)">
       <button class="ract" onclick="addToCol()"><span>➕</span>Add</button>
       <button class="ract" onclick="addAlert()"><span>🔔</span>Alert</button>
-      <button class="ract" onclick="shareWAListing()" style="background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.3)"><span>💬</span>List WA</button>
+      <button class="ract" onclick="shareWAListing()" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3)"><span>💬</span>List WA</button>
       <button class="ract" onclick="showShare()"><span>📤</span>Share</button>
       <button class="ract" onclick="resetScan()"><span>🔄</span>Rescan</button>
     </div>
@@ -1121,7 +1094,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">Save your collection to the cloud, sync across devices, and unlock Pro features</div>
       <button class="btn-red" style="width:100%;justify-content:center;padding:14px;border-radius:12px;font-size:15px;margin-bottom:10px" onclick="openAuth()">Sign In / Create Account</button>
     </div>
-    <div class="card"><div class="card-title">Why create an account?</div><div style="font-size:13px;color:var(--text2);line-height:2.2">☁️ Cloud sync — access collection on any device<br>🔒 Secure — powered by Clerk auth<br>⭐ Pro — unlimited scans for ₹99/month<br>👑 Developer — lifetime Pro if you're Mahak</div></div>
+    <div class="card"><div class="card-title">Why create an account?</div><div style="font-size:13px;color:var(--text2);line-height:2.2">☁️ Cloud sync — access collection on any device<br>🔒 Secure — powered by Supabase auth<br>⭐ Pro — unlimited scans for ₹99/month<br>👑 Developer — lifetime Pro if you're Mahak</div></div>
   </div>
   <!-- Logged in state -->
   <div id="profile-user" style="display:none">
@@ -1177,18 +1150,16 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       </div>
     </div>
 
-    <!-- Portfolio breakdown -->
+    <!-- Portfolio -->
     <div class="portfolio-card" id="portfolio-section" style="display:none">
-      <div class="card-title" style="color:var(--gold);margin-bottom:12px">📊 Collection Portfolio</div>
+      <div class="card-title" style="color:var(--gold);margin-bottom:12px">📊 Portfolio Breakdown</div>
       <div id="portfolio-chart"></div>
     </div>
-
     <!-- Leaderboard -->
     <div class="card">
       <div class="card-title">🏆 Top Indian Collectors</div>
-      <div id="leaderboard-list"><div style="text-align:center;padding:20px;color:var(--text3)">Loading...</div></div>
+      <div id="leaderboard-list"><div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
-
     <!-- Actions -->
     <div class="card"><div class="card-title">Account</div>
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -1484,16 +1455,17 @@ async function authContinue(){
     if(_authMode === 'signin'){
       var r = await _sb.auth.signInWithPassword({email:email, password:pass})
       if(r.error){
-        var m = r.error.message || ''
+        var m = r.error.message||''
         if(m.toLowerCase().includes('invalid')||m.toLowerCase().includes('wrong')||m.toLowerCase().includes('credentials')) m='Wrong email or password'
         if(m.toLowerCase().includes('confirm')||m.toLowerCase().includes('verif')) m='Please verify your email — check your inbox'
         if(m.toLowerCase().includes('not found')||m.toLowerCase().includes('no user')) m='No account found — sign up first'
         showAuthErr(m); setAuthLoading(false)
       } else {
+        // SUCCESS — stop spinner immediately, close modal, celebrate
         setAuthLoading(false)
         closeAuth()
         sessionStorage.removeItem('hs_celebrated')
-        showSuccessCelebration()
+        setTimeout(showSuccessCelebration, 300)
       }
 
     } else {
@@ -1578,137 +1550,86 @@ function showSuccessCelebration(){
   if(!currentUser) return
   if(sessionStorage.getItem('hs_celebrated')) return
   sessionStorage.setItem('hs_celebrated','1')
-
   var overlay = document.getElementById('auth-success-overlay')
-  var nameEl  = document.getElementById('auth-success-name')
   if(!overlay) return
-
   var isDev = userProfile && userProfile.is_developer
   var isPro = userProfile && userProfile.is_pro
-  var dispName = currentUser.name || currentUser.email.split('@')[0]
-
-  // Welcome message
-  var welcomeEl = document.getElementById('auth-success-msg').querySelector('div:first-child')
-  if(welcomeEl) welcomeEl.textContent = isDev ? '👑 Welcome back, Developer!' : isPro ? '⭐ Welcome back, Pro Collector!' : '🚗 Welcome back!'
-  if(nameEl) nameEl.textContent = dispName
-
+  var name = currentUser.name || currentUser.email.split('@')[0]
+  var nameEl = document.getElementById('auth-success-name')
+  var msgEl = document.getElementById('auth-success-msg').querySelector('div')
+  if(msgEl) msgEl.textContent = isDev ? '👑 Welcome back, Developer!' : isPro ? '⭐ Welcome back, Pro!' : '🏎️ Welcome back!'
+  if(nameEl) nameEl.textContent = name
   overlay.style.display = 'block'
   overlay.style.background = 'rgba(0,0,0,.88)'
-
   var canvas = document.getElementById('cars-canvas')
   if(!canvas) return
   canvas.width = window.innerWidth
   canvas.height = window.innerHeight
   var ctx = canvas.getContext('2d')
-
-  // ── 5 racing lanes with different speeds ──
-  var laneData = [
-    {yRatio:.1, speed:12, size:36, items:['🏎️','🏎️','🏁','⚡']},
-    {yRatio:.28, speed:7, size:44, items:['🚗','🔥','🚗','🏆']},
-    {yRatio:.46, speed:14, size:30, items:['🏎️','🏁','🏎️','🏁']},
-    {yRatio:.65, speed:9, size:40, items:['🚗','⭐','🚗','💨']},
-    {yRatio:.82, speed:11, size:34, items:['🔥','🏎️','🔥','🚗']},
+  // 5 racing lanes
+  var lanes = [
+    {yr:.1,spd:13,sz:34,items:['🏎️','🏎️','🏁','⚡']},
+    {yr:.28,spd:7,sz:42,items:['🚗','🔥','🚗','🏆']},
+    {yr:.46,spd:15,sz:28,items:['🏎️','🏁','🏎️','🏁']},
+    {yr:.64,spd:9,sz:38,items:['🚗','⭐','🔥','💨']},
+    {yr:.82,spd:11,sz:32,items:['🔥','🏎️','🚗','🔥']}
   ]
-
   var cars = []
-  laneData.forEach(function(lane, li){
+  lanes.forEach(function(ln,li){
     for(var i=0;i<8;i++){
       cars.push({
-        x: -60 - i*160 - li*40,
-        baseY: lane.yRatio * canvas.height,
-        y: 0, speed: lane.speed + Math.random()*3,
-        size: lane.size + Math.random()*6,
-        emoji: lane.items[i % lane.items.length],
-        wave: Math.random()*Math.PI*2,
-        waveAmp: 3 + Math.random()*5,
-        waveSpd: 0.04 + Math.random()*0.03,
-        alpha: 0.75 + Math.random()*0.25
+        x:-80-i*160-li*35, baseY:ln.yr*canvas.height,
+        y:0, spd:ln.spd+Math.random()*2,
+        sz:ln.sz+Math.random()*6,
+        em:ln.items[i%ln.items.length],
+        alpha:.75+Math.random()*.25,
+        wave:Math.random()*Math.PI*2,
+        amp:3+Math.random()*5, wspd:.04+Math.random()*.03
       })
     }
   })
-
-  // Sparks
   var sparks = []
-  for(var s=0;s<80;s++){
+  for(var s=0;s<70;s++){
     sparks.push({
-      x:Math.random()*canvas.width, y:canvas.height*0.3+Math.random()*canvas.height*0.4,
+      x:Math.random()*canvas.width, y:canvas.height*.4+Math.random()*canvas.height*.3,
       vx:(Math.random()-.5)*4, vy:-3-Math.random()*5,
       r:2+Math.random()*4,
-      color:['#ffd60a','#e63946','#ff6a00','#ffffff','#4cc9f0','#ff4757'][Math.floor(Math.random()*6)],
-      life:1, decay:.01+Math.random()*.018
+      col:['#ffd60a','#e63946','#ff6a00','#fff','#4cc9f0'][Math.floor(Math.random()*5)],
+      life:1, dec:.012+Math.random()*.015
     })
   }
-
-  // Checkered flag sweep at top
-  var sweepX = -canvas.width
-
-  var startTime = Date.now(), dur = 4000
-  function animate(){
-    var elapsed = Date.now()-startTime
-    var prog = elapsed/dur
+  var t0 = Date.now(), dur = 3800
+  function draw(){
+    var prog = (Date.now()-t0)/dur
     if(prog>=1){overlay.style.display='none';return}
-    var fadeAlpha = prog > .72 ? 1-(prog-.72)/.28 : 1
-
+    var fade = prog>.72 ? 1-(prog-.72)/.28 : 1
     ctx.clearRect(0,0,canvas.width,canvas.height)
-
     // Speed lines
-    ctx.save(); ctx.globalAlpha=.05*fadeAlpha
-    for(var l=0;l<24;l++){
-      var ly=(l/24)*canvas.height
-      ctx.fillStyle = l%3===0?'#ffd60a':l%3===1?'#e63946':'#333'
-      ctx.fillRect(0,ly,canvas.width,1.5)
+    ctx.save(); ctx.globalAlpha=.04*fade
+    for(var i=0;i<20;i++){
+      ctx.fillStyle=i%2?'#ffd60a':'#333'
+      ctx.fillRect(0,(i/20)*canvas.height,canvas.width,1.5)
     }
     ctx.restore()
-
-    // Checkered flag sweep
-    sweepX += 18
-    if(sweepX < canvas.width+120){
-      ctx.save(); ctx.globalAlpha=.12*fadeAlpha
-      for(var cx=0;cx<8;cx++) for(var cy=0;cy<4;cy++){
-        ctx.fillStyle=(cx+cy)%2===0?'#fff':'#000'
-        ctx.fillRect(sweepX+cx*20-160,cy*20,20,20)
-      }
-      ctx.restore()
-    }
-
-    // Cars with trails
-    cars.forEach(function(car){
-      car.x += car.speed
-      car.wave += car.waveSpd
-      car.y = car.baseY + Math.sin(car.wave)*car.waveAmp
-      // Trail
-      ctx.save()
-      ctx.globalAlpha=.08*car.alpha*fadeAlpha
-      ctx.font=(car.size*.65)+'px serif'
-      ctx.fillText(car.emoji, car.x-car.speed*4, car.y)
-      ctx.globalAlpha=.04*car.alpha*fadeAlpha
-      ctx.fillText(car.emoji, car.x-car.speed*8, car.y)
-      ctx.restore()
-      // Main
-      ctx.save()
-      ctx.globalAlpha=car.alpha*fadeAlpha
-      ctx.font=car.size+'px serif'
-      ctx.fillText(car.emoji, car.x, car.y)
-      ctx.restore()
-      if(car.x>canvas.width+100){car.x=-100;car.y=car.baseY+(Math.random()-.5)*20}
+    // Cars
+    cars.forEach(function(c){
+      c.x+=c.spd; c.wave+=c.wspd; c.y=c.baseY+Math.sin(c.wave)*c.amp
+      ctx.save(); ctx.globalAlpha=.07*c.alpha*fade; ctx.font=(c.sz*.6)+'px serif'
+      ctx.fillText(c.em,c.x-c.spd*4,c.y)
+      ctx.globalAlpha=c.alpha*fade; ctx.font=c.sz+'px serif'
+      ctx.fillText(c.em,c.x,c.y); ctx.restore()
+      if(c.x>canvas.width+100){c.x=-100;c.y=c.baseY+(Math.random()-.5)*20}
     })
-
     // Sparks
     sparks.forEach(function(sp){
-      sp.x+=sp.vx; sp.y+=sp.vy; sp.vy+=.1; sp.life-=sp.decay
+      sp.x+=sp.vx; sp.y+=sp.vy; sp.vy+=.1; sp.life-=sp.dec
       if(sp.life<=0) return
-      ctx.save()
-      ctx.globalAlpha=sp.life*fadeAlpha
-      ctx.fillStyle=sp.color
-      ctx.beginPath()
-      ctx.arc(sp.x,sp.y,sp.r*sp.life,0,Math.PI*2)
-      ctx.fill()
-      ctx.restore()
+      ctx.save(); ctx.globalAlpha=sp.life*fade; ctx.fillStyle=sp.col
+      ctx.beginPath(); ctx.arc(sp.x,sp.y,sp.r*sp.life,0,Math.PI*2); ctx.fill(); ctx.restore()
     })
-
-    requestAnimationFrame(animate)
+    requestAnimationFrame(draw)
   }
-  animate()
+  draw()
 }
 
 // ── Override openAccountModal to show cleaner modal ──
@@ -1857,13 +1778,12 @@ window.addEventListener('load', function() {
 
 // ── Nav ──
 function goPage(id) {
-  document.querySelectorAll('.page').forEach(function(p) {
-    p.classList.remove('active')
-    p.style.animation = 'none'
+  document.querySelectorAll('.page').forEach(function(p){
+    p.classList.remove('active'); p.style.animation='none'
   })
-  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active') })
-  var pg = document.getElementById('page-' + id)
-  pg.style.animation = ''
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')})
+  var pg = document.getElementById('page-'+id)
+  pg.style.animation=''; void pg.offsetWidth  // reflow to restart animation
   pg.classList.add('active')
   var idx = {scan:0,collection:1,hunt:2,market:3,profile:4,more:5}[id]
   if (idx !== undefined) document.querySelectorAll('.nav-item')[idx].classList.add('active')
@@ -2737,75 +2657,69 @@ function showShare() {
 function closeShare() { document.getElementById('share-modal').classList.remove('open'); document.body.style.overflow = '' }
 function shareWA() {
   if (!lastResult) return
-  var rarity_emoji = lastResult.rarity && lastResult.rarity.includes('Super') ? '🔴 SUPER TH' :
-    lastResult.rarity && lastResult.rarity.includes('Treasure') ? '🟡 Treasure Hunt' :
-    lastResult.rarity && lastResult.rarity.includes('Error') ? '💎 ERROR CAR' :
-    lastResult.rarity && lastResult.rarity.includes('Vintage') ? '🏺 Vintage' : '🚗 ' + (lastResult.rarity||'Common')
-  var trend_emoji = lastResult.price_trend === 'Rising' ? '📈' : lastResult.price_trend === 'Falling' ? '📉' : '➡️'
-  var inv_emoji = lastResult.investment === 'Very High' ? '🔥' : lastResult.investment === 'High' ? '⬆️' : '↗️'
-  var txt = [
-    '🏎️ *' + lastResult.name + '*',
+  var rar = lastResult.rarity||'Common'
+  var re = rar.includes('Super')?'🔴 SUPER TH':rar.includes('Treasure')?'🟡 Treasure Hunt':rar.includes('Error')?'💎 ERROR CAR':rar.includes('Vintage')?'🏺 Vintage':'🚗 '+rar
+  var te = lastResult.price_trend==='Rising'?'📈':lastResult.price_trend==='Falling'?'📉':'➡️'
+  var lines = [
+    '🏎️ *'+lastResult.name+'*',
     '━━━━━━━━━━━━━━━━━━━',
-    '🎯 ' + rarity_emoji,
-    '📦 Series: ' + (lastResult.series || 'N/A'),
+    '🎯 '+re,
+    '📦 '+( lastResult.series||''),
     '',
     '💰 *Indian Prices*',
-    '🏬 Retail: ₹' + (lastResult.india_retail_inr || '?'),
-    '🤝 Collector: ₹' + (lastResult.india_collector_inr || '?'),
-    '',
-    '🌍 US Market: $' + (lastResult.us_collector_usd || '?'),
-    trend_emoji + ' Price Trend: ' + (lastResult.price_trend || 'Stable'),
-    inv_emoji + ' Investment: ' + (lastResult.investment || 'Medium') + ' Potential',
-    '',
-    lastResult.india_insight ? '📊 ' + lastResult.india_insight : '',
+    '🏬 Retail: ₹'+(lastResult.india_retail_inr||'?'),
+    '🤝 Collector: ₹'+(lastResult.india_collector_inr||'?'),
+    '🌍 US: $'+(lastResult.us_collector_usd||'?'),
+    te+' Trend: '+(lastResult.price_trend||'Stable'),
+    (lastResult.investment==='Very High'?'🔥':'⬆️')+' Investment: '+(lastResult.investment||'Medium')+' Potential',
+    lastResult.india_insight?'':'',
+    lastResult.india_insight?'📊 '+lastResult.india_insight:'',
     '━━━━━━━━━━━━━━━━━━━',
     '🔍 Scanned with *HotScan India*',
-    '🇮🇳 India\'s #1 Free Hot Wheels Scanner',
-    '👉 hotscan.in'
-  ].filter(Boolean).join('\n')
-  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+    '🇮🇳 Free at hotscan.in'
+  ].filter(function(l){return l!==undefined})
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
 }
 
 function shareWAListing() {
   if (!lastResult) return
-  var price = prompt('Your asking price (₹)?', '')
+  var price = prompt('Your asking price (₹)?','')
   if (!price) return
-  var cond = prompt('Condition? (MOC/NM/VG/Loose)', 'Mint on Card')
-  var city = prompt('Your city?', '')
-  var txt = [
+  var cond = prompt('Condition?','Mint on Card')
+  var city = prompt('Your city?','')
+  var lines = [
     '🚗 *FOR SALE — Hot Wheels*',
     '━━━━━━━━━━━━━━━━━━━',
-    '*' + lastResult.name + '*',
-    '📦 ' + (lastResult.series || ''),
-    '⭐ ' + (lastResult.rarity || 'Common'),
-    '📍 Condition: ' + (cond || 'MOC'),
-    city ? '🏙️ Location: ' + city : '',
+    '*'+lastResult.name+'*',
+    '📦 '+(lastResult.series||''),
+    '⭐ '+(lastResult.rarity||'Common'),
+    '📍 Condition: '+(cond||'MOC'),
+    city?'🏙️ '+city:'',
     '',
-    '💰 *Asking: ₹' + price + '*',
-    '📊 Market value: ₹' + (lastResult.india_collector_inr || '?'),
+    '💰 *Asking: ₹'+price+'*',
+    '📊 Market: ₹'+(lastResult.india_collector_inr||'?'),
     '',
-    '💬 DM to buy | Price negotiable',
+    '💬 DM to buy',
     '━━━━━━━━━━━━━━━━━━━',
     '🔍 Listed via HotScan India',
     '#HotWheelsIndia #HotWheelsIndiaSale #DieCast'
-  ].filter(Boolean).join('\n')
-  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+  ].filter(Boolean)
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
 }
 
 function shareWAGroup() {
   if (!lastResult) return
-  var txt = [
-    '🏎️ Just scanned this gem!',
+  var lines = [
+    '🏎️ Just scanned this!',
     '',
-    '*' + lastResult.name + '* (' + (lastResult.rarity||'Common') + ')',
-    '🇮🇳 India: ₹' + (lastResult.india_collector_inr||'?') + ' | 🇺🇸 US: $' + (lastResult.us_collector_usd||'?'),
-    '📈 ' + (lastResult.investment||'Medium') + ' investment potential',
-    lastResult.india_insight ? '💡 ' + lastResult.india_insight : '',
+    '*'+lastResult.name+'* ('+( lastResult.rarity||'Common')+')',
+    '🇮🇳 ₹'+(lastResult.india_collector_inr||'?')+' | 🇺🇸 $'+(lastResult.us_collector_usd||'?'),
+    '📈 '+(lastResult.investment||'Medium')+' investment potential',
+    lastResult.india_insight?'💡 '+lastResult.india_insight:'',
     '',
-    'Scanned free at hotscan.in 🔍',
-    '#HotWheelsIndia #HotScan'
-  ].filter(Boolean).join('\n')
-  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+    'Free at hotscan.in 🔍 #HotWheelsIndia'
+  ].filter(function(l){return l!==undefined})
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
 }
 async function shareNative() {
   if (!lastResult) return
@@ -3252,38 +3166,37 @@ async function loadProfile(){
       userProfile = Object.assign({},userProfile,{is_pro:true,is_developer:true})
     }
     if(userProfile && userProfile.is_pro) localStorage.setItem('hs_pro','true')
-    updateHeaderUI()
+    updateHeaderUI() // update header NOW that profile is loaded
   }catch(e){ console.warn('loadProfile:',e) }
 }
 
 function updateHeaderUI() {
   var btn = document.getElementById('user-hdr-btn')
   if (!btn) return
-  btn.onclick = currentUser ? openAccountModal : openAuth
+  // Always set onclick here since inline was removed
+  btn.onclick = function(){ currentUser ? openAccountModal() : openAuth() }
   if (currentUser) {
     var name = currentUser.name || currentUser.email.split('@')[0]
-    var initials = name[0].toUpperCase()
+    var initial = name[0].toUpperCase()
     var isDev = userProfile && userProfile.is_developer
-    var isPr  = !isDev && userProfile && userProfile.is_pro
-    var avatarBg = isDev ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'linear-gradient(135deg,var(--red),var(--gold))'
+    var isPro = !isDev && userProfile && userProfile.is_pro
+    var avatarBg = isDev
+      ? 'linear-gradient(135deg,#7c3aed,#4f46e5)'
+      : 'linear-gradient(135deg,var(--red),var(--gold))'
     var badge = isDev
-      ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;white-space:nowrap">👑 Dev</span>'
-      : isPr ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,var(--red),var(--gold));color:#000;white-space:nowrap">⭐ Pro</span>' : ''
-    btn.innerHTML = '<div style="display:flex;align-items:center;gap:6px;cursor:pointer">'
-      + '<div style="width:30px;height:30px;border-radius:50%;background:'+avatarBg+';border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.5)">'+initials+'</div>'
-      + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>'
-      + badge + '</div>'
-  } else {
-    btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
-  }
-};background:var(--red);color:#fff;letter-spacing:.03em">' + planLabel + '</div>' : '') + '</div>'
+      ? '<span style="font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;white-space:nowrap;flex-shrink:0">👑 Dev</span>'
+      : isPro
+      ? '<span style="font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;background:linear-gradient(90deg,var(--red),var(--gold));color:#000;white-space:nowrap;flex-shrink:0">⭐ Pro</span>'
+      : ''
+    btn.innerHTML = '<div style="display:flex;align-items:center;gap:6px;cursor:pointer;max-width:200px">'
+      + '<div style="width:30px;height:30px;border-radius:50%;background:' + avatarBg + ';border:2px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.5)">' + initial + '</div>'
+      + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
+      + badge
+      + '</div>'
   } else {
     btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
   }
 }
-
-
-
 
 
 
@@ -3383,8 +3296,8 @@ function renderProfilePage() {
   document.getElementById('prof-scans-bar').style.width = isPro() ? '100%' : Math.min(used/FREE_SCANS*100, 100) + '%'
   if (isPro()) document.getElementById('prof-scans-bar').style.background = 'var(--green)'
   // Portfolio
-  var portSec = document.getElementById('portfolio-section')
-  if (portSec && collection.length) { portSec.style.display='block'; renderPortfolio() }
+  var ps = document.getElementById('portfolio-section')
+  if(ps){ if(collection.length){ps.style.display='block';renderPortfolio()}else{ps.style.display='none'} }
   // Leaderboard
   renderLeaderboard()
   // Recent scans
@@ -3744,83 +3657,74 @@ function shareResultToGroup(){
 }
 
 
-// ════════════════════════════════════════════════════════
-// LEADERBOARD
-// ════════════════════════════════════════════════════════
+// ════════ LEADERBOARD ════════
 async function renderLeaderboard() {
   var el = document.getElementById('leaderboard-list')
   if (!el) return
-  // Load from Supabase community prices aggregated
   var leaders = []
   if (_sb) {
     try {
-      var res = await _sb.from('community_prices')
-        .select('user_name, user_id')
-        .not('user_name', 'is', null)
+      var res = await _sb.from('community_prices').select('user_name').not('user_name','is',null)
       if (res.data) {
         var counts = {}
-        res.data.forEach(function(r){ counts[r.user_name] = (counts[r.user_name]||0)+1 })
+        res.data.forEach(function(r){ counts[r.user_name]=(counts[r.user_name]||0)+1 })
         leaders = Object.entries(counts).sort(function(a,b){return b[1]-a[1]}).slice(0,10)
       }
-    } catch(e) {}
+    } catch(e) { console.warn('Leaderboard error:',e) }
   }
-  // Fallback demo data
   if (!leaders.length) {
     leaders = [
       ['Mumbai_HWCollector',47],['STH_Hunter_Delhi',38],['Vintage_King_BLR',31],
-      ['JDM_Fan_Chennai',28],['RajCollects',22],['HotWheels_Pune',18],
+      ['JDM_Fan_Chennai',28],['RajCollects',22],['HW_Pune',18],
       ['mahakf',15],['Collector_Hyd',12],['TH_Finder',9],['NitroCars',7]
     ]
   }
   var medals = ['🥇','🥈','🥉']
-  el.innerHTML = leaders.map(function(l, i){
-    var rank = i < 3 ? medals[i] : '#'+(i+1)
-    var rankCls = i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''
+  var cls = ['lb-gold','lb-silver','lb-bronze']
+  el.innerHTML = leaders.map(function(l,i){
+    var rank = i<3 ? medals[i] : '#'+(i+1)
     return '<div class="lb-item" style="animation-delay:'+i*.05+'s">'
-      + '<div class="lb-rank '+rankCls+'">'+rank+'</div>'
-      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+l[0]+'</div>'
-      + '<div style="font-size:10px;color:var(--text3)">'+l[1]+' prices submitted</div></div>'
-      + '<div style="font-size:13px;font-weight:700;color:var(--gold)">'+l[1]+' pts</div>'
-      + '</div>'
+      +'<div class="lb-rank '+(cls[i]||'')+'">'+rank+'</div>'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:700">'+l[0]+'</div>'
+      +'<div style="font-size:10px;color:var(--text3)">'+l[1]+' prices submitted</div></div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--gold)">'+l[1]+' pts</div>'
+      +'</div>'
   }).join('')
 }
 
-// ════════════════════════════════════════════════════════
-// PORTFOLIO VALUE TRACKER
-// ════════════════════════════════════════════════════════
+// ════════ PORTFOLIO ════════
 function renderPortfolio() {
   var el = document.getElementById('portfolio-chart')
   if (!el || !collection.length) return
-  var total = 0, rare = 0, th = 0, vintage = 0, common = 0
+  var total=0,th=0,vin=0,rare=0,common=0
   collection.forEach(function(c){
-    var val = parseFloat((c.india_collector_inr||'0').split('-')[0])||0
-    total += val
-    var r = (c.rarity||'').toLowerCase()
-    if(r.includes('super')||r.includes('treasure')) th += val
-    else if(r.includes('vintage')||r.includes('error')) vintage += val
-    else if(r.includes('rare')||r.includes('premium')) rare += val
-    else common += val
+    var v=parseFloat((c.india_collector_inr||'0').split('-')[0])||0
+    total+=v
+    var r=(c.rarity||'').toLowerCase()
+    if(r.includes('super')||r.includes('treasure')) th+=v
+    else if(r.includes('vintage')||r.includes('error')) vin+=v
+    else if(r.includes('rare')||r.includes('premium')) rare+=v
+    else common+=v
   })
   if(!total) return
-  var segments = [
-    {label:'STH/TH',val:th,color:'var(--red)'},
-    {label:'Vintage/Error',val:vintage,color:'var(--gold)'},
-    {label:'Rare/Premium',val:rare,color:'var(--blue)'},
+  var segs = [
+    {label:'STH / TH',val:th,color:'var(--red)'},
+    {label:'Vintage / Error',val:vin,color:'var(--gold)'},
+    {label:'Rare / Premium',val:rare,color:'var(--blue)'},
     {label:'Common',val:common,color:'var(--text3)'}
   ].filter(function(s){return s.val>0})
-  var bars = segments.map(function(s){
-    var pct = Math.round(s.val/total*100)
-    return '<div style="margin-bottom:8px">'
-      + '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">'
-      + '<span style="color:var(--text2)">'+s.label+'</span>'
-      + '<span style="color:'+s.color+';font-weight:700">₹'+s.val.toLocaleString('en-IN')+' ('+pct+'%)</span></div>'
-      + '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">'
-      + '<div style="height:100%;width:'+pct+'%;background:'+s.color+';border-radius:3px;transition:width .6s ease"></div>'
-      + '</div></div>'
-  }).join('')
-  el.innerHTML = '<div style="font-size:22px;font-weight:800;color:var(--gold);margin-bottom:4px">₹'+total.toLocaleString('en-IN')+'</div>'
-    + '<div style="font-size:10px;color:var(--text3);margin-bottom:14px">Total collection value · '+collection.length+' cars</div>'
-    + bars
+  el.innerHTML = '<div style="font-size:22px;font-weight:800;color:var(--gold);margin-bottom:3px">₹'+total.toLocaleString('en-IN')+'</div>'
+    +'<div style="font-size:10px;color:var(--text3);margin-bottom:14px">'+collection.length+' cars · estimated collector value</div>'
+    +segs.map(function(s){
+      var pct=Math.round(s.val/total*100)
+      return '<div style="margin-bottom:9px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">'
+        +'<span style="color:var(--text2)">'+s.label+'</span>'
+        +'<span style="font-weight:700;color:'+s.color+'">₹'+s.val.toLocaleString('en-IN')+' ('+pct+'%)</span></div>'
+        +'<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">'
+        +'<div style="height:100%;width:'+pct+'%;background:'+s.color+';border-radius:3px;transition:width .6s ease"></div>'
+        +'</div></div>'
+    }).join('')
 }
 
 function whatsappSupport(){
