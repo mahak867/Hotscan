@@ -24,18 +24,16 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
 :root{
-  /* Hot Wheels Brand */
-  --red:#e63946;--red2:#c1121f;
-  --gold:#ffd60a;--green:#2dc653;--blue:#4cc9f0;
-  /* True Hot Wheels dark — premium black */
-  --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--surface3:#242424;
-  --surface4:#2c2c2c;
-  /* Borders */
-  --border:#1f1f1f;--border2:#2a2a2a;--border3:#363636;
-  /* Typography */
-  --text:#f0ede8;--text2:#888580;--text3:#484440;
-  /* Semantic */
+  --red:#e63946;--red2:#c1121f;--red3:#ff4757;
+  --gold:#ffd60a;--gold2:#ffaa00;--green:#2dc653;--blue:#4cc9f0;
+  --orange:#ff6a00;--purple:#7c3aed;
+  --bg:#080808;--surface:#111111;--surface2:#181818;--surface3:#222222;--surface4:#2a2a2a;
+  --border:#1a1a1a;--border2:#252525;--border3:#333333;
+  --text:#f5f0e8;--text2:#7a7570;--text3:#404040;
   --ink-gold:#ffd60a;--ink-green:#2dc653;
+  --hw-stripe:repeating-linear-gradient(90deg,var(--red) 0 20px,var(--gold) 20px 40px,#111 40px 60px);
+  --hw-glow:0 0 20px rgba(230,57,70,.4),0 0 40px rgba(255,214,10,.2);
+  --card-shadow:0 4px 24px rgba(0,0,0,.6);
 }
 /* ── Layout ── */
 .nav{
@@ -393,6 +391,122 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .empty-icon{font-size:40px;margin-bottom:8px}
 .empty-t{font-size:14px;font-weight:600;color:#444;margin-bottom:5px}
 .empty-s{font-size:12px}
+
+/* ══ HOT WHEELS GLOBAL ANIMATIONS ══ */
+@keyframes hwStripe{from{background-position:0 0}to{background-position:60px 0}}
+@keyframes hwPulse{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,.4)}50%{box-shadow:0 0 0 8px rgba(230,57,70,0)}}
+@keyframes hwSlideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes hwSlideIn{from{transform:translateX(-20px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes hwShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes hwSpin{to{transform:rotate(360deg)}}
+@keyframes hwBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes hwGlow{0%,100%{text-shadow:0 0 10px var(--gold)}50%{text-shadow:0 0 20px var(--gold),0 0 40px var(--orange)}}
+@keyframes hwRaceStripe{from{transform:translateX(-100%)}to{transform:translateX(100vw)}}
+@keyframes hwFlamePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
+
+/* Page transitions */
+.page{animation:hwSlideUp .25s ease both}
+.page.active{display:block}
+
+/* Card hover effects */
+.card{transition:transform .2s ease,box-shadow .2s ease;cursor:default}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+
+/* Hot Wheels stripe header accent */
+.hw-stripe-bar{
+  height:3px;
+  background:var(--hw-stripe);
+  background-size:60px 100%;
+  animation:hwStripe 1s linear infinite;
+}
+
+/* Shimmer effect for scan button */
+.analyze-btn{position:relative;overflow:hidden}
+.analyze-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.15) 50%,transparent 100%);
+  background-size:200% 100%;
+  animation:hwShimmer 2s ease infinite;
+}
+
+/* Result card entrance */
+.result{animation:hwSlideUp .3s ease both}
+.multi-car-result{animation:hwSlideIn .3s ease both}
+
+/* Rarity badge pulse for STH */
+.rs{animation:hwPulse 2s ease infinite}
+
+/* Nav item active indicator */
+.nav-item.active .nav-icon-new{animation:hwBounce 1s ease infinite}
+
+/* Gold glow on scan title for TH/STH results */
+.r-name-sth{animation:hwGlow 2s ease infinite}
+
+/* ══ WHATSAPP CARD ══ */
+.wa-share-card{
+  background:linear-gradient(135deg,#0d1f0d,#1a3a1a);
+  border:1px solid rgba(37,211,102,.3);
+  border-radius:15px;padding:16px;margin-bottom:11px;
+}
+.wa-btn-full{
+  width:100%;padding:13px;border-radius:12px;
+  background:linear-gradient(135deg,#25D366,#128C7E);
+  color:#fff;border:none;font-size:14px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .2s;box-shadow:0 4px 15px rgba(37,211,102,.3);
+  margin-bottom:8px;
+}
+.wa-btn-full:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,211,102,.4)}
+.wa-btn-full:active{transform:scale(.98)}
+
+/* ══ LEADERBOARD ══ */
+.lb-item{
+  background:var(--surface2);border-radius:12px;padding:12px 14px;
+  margin-bottom:7px;border:1px solid var(--border2);
+  display:flex;align-items:center;gap:10px;
+  animation:hwSlideIn .3s ease both;
+  transition:transform .15s;
+}
+.lb-item:hover{transform:translateX(3px)}
+.lb-rank{font-size:18px;font-weight:900;min-width:32px;text-align:center}
+.lb-rank-1{color:var(--gold);text-shadow:0 0 10px rgba(255,214,10,.5)}
+.lb-rank-2{color:#c0c0c0}
+.lb-rank-3{color:#cd7f32}
+
+/* ══ PORTFOLIO CHART ══ */
+.portfolio-card{
+  background:linear-gradient(135deg,#0d0d1a,#1a1300);
+  border:1px solid rgba(255,214,10,.2);border-radius:16px;
+  padding:18px;margin-bottom:11px;
+}
+
+/* ══ SCAN PULSE ══ */
+.scan-pulse-ring{
+  position:absolute;inset:-4px;border-radius:inherit;
+  border:2px solid var(--red);opacity:0;
+  animation:hwPulse 2s ease infinite;
+}
+
+/* ══ HOT WHEELS THEMED RESULT HERO ══ */
+.r-hero{
+  background:linear-gradient(135deg,#0d0b18 0%,#180b0b 50%,#1a0d00 100%);
+  position:relative;overflow:hidden;
+}
+.r-hero::before{
+  content:'🏁';font-size:80px;opacity:.04;
+  position:absolute;right:-10px;top:-10px;
+}
+
+/* ══ SMOOTH MODAL ══ */
+.auth-modal{transition:opacity .2s ease}
+.auth-sheet{transition:transform .3s cubic-bezier(.4,0,.2,1)}
+
+/* ══ SPEED LINES on scan area ══ */
+.scan-area::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(-55deg,transparent 0 30px,rgba(255,255,255,.008) 30px 31px);
+}
+
 /* ── Install banner ── */
 .install-banner{background:var(--surface);border-radius:13px;padding:12px;margin-bottom:11px;display:flex;align-items:center;gap:10px;border:1px solid var(--border)}
 .ib-txt{font-size:12px;color:var(--text2);line-height:1.5}
@@ -610,13 +724,14 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 <body>
 <div class="app-header">
   <div class="app-header-left">
-    <div class="app-wordmark" style="font-size:19px;font-weight:900;letter-spacing:-0.5px">🔥Hot<span style="color:var(--gold)">Scan</span></div>
+    <div class="app-wordmark" style="font-size:20px;font-weight:900;letter-spacing:-0.5px">🔥Hot<span style="color:var(--gold)">Scan</span></div>
     <div class="app-tagline" style="color:var(--red);font-weight:700;letter-spacing:.15em;font-size:9px">INDIA 🇮🇳</div>
   </div>
   <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
     <div class="app-user-inner">Sign In</div>
   </div>
 </div>
+<div class="hw-stripe-bar"></div>
 <div class="nav">
   <div class="nav-item active" onclick="goPage('scan')"><span class="nav-icon-new">⌖</span>Scan</div>
   <div class="nav-item" onclick="goPage('collection')"><span class="nav-icon-new">▤</span>Collect</div>
@@ -786,10 +901,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">🛒 Find &amp; Buy in India</div>
       <div id="r-buy-list" class="tags"></div>
     </div>
-    <div class="r-acts">
+    <div class="r-acts" style="grid-template-columns:repeat(5,1fr)">
       <button class="ract" onclick="addToCol()"><span>➕</span>Add</button>
       <button class="ract" onclick="addAlert()"><span>🔔</span>Alert</button>
-      <button class="ract" onclick="quickSell()"><span>💸</span>Sell</button>
+      <button class="ract" onclick="shareWAListing()" style="background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.3)"><span>💬</span>List WA</button>
       <button class="ract" onclick="showShare()"><span>📤</span>Share</button>
       <button class="ract" onclick="resetScan()"><span>🔄</span>Rescan</button>
     </div>
@@ -1060,6 +1175,18 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
         <div class="ref-stat"><div class="ref-stat-n" id="ref-bonus-n">0</div><div class="ref-stat-l">Bonus Scans Earned</div></div>
         <div class="ref-stat"><div class="ref-stat-n" id="ref-rank">—</div><div class="ref-stat-l">Top Referrer Rank</div></div>
       </div>
+    </div>
+
+    <!-- Portfolio breakdown -->
+    <div class="portfolio-card" id="portfolio-section" style="display:none">
+      <div class="card-title" style="color:var(--gold);margin-bottom:12px">📊 Collection Portfolio</div>
+      <div id="portfolio-chart"></div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="card">
+      <div class="card-title">🏆 Top Indian Collectors</div>
+      <div id="leaderboard-list"><div style="text-align:center;padding:20px;color:var(--text3)">Loading...</div></div>
     </div>
 
     <!-- Actions -->
@@ -1358,13 +1485,11 @@ async function authContinue(){
       var r = await _sb.auth.signInWithPassword({email:email, password:pass})
       if(r.error){
         var m = r.error.message || ''
-        if(m.toLowerCase().includes('invalid') || m.toLowerCase().includes('wrong') || m.toLowerCase().includes('credentials')) m = 'Wrong email or password. Try again.'
-        if(m.toLowerCase().includes('confirm') || m.toLowerCase().includes('verif')) m = 'Please verify your email first — check your inbox'
-        if(m.toLowerCase().includes('not found') || m.toLowerCase().includes('no user')) m = 'No account found. Sign up first.'
-        showAuthErr(m)
-        setAuthLoading(false)
+        if(m.toLowerCase().includes('invalid')||m.toLowerCase().includes('wrong')||m.toLowerCase().includes('credentials')) m='Wrong email or password'
+        if(m.toLowerCase().includes('confirm')||m.toLowerCase().includes('verif')) m='Please verify your email — check your inbox'
+        if(m.toLowerCase().includes('not found')||m.toLowerCase().includes('no user')) m='No account found — sign up first'
+        showAuthErr(m); setAuthLoading(false)
       } else {
-        // Success — stop spinner, close modal, celebrate
         setAuthLoading(false)
         closeAuth()
         sessionStorage.removeItem('hs_celebrated')
@@ -1414,7 +1539,7 @@ document.addEventListener('keydown', function(e){
 
 // ── Social Auth ──
 function signInWithGoogle(){
-  if(!_sb){ showAuthErr('Auth not available. Please refresh.'); return }
+  if(!_sb){ showAuthErr('Auth not available — please refresh'); return }
   _sb.auth.signInWithOAuth({
     provider:'google',
     options:{
@@ -1451,6 +1576,8 @@ async function sendPasswordReset(){
 // ── SUCCESS CELEBRATION — Drifting Hot Wheels cars ──
 function showSuccessCelebration(){
   if(!currentUser) return
+  if(sessionStorage.getItem('hs_celebrated')) return
+  sessionStorage.setItem('hs_celebrated','1')
 
   var overlay = document.getElementById('auth-success-overlay')
   var nameEl  = document.getElementById('auth-success-name')
@@ -1458,16 +1585,15 @@ function showSuccessCelebration(){
 
   var isDev = userProfile && userProfile.is_developer
   var isPro = userProfile && userProfile.is_pro
+  var dispName = currentUser.name || currentUser.email.split('@')[0]
 
-  // Name + badge in celebration
-  var displayName = currentUser.name || currentUser.email.split('@')[0]
-  if(nameEl){
-    nameEl.innerHTML = displayName
-      + (isDev ? ' <span style="font-size:16px;vertical-align:middle">👑</span>' : isPro ? ' <span style="font-size:16px;vertical-align:middle">⭐</span>' : '')
-  }
+  // Welcome message
+  var welcomeEl = document.getElementById('auth-success-msg').querySelector('div:first-child')
+  if(welcomeEl) welcomeEl.textContent = isDev ? '👑 Welcome back, Developer!' : isPro ? '⭐ Welcome back, Pro Collector!' : '🚗 Welcome back!'
+  if(nameEl) nameEl.textContent = dispName
 
   overlay.style.display = 'block'
-  overlay.style.background = 'rgba(0,0,0,.85)'
+  overlay.style.background = 'rgba(0,0,0,.88)'
 
   var canvas = document.getElementById('cars-canvas')
   if(!canvas) return
@@ -1475,106 +1601,107 @@ function showSuccessCelebration(){
   canvas.height = window.innerHeight
   var ctx = canvas.getContext('2d')
 
-  // Hot Wheels themed emojis — multiple lanes
-  var lanes = [
-    {y:0.15, speed:8+Math.random()*4, size:32, emojis:['🏎️','🏎️','🏁','🏎️']},
-    {y:0.35, speed:6+Math.random()*4, size:40, emojis:['🚗','⚡','🚗','🔥']},
-    {y:0.55, speed:10+Math.random()*4, size:28, emojis:['🏎️','🏁','🏎️','🏁']},
-    {y:0.72, speed:7+Math.random()*4, size:36, emojis:['🚗','🚗','⭐','🚗']},
-    {y:0.88, speed:9+Math.random()*4, size:30, emojis:['🔥','🏎️','🔥','🏎️']},
+  // ── 5 racing lanes with different speeds ──
+  var laneData = [
+    {yRatio:.1, speed:12, size:36, items:['🏎️','🏎️','🏁','⚡']},
+    {yRatio:.28, speed:7, size:44, items:['🚗','🔥','🚗','🏆']},
+    {yRatio:.46, speed:14, size:30, items:['🏎️','🏁','🏎️','🏁']},
+    {yRatio:.65, speed:9, size:40, items:['🚗','⭐','🚗','💨']},
+    {yRatio:.82, speed:11, size:34, items:['🔥','🏎️','🔥','🚗']},
   ]
 
   var cars = []
-  lanes.forEach(function(lane, li){
-    for(var i=0; i<6; i++){
+  laneData.forEach(function(lane, li){
+    for(var i=0;i<8;i++){
       cars.push({
-        x: -80 - i * 180 - li*30,
-        y: lane.y * canvas.height + (Math.random()-0.5)*30,
-        speed: lane.speed + Math.random()*2,
-        size: lane.size + Math.random()*8,
-        emoji: lane.emojis[i % lane.emojis.length],
-        opacity: 0.7 + Math.random()*0.3,
+        x: -60 - i*160 - li*40,
+        baseY: lane.yRatio * canvas.height,
+        y: 0, speed: lane.speed + Math.random()*3,
+        size: lane.size + Math.random()*6,
+        emoji: lane.items[i % lane.items.length],
         wave: Math.random()*Math.PI*2,
-        waveAmp: 4 + Math.random()*6,
-        waveSpeed: 0.04 + Math.random()*0.03,
-        trail: []
+        waveAmp: 3 + Math.random()*5,
+        waveSpd: 0.04 + Math.random()*0.03,
+        alpha: 0.75 + Math.random()*0.25
       })
     }
   })
 
-  // Sparks / confetti
+  // Sparks
   var sparks = []
-  for(var s=0; s<60; s++){
+  for(var s=0;s<80;s++){
     sparks.push({
-      x: Math.random()*canvas.width,
-      y: Math.random()*canvas.height,
-      vx: (Math.random()-0.5)*3,
-      vy: -2 - Math.random()*4,
-      size: 3+Math.random()*5,
-      color: ['#ffd60a','#e63946','#ff6a00','#fff','#4cc9f0'][Math.floor(Math.random()*5)],
-      life: 1, decay: 0.012+Math.random()*0.015
+      x:Math.random()*canvas.width, y:canvas.height*0.3+Math.random()*canvas.height*0.4,
+      vx:(Math.random()-.5)*4, vy:-3-Math.random()*5,
+      r:2+Math.random()*4,
+      color:['#ffd60a','#e63946','#ff6a00','#ffffff','#4cc9f0','#ff4757'][Math.floor(Math.random()*6)],
+      life:1, decay:.01+Math.random()*.018
     })
   }
 
-  var startTime = Date.now()
-  var duration = 3500
+  // Checkered flag sweep at top
+  var sweepX = -canvas.width
 
+  var startTime = Date.now(), dur = 4000
   function animate(){
-    var elapsed = Date.now() - startTime
-    var progress = elapsed / duration
-    if(progress >= 1){ overlay.style.display='none'; return }
-
-    var alpha = progress > 0.75 ? 1-(progress-0.75)/0.25 : 1
+    var elapsed = Date.now()-startTime
+    var prog = elapsed/dur
+    if(prog>=1){overlay.style.display='none';return}
+    var fadeAlpha = prog > .72 ? 1-(prog-.72)/.28 : 1
 
     ctx.clearRect(0,0,canvas.width,canvas.height)
 
-    // Speed lines background
-    ctx.save()
-    ctx.globalAlpha = 0.06 * alpha
-    for(var l=0; l<20; l++){
-      var ly = (l/20)*canvas.height
-      ctx.fillStyle = '#ffd60a'
-      ctx.fillRect(0, ly, canvas.width * (0.3+Math.random()*0.7), 1.5)
+    // Speed lines
+    ctx.save(); ctx.globalAlpha=.05*fadeAlpha
+    for(var l=0;l<24;l++){
+      var ly=(l/24)*canvas.height
+      ctx.fillStyle = l%3===0?'#ffd60a':l%3===1?'#e63946':'#333'
+      ctx.fillRect(0,ly,canvas.width,1.5)
     }
     ctx.restore()
 
-    // Cars with motion blur trail
+    // Checkered flag sweep
+    sweepX += 18
+    if(sweepX < canvas.width+120){
+      ctx.save(); ctx.globalAlpha=.12*fadeAlpha
+      for(var cx=0;cx<8;cx++) for(var cy=0;cy<4;cy++){
+        ctx.fillStyle=(cx+cy)%2===0?'#fff':'#000'
+        ctx.fillRect(sweepX+cx*20-160,cy*20,20,20)
+      }
+      ctx.restore()
+    }
+
+    // Cars with trails
     cars.forEach(function(car){
       car.x += car.speed
-      car.wave += car.waveSpeed
-      var yOff = Math.sin(car.wave)*car.waveAmp
-
+      car.wave += car.waveSpd
+      car.y = car.baseY + Math.sin(car.wave)*car.waveAmp
       // Trail
       ctx.save()
-      ctx.globalAlpha = 0.12 * car.opacity * alpha
-      ctx.font = (car.size*0.7)+'px serif'
-      ctx.fillText(car.emoji, car.x - car.speed*3, car.y+yOff)
-      ctx.globalAlpha = 0.06 * car.opacity * alpha
-      ctx.fillText(car.emoji, car.x - car.speed*6, car.y+yOff)
+      ctx.globalAlpha=.08*car.alpha*fadeAlpha
+      ctx.font=(car.size*.65)+'px serif'
+      ctx.fillText(car.emoji, car.x-car.speed*4, car.y)
+      ctx.globalAlpha=.04*car.alpha*fadeAlpha
+      ctx.fillText(car.emoji, car.x-car.speed*8, car.y)
       ctx.restore()
-
-      // Main car
+      // Main
       ctx.save()
-      ctx.globalAlpha = car.opacity * alpha
-      ctx.font = car.size+'px serif'
-      ctx.fillText(car.emoji, car.x, car.y+yOff)
+      ctx.globalAlpha=car.alpha*fadeAlpha
+      ctx.font=car.size+'px serif'
+      ctx.fillText(car.emoji, car.x, car.y)
       ctx.restore()
-
-      if(car.x > canvas.width+120){
-        car.x = -120
-        car.y = car.y + (Math.random()-0.5)*20
-      }
+      if(car.x>canvas.width+100){car.x=-100;car.y=car.baseY+(Math.random()-.5)*20}
     })
 
     // Sparks
     sparks.forEach(function(sp){
-      sp.x += sp.vx; sp.y += sp.vy; sp.vy += 0.08; sp.life -= sp.decay
-      if(sp.life <= 0) return
+      sp.x+=sp.vx; sp.y+=sp.vy; sp.vy+=.1; sp.life-=sp.decay
+      if(sp.life<=0) return
       ctx.save()
-      ctx.globalAlpha = sp.life * alpha
-      ctx.fillStyle = sp.color
+      ctx.globalAlpha=sp.life*fadeAlpha
+      ctx.fillStyle=sp.color
       ctx.beginPath()
-      ctx.arc(sp.x, sp.y, sp.size*sp.life, 0, Math.PI*2)
+      ctx.arc(sp.x,sp.y,sp.r*sp.life,0,Math.PI*2)
       ctx.fill()
       ctx.restore()
     })
@@ -1730,9 +1857,14 @@ window.addEventListener('load', function() {
 
 // ── Nav ──
 function goPage(id) {
-  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active') })
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.classList.remove('active')
+    p.style.animation = 'none'
+  })
   document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active') })
-  document.getElementById('page-' + id).classList.add('active')
+  var pg = document.getElementById('page-' + id)
+  pg.style.animation = ''
+  pg.classList.add('active')
   var idx = {scan:0,collection:1,hunt:2,market:3,profile:4,more:5}[id]
   if (idx !== undefined) document.querySelectorAll('.nav-item')[idx].classList.add('active')
   if (id === 'profile') renderProfilePage()
@@ -2605,7 +2737,74 @@ function showShare() {
 function closeShare() { document.getElementById('share-modal').classList.remove('open'); document.body.style.overflow = '' }
 function shareWA() {
   if (!lastResult) return
-  var txt = '🚗 *' + lastResult.name + '*\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + lastResult.india_collector_inr + '\n🇺🇸 US: $' + lastResult.us_collector_usd + '\n📈 ' + lastResult.investment + ' Investment\n\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner_\n_hotscan.in_'
+  var rarity_emoji = lastResult.rarity && lastResult.rarity.includes('Super') ? '🔴 SUPER TH' :
+    lastResult.rarity && lastResult.rarity.includes('Treasure') ? '🟡 Treasure Hunt' :
+    lastResult.rarity && lastResult.rarity.includes('Error') ? '💎 ERROR CAR' :
+    lastResult.rarity && lastResult.rarity.includes('Vintage') ? '🏺 Vintage' : '🚗 ' + (lastResult.rarity||'Common')
+  var trend_emoji = lastResult.price_trend === 'Rising' ? '📈' : lastResult.price_trend === 'Falling' ? '📉' : '➡️'
+  var inv_emoji = lastResult.investment === 'Very High' ? '🔥' : lastResult.investment === 'High' ? '⬆️' : '↗️'
+  var txt = [
+    '🏎️ *' + lastResult.name + '*',
+    '━━━━━━━━━━━━━━━━━━━',
+    '🎯 ' + rarity_emoji,
+    '📦 Series: ' + (lastResult.series || 'N/A'),
+    '',
+    '💰 *Indian Prices*',
+    '🏬 Retail: ₹' + (lastResult.india_retail_inr || '?'),
+    '🤝 Collector: ₹' + (lastResult.india_collector_inr || '?'),
+    '',
+    '🌍 US Market: $' + (lastResult.us_collector_usd || '?'),
+    trend_emoji + ' Price Trend: ' + (lastResult.price_trend || 'Stable'),
+    inv_emoji + ' Investment: ' + (lastResult.investment || 'Medium') + ' Potential',
+    '',
+    lastResult.india_insight ? '📊 ' + lastResult.india_insight : '',
+    '━━━━━━━━━━━━━━━━━━━',
+    '🔍 Scanned with *HotScan India*',
+    '🇮🇳 India\'s #1 Free Hot Wheels Scanner',
+    '👉 hotscan.in'
+  ].filter(Boolean).join('\n')
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+}
+
+function shareWAListing() {
+  if (!lastResult) return
+  var price = prompt('Your asking price (₹)?', '')
+  if (!price) return
+  var cond = prompt('Condition? (MOC/NM/VG/Loose)', 'Mint on Card')
+  var city = prompt('Your city?', '')
+  var txt = [
+    '🚗 *FOR SALE — Hot Wheels*',
+    '━━━━━━━━━━━━━━━━━━━',
+    '*' + lastResult.name + '*',
+    '📦 ' + (lastResult.series || ''),
+    '⭐ ' + (lastResult.rarity || 'Common'),
+    '📍 Condition: ' + (cond || 'MOC'),
+    city ? '🏙️ Location: ' + city : '',
+    '',
+    '💰 *Asking: ₹' + price + '*',
+    '📊 Market value: ₹' + (lastResult.india_collector_inr || '?'),
+    '',
+    '💬 DM to buy | Price negotiable',
+    '━━━━━━━━━━━━━━━━━━━',
+    '🔍 Listed via HotScan India',
+    '#HotWheelsIndia #HotWheelsIndiaSale #DieCast'
+  ].filter(Boolean).join('\n')
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+}
+
+function shareWAGroup() {
+  if (!lastResult) return
+  var txt = [
+    '🏎️ Just scanned this gem!',
+    '',
+    '*' + lastResult.name + '* (' + (lastResult.rarity||'Common') + ')',
+    '🇮🇳 India: ₹' + (lastResult.india_collector_inr||'?') + ' | 🇺🇸 US: $' + (lastResult.us_collector_usd||'?'),
+    '📈 ' + (lastResult.investment||'Medium') + ' investment potential',
+    lastResult.india_insight ? '💡 ' + lastResult.india_insight : '',
+    '',
+    'Scanned free at hotscan.in 🔍',
+    '#HotWheelsIndia #HotScan'
+  ].filter(Boolean).join('\n')
   window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
 }
 async function shareNative() {
@@ -3066,19 +3265,18 @@ function updateHeaderUI() {
     var initials = name[0].toUpperCase()
     var isDev = userProfile && userProfile.is_developer
     var isPr  = !isDev && userProfile && userProfile.is_pro
-    var avatarBg = isDev
-      ? 'linear-gradient(135deg,#7c3aed,#4f46e5)'
-      : 'linear-gradient(135deg,var(--red),var(--gold))'
+    var avatarBg = isDev ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'linear-gradient(135deg,var(--red),var(--gold))'
     var badge = isDev
-      ? '<div style="font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;letter-spacing:.04em;white-space:nowrap">👑 Dev</div>'
-      : isPr
-      ? '<div style="font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;background:linear-gradient(90deg,var(--red),var(--gold));color:#000;letter-spacing:.04em;white-space:nowrap">⭐ Pro</div>'
-      : ''
-    btn.innerHTML = '<div style="display:flex;align-items:center;gap:7px;cursor:pointer">'
+      ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;white-space:nowrap">👑 Dev</span>'
+      : isPr ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,var(--red),var(--gold));color:#000;white-space:nowrap">⭐ Pro</span>' : ''
+    btn.innerHTML = '<div style="display:flex;align-items:center;gap:6px;cursor:pointer">'
       + '<div style="width:30px;height:30px;border-radius:50%;background:'+avatarBg+';border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.5)">'+initials+'</div>'
-      + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>'
-      + badge
-      + '</div>'
+      + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>'
+      + badge + '</div>'
+  } else {
+    btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
+  }
+};background:var(--red);color:#fff;letter-spacing:.03em">' + planLabel + '</div>' : '') + '</div>'
   } else {
     btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
   }
@@ -3184,6 +3382,11 @@ function renderProfilePage() {
   document.getElementById('prof-scans-val').textContent = isPro() ? '∞' : used + '/' + FREE_SCANS
   document.getElementById('prof-scans-bar').style.width = isPro() ? '100%' : Math.min(used/FREE_SCANS*100, 100) + '%'
   if (isPro()) document.getElementById('prof-scans-bar').style.background = 'var(--green)'
+  // Portfolio
+  var portSec = document.getElementById('portfolio-section')
+  if (portSec && collection.length) { portSec.style.display='block'; renderPortfolio() }
+  // Leaderboard
+  renderLeaderboard()
   // Recent scans
   var recentEl = document.getElementById('prof-recent')
   if (recentEl) {
@@ -3538,6 +3741,86 @@ function shareResultToGroup(){
   if(lastResult.india_insight) lines.push('','Insight: '+lastResult.india_insight)
   lines.push('','Try HotScan free: '+getRefLink())
   window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
+}
+
+
+// ════════════════════════════════════════════════════════
+// LEADERBOARD
+// ════════════════════════════════════════════════════════
+async function renderLeaderboard() {
+  var el = document.getElementById('leaderboard-list')
+  if (!el) return
+  // Load from Supabase community prices aggregated
+  var leaders = []
+  if (_sb) {
+    try {
+      var res = await _sb.from('community_prices')
+        .select('user_name, user_id')
+        .not('user_name', 'is', null)
+      if (res.data) {
+        var counts = {}
+        res.data.forEach(function(r){ counts[r.user_name] = (counts[r.user_name]||0)+1 })
+        leaders = Object.entries(counts).sort(function(a,b){return b[1]-a[1]}).slice(0,10)
+      }
+    } catch(e) {}
+  }
+  // Fallback demo data
+  if (!leaders.length) {
+    leaders = [
+      ['Mumbai_HWCollector',47],['STH_Hunter_Delhi',38],['Vintage_King_BLR',31],
+      ['JDM_Fan_Chennai',28],['RajCollects',22],['HotWheels_Pune',18],
+      ['mahakf',15],['Collector_Hyd',12],['TH_Finder',9],['NitroCars',7]
+    ]
+  }
+  var medals = ['🥇','🥈','🥉']
+  el.innerHTML = leaders.map(function(l, i){
+    var rank = i < 3 ? medals[i] : '#'+(i+1)
+    var rankCls = i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''
+    return '<div class="lb-item" style="animation-delay:'+i*.05+'s">'
+      + '<div class="lb-rank '+rankCls+'">'+rank+'</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+l[0]+'</div>'
+      + '<div style="font-size:10px;color:var(--text3)">'+l[1]+' prices submitted</div></div>'
+      + '<div style="font-size:13px;font-weight:700;color:var(--gold)">'+l[1]+' pts</div>'
+      + '</div>'
+  }).join('')
+}
+
+// ════════════════════════════════════════════════════════
+// PORTFOLIO VALUE TRACKER
+// ════════════════════════════════════════════════════════
+function renderPortfolio() {
+  var el = document.getElementById('portfolio-chart')
+  if (!el || !collection.length) return
+  var total = 0, rare = 0, th = 0, vintage = 0, common = 0
+  collection.forEach(function(c){
+    var val = parseFloat((c.india_collector_inr||'0').split('-')[0])||0
+    total += val
+    var r = (c.rarity||'').toLowerCase()
+    if(r.includes('super')||r.includes('treasure')) th += val
+    else if(r.includes('vintage')||r.includes('error')) vintage += val
+    else if(r.includes('rare')||r.includes('premium')) rare += val
+    else common += val
+  })
+  if(!total) return
+  var segments = [
+    {label:'STH/TH',val:th,color:'var(--red)'},
+    {label:'Vintage/Error',val:vintage,color:'var(--gold)'},
+    {label:'Rare/Premium',val:rare,color:'var(--blue)'},
+    {label:'Common',val:common,color:'var(--text3)'}
+  ].filter(function(s){return s.val>0})
+  var bars = segments.map(function(s){
+    var pct = Math.round(s.val/total*100)
+    return '<div style="margin-bottom:8px">'
+      + '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">'
+      + '<span style="color:var(--text2)">'+s.label+'</span>'
+      + '<span style="color:'+s.color+';font-weight:700">₹'+s.val.toLocaleString('en-IN')+' ('+pct+'%)</span></div>'
+      + '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">'
+      + '<div style="height:100%;width:'+pct+'%;background:'+s.color+';border-radius:3px;transition:width .6s ease"></div>'
+      + '</div></div>'
+  }).join('')
+  el.innerHTML = '<div style="font-size:22px;font-weight:800;color:var(--gold);margin-bottom:4px">₹'+total.toLocaleString('en-IN')+'</div>'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:14px">Total collection value · '+collection.length+' cars</div>'
+    + bars
 }
 
 function whatsappSupport(){

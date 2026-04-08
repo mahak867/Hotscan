@@ -1,197 +1,113 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/HotScan-India-e63946?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRleHQgeT0iMjAiIGZvbnQtc2l6ZT0iMjAiPvCfkqU8L3RleHQ+PC9zdmc+" alt="HotScan India">
+<img src="assets/banner.svg" alt="AI Projects Hub" width="100%" />
 
-# 🚗 HotScan India
+# 🤖 AI Projects Hub
 
-### India's First Hot Wheels Scanner
+### Real working AI projects you can run in under 5 minutes
 
-**Scan any Hot Wheels car → Get live Indian market prices instantly**
+[![GitHub Stars](https://img.shields.io/github/stars/mahak867/ai-projects-hub?style=flat-square&color=00b386)](https://github.com/mahak867/ai-projects-hub/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/mahak867/ai-projects-hub?style=flat-square&color=0ea5e9)](https://github.com/mahak867/ai-projects-hub/forks)
+[![GitHub Issues](https://img.shields.io/github/issues/mahak867/ai-projects-hub?style=flat-square)](https://github.com/mahak867/ai-projects-hub/issues)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-[![Live App](https://img.shields.io/badge/Live%20App-mahak867.github.io%2FHotscan-e63946?style=flat-square)](https://mahak867.github.io/Hotscan)
-[![Version](https://img.shields.io/badge/Version-2.0-ffd60a?style=flat-square)](#)
-[![License](https://img.shields.io/badge/License-MIT-2dc653?style=flat-square)](#)
-[![Made for India](https://img.shields.io/badge/Made%20for-India%20🇮🇳-4cc9f0?style=flat-square)](#)
+**20+ production-ready AI projects** · Built with Claude, Python, and modern AI tools  
+Focused on **Indian markets**, **real APIs**, and **code that actually runs**
 
-<br>
-
-> **No one has built this for India. Until now.**
->
-> Every Indian Hot Wheels collector has been guessing prices —
-> overpaying at Hamleys, underselling on OLX, missing Treasure Hunts
-> because they didn't know what they were looking at.
-> HotScan fixes that.
+[Browse Projects](#-projects) · [Quick Start](#-quick-start) · [Contributing](#-contributing)
 
 </div>
 
 ---
 
-## 📱 What It Does
+## 🎯 Why This Repo?
 
-Point your phone camera at any Hot Wheels car and in seconds get:
+Most AI tutorials give you pseudo-code. Every project here:
 
-| Feature | Details |
-|---------|---------|
-| 🔍 **Car Identification** | Name, series, casting year, color, tampo, wheel type |
-| ⭐ **Rarity Rating** | Common → Super Treasure Hunt → Error Car |
-| 🇮🇳 **Live Indian Prices** | Retail (Hamleys/Flipkart) + Collector (OLX/Instagram) in ₹ |
-| 🇺🇸 **US Market Prices** | Retail + eBay collector price in $ |
-| 📈 **Price Trend** | Rising / Stable / Falling with reason |
-| 🔴 **Live Listings** | Real current listings from Indian sellers |
-| 📊 **Market Insight** | India-specific demand, availability, collector trends |
-| 💰 **Investment Potential** | Low → Very High with specific reasoning |
-| 💸 **Where to Sell** | Best platforms for Indian sellers |
+- ✅ **Runs in under 5 minutes** — clone, install, run
+- ✅ **Uses real APIs** — no mock data, no fake demos  
+- ✅ **Has a working demo** — screenshot or GIF in every README
+- ✅ **Teaches you something** — clear explanation of what and why
+- ✅ **India-first where relevant** — NSE, BSE, INR, Indian use cases
 
 ---
 
-## ⚡ How It Works
+## 🚀 Quick Start
 
-HotScan uses a **2-step AI pipeline** for accuracy + live data:
-
-```
-📸 Your photo
-    │
-    ▼
-👁  Step 1 — Llama 4 Maverick (Vision AI)
-    Identifies the exact car, rarity, condition
-    │
-    ▼
-🔍  Step 2 — Groq Compound AI (Web Search)
-    Searches OLX, Amazon India, Instagram, eBay
-    for LIVE current prices
-    │
-    ▼  (fallback if Compound unavailable)
-🧠  Step 2b — Kimi K2 (Smartest text model on Groq)
-    Deep market knowledge for Indian collector pricing
-    │
-    ▼
-✅  Result with live Indian prices in ~10-15 seconds
+```bash
+git clone https://github.com/mahak867/ai-projects-hub.git
+cd ai-projects-hub
+# Pick any project folder and follow its README
 ```
 
----
-
-## 🚀 Getting Started
-
-### On iPhone (Recommended)
-
-1. Open [mahak867.github.io/Hotscan](https://mahak867.github.io/Hotscan) in **Safari**
-2. Tap **Share** → **"Add to Home Screen"**
-3. Get a free API key at [console.groq.com](https://console.groq.com)
-4. Enter your key in the app → Start scanning!
-
-### On Android
-
-1. Open [mahak867.github.io/Hotscan](https://mahak867.github.io/Hotscan) in **Chrome**
-2. Tap **⋮** → **"Add to Home Screen"**
-3. Same setup as above
-
-### On Desktop
-
-Just open the link — works in any browser.
+You need a **free Claude API key** for most projects → [console.anthropic.com](https://console.anthropic.com)
 
 ---
 
-## 🤖 AI Models Used
+## 📋 Projects
 
-| Step | Model | Purpose |
-|------|-------|---------|
-| Vision | `meta-llama/llama-4-maverick-17b-128e-instruct` | See and identify the car |
-| Live Search | `groq/compound-beta` | Search web for live Indian prices |
-| Price Analysis | `moonshotai/kimi-k2-instruct` | Deep Indian market knowledge (fallback) |
+### 🟢 Beginner — Start Here
 
-All models run on **Groq** — the fastest AI inference platform.
-Free tier is more than enough for personal use.
+| # | Project | What It Does | Stack |
+|---|---------|-------------|-------|
+| 01 | [pdf-chat-claude](./01-pdf-chat-claude/) | Chat with any PDF using Claude | Python, Streamlit, Claude |
+| 02 | [indian-stock-agent](./02-indian-stock-agent/) | NSE stock analysis with AI | Python, Claude, yfinance |
+| 03 | [whatsapp-ai-bot](./03-whatsapp-ai-bot/) | Claude-powered WhatsApp bot | Python, Twilio, Claude |
+| 04 | [youtube-summarizer](./04-youtube-summarizer/) | Summarize any YouTube video | Python, Claude, yt-dlp |
+| 05 | [resume-analyzer](./05-resume-analyzer/) | Score resumes against job descriptions | Python, Streamlit, Claude |
 
----
+### 🟡 Intermediate — Build Real Systems
 
-## 📲 Features
+| # | Project | What It Does | Stack |
+|---|---------|-------------|-------|
+| 06 | [nse-earnings-monitor](./06-nse-earnings-monitor/) | Monitor NSE earnings + AI alerts | Python, Claude, Telegram |
+| 07 | [claude-mcp-financial-analyst](./07-claude-mcp-financial-analyst/) | MCP server for financial analysis | Python, MCP, Claude Desktop |
+| 08 | [multi-agent-research](./08-multi-agent-research/) | 3-agent research pipeline | Python, Claude API |
+| 09 | [rag-annual-reports](./09-rag-annual-reports/) | Chat with NSE annual reports | Python, ChromaDB, Claude |
+| 10 | [computer-use-demo](./10-computer-use-demo/) | Claude computer use examples | Python, Claude, Anthropic |
+| 11 | [ai-code-reviewer](./11-ai-code-reviewer/) | GitHub Action for PR reviews | GitHub Actions, Claude |
+| 12 | [voice-journal-ai](./12-voice-journal-ai/) | Voice → insights → Notion | Python, Whisper, Claude |
 
-### 🔍 Scan
-- Camera + gallery support
-- Auto image compression for fast scans
-- Step-by-step pipeline progress indicator
-- Estimated time display
-- Live listings from Indian sellers
+### 🔴 Advanced — Production Systems
 
-### 🗂 Collection
-- Track all your Hot Wheels
-- Total collection value in ₹
-- Sort by value, rarity, name, date
-- Filter by rarity type
-- **Export Valuation Certificate** (for insurance)
-
-### 🔔 Deal Alerts
-- Watchlist for cars you want
-- Direct OLX + Instagram search links per car
-- Quick access to Treasure Hunt listings
-
-### 🕐 History
-- Last 50 scans with timestamps
-- Prices stored for reference
-
-### ⚙️ More
-- Indian store links (Amazon, Flipkart, Hamleys, Maido)
-- Indian collector community (Instagram, OLX)
-- Full rarity guide with Indian price ranges
-- WhatsApp share card for collector groups
+| # | Project | What It Does | Stack |
+|---|---------|-------------|-------|
+| 13 | [claude-trading-signals](./13-claude-trading-signals/) | AI trading signal pipeline | Python, Claude, NSE data |
+| 14 | [build-your-own-perplexity](./14-build-your-own-perplexity/) | Search engine with AI answers | Python, Claude, Streamlit |
+| 15 | [agentic-data-analyst](./15-agentic-data-analyst/) | Upload CSV → get AI analysis | Python, Claude, Pandas |
+| 16 | [real-time-news-analyst](./16-real-time-news-analyst/) | News → investment thesis → email | Python, Claude, RSS |
+| 17 | [open-source-screener](./17-open-source-screener/) | Self-hosted Indian stock screener | Next.js, Claude, Finnhub |
+| 18 | [document-intelligence](./18-document-intelligence/) | Multi-doc extraction + comparison | Python, Claude, PyMuPDF |
+| 19 | [ai-interview-coach](./19-ai-interview-coach/) | AI mock interviews with feedback | Python, Claude, Streamlit |
+| 20 | [context-engineering-cookbook](./20-context-engineering-cookbook/) | Prompting patterns that work | Markdown + Python examples |
 
 ---
 
-## ⭐ Rarity Guide
+## 🌟 Featured Projects
 
-| Rarity | India Price | What to Look For |
-|--------|------------|------------------|
-| Common | ₹150–200 | Any toy store, mass produced |
-| Uncommon | ₹200–500 | Slightly harder to find |
-| Rare | ₹500–1,500 | Limited run or old casting |
-| Treasure Hunt | ₹1,000–3,000 | Flame logo, 1 per case |
-| **Super Treasure Hunt** | ₹3,000–15,000 | Real Riders + Spectraflame paint |
-| Error Car | ₹5,000–50,000 | Factory mistake, extremely collectible |
+### 🏆 Most Popular
+**[build-your-own-perplexity](./14-build-your-own-perplexity/)** — AI search with citations, streaming answers
 
----
+### 🇮🇳 India Special  
+**[nse-earnings-monitor](./06-nse-earnings-monitor/)** — Never miss an NSE earnings announcement again
 
-## 🔒 Privacy
-
-- Your Groq API key is stored **only on your device** (localStorage)
-- Photos are sent directly to Groq's API for analysis only
-- No user accounts, no tracking, no data collection
-- No backend server — fully client-side
-
----
-
-## 🛣 Roadmap
-
-- [ ] Barcode scanning for sealed blister cards
-- [ ] Price history charts (track how value changes over time)
-- [ ] Community price submissions (crowdsourced Indian prices)
-- [ ] Offline mode with cached car database
-- [ ] Collection sharing between users
-- [ ] OLX price alert notifications
+### ⚡ Fastest to Run  
+**[pdf-chat-claude](./01-pdf-chat-claude/)** — 3 commands and you're chatting with PDFs
 
 ---
 
 ## 🤝 Contributing
 
-PRs welcome! If you're an Indian Hot Wheels collector:
+PRs are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-- Found a price inaccuracy? Open an issue
-- Want to add a feature? Fork and PR
-- Know the Indian collector market well? Help improve the AI prompts
+Good first issues are tagged [`good first issue`](https://github.com/mahak867/ai-projects-hub/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 ---
 
-## 📄 License
+## 📬 Stay Updated
 
-MIT — Free to use, fork, and build on.
+If this repo helped you, **star it** ⭐ — it helps others discover these projects.
 
----
+Built by [mahak867](https://github.com/mahak867) · MIT License
 
-<div align="center">
-
-**Built with ❤️ for Indian Hot Wheels collectors**
-
-🇮🇳 *No one built this for India. So we did.*
-
-[⭐ Star this repo](https://github.com/mahak867/Hotscan) · [🐛 Report a bug](https://github.com/mahak867/Hotscan/issues) · [💡 Request a feature](https://github.com/mahak867/Hotscan/issues)
-
-</div>
