@@ -1769,6 +1769,16 @@ function updateScanCounter() {
 window.addEventListener('load', function() {
   var am=document.getElementById('auth-modal'); if(am) am.classList.remove('open')
   document.body.style.overflow=''
+  
+  // Restore profile from cache for instant UI (before DB responds)
+  try{
+    var cached = JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
+    if(cached && cached.data && (Date.now()-cached.ts) < 3600000){
+      userProfile = cached.data
+      if(cached.data.is_pro || cached.data.is_developer) localStorage.setItem('hs_pro','true')
+    }
+  }catch(e){}
+  
   // Supabase
   try {
     if (window.supabase) _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
@@ -2952,7 +2962,7 @@ async function fullCloudSync() {
   try {
     // Pull from cloud — overrides local
     var res = await _sb.from('collection').select('*').eq('user_id', currentUser.id).order('added_at', {ascending:false})
-    if (res.data && res.data.length >= 0) {
+    if (res.data && res.data.length > 0) {
       collection = res.data.map(function(d) {
         return {
           id: d.id, name: d.name, series: d.series,
@@ -3037,20 +3047,42 @@ function ol(url) { if (url && url !== '#') window.open(url, '_blank') }
 // ════════════════════════════════════════════════════════
 async function initAuth(){
   if(!_sb){ updateHeaderUI(); return }
+  var _authInitialized = false  // lock to prevent double-init
   try{
     _sb.auth.onAuthStateChange(async function(event,session){
-      console.log('Auth:',event,session?session.user.email:'none')
-      if(session&&session.user){
-        var u=session.user
-        currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
-        await loadProfile(); updateHeaderUI(); renderProfilePage(); updateScanCounter()
-        if(event==='SIGNED_IN'){ closeAuth(); sessionStorage.removeItem('hs_cel'); setTimeout(showSuccessCelebration,400) }
-        if(event==='INITIAL_SESSION'){ await fullCloudSync(); renderCol() }
+      console.log('Auth event:',event, session?session.user.email:'signed-out')
+      if(session && session.user){
+        var u = session.user
+        currentUser = {
+          id: u.id,
+          email: u.email||'',
+          name: (u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name)) || u.email.split('@')[0]
+        }
+        await loadProfile()
+        if(event==='SIGNED_IN'){
+          closeAuth()
+          await fullCloudSync()
+          renderCol()
+          sessionStorage.removeItem('hs_cel')
+          setTimeout(showSuccessCelebration,400)
+          _authInitialized = true
+        }
+        if(event==='INITIAL_SESSION'){
+          await fullCloudSync()
+          renderCol()
+          _authInitialized = true
+        }
+        if(event==='TOKEN_REFRESHED'){ _authInitialized = true }
+        updateHeaderUI(); renderProfilePage(); updateScanCounter()
       } else {
-        currentUser=null; userProfile=null; localStorage.removeItem('hs_pro')
+        currentUser=null; userProfile=null
+        localStorage.removeItem('hs_pro')
+        sessionStorage.removeItem('hs_cel')
         updateHeaderUI(); renderProfilePage(); updateScanCounter()
       }
     })
+    // Wait briefly for onAuthStateChange INITIAL_SESSION
+    await new Promise(function(r){ setTimeout(r, 300) })
     var {data:{session}}=await _sb.auth.getSession()
     if(session&&session.user&&!currentUser){
       var u=session.user
@@ -3073,41 +3105,105 @@ async function initAuth(){
 
 
 async function loadProfile(){
-  if(!currentUser||!_sb) return
+  if(!currentUser || !_sb) return
+  
+  // Immediate dev override from local cache while DB loads
+  if(currentUser.email === DEV_EMAIL){
+    if(!userProfile) userProfile = {is_pro:true, is_developer:true}
+    localStorage.setItem('hs_pro','true')
+    updateHeaderUI()
+  }
+  
   try{
-    var {data}=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
-    if(data){ userProfile=data }
-    else{
-      var ins=await _sb.from('profiles').upsert({id:currentUser.id,email:currentUser.email,display_name:currentUser.name,is_pro:false,is_developer:false},{onConflict:'id'}).select().single()
-      userProfile=ins.data||{id:currentUser.id,email:currentUser.email,is_pro:false,is_developer:false}
+    var {data, error} = await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+    
+    if(error && error.code === 'PGRST116'){
+      // Row not found — create it
+      var {data:newRow} = await _sb.from('profiles').upsert({
+        id: currentUser.id,
+        email: currentUser.email,
+        display_name: currentUser.name || currentUser.email.split('@')[0],
+        is_pro: currentUser.email===DEV_EMAIL,
+        is_developer: currentUser.email===DEV_EMAIL
+      }, {onConflict:'id'}).select().single()
+      data = newRow
     }
-    // ALWAYS grant dev — unconditional
-    if(currentUser.email===DEV_EMAIL){
-      await _sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',currentUser.id)
-      userProfile=Object.assign({},userProfile,{is_pro:true,is_developer:true})
+    
+    if(data){
+      userProfile = data
+      // Cache to localStorage for instant load next time
+      try{ localStorage.setItem('hs_profile_cache', JSON.stringify({data:data, ts:Date.now()})) }catch(e){}
+    }
+    
+    // ALWAYS grant dev — no conditions, every single login
+    if(currentUser.email === DEV_EMAIL){
+      await _sb.from('profiles').update({
+        is_pro: true,
+        is_developer: true,
+        pro_since: new Date().toISOString()
+      }).eq('id', currentUser.id)
+      userProfile = Object.assign({}, userProfile||{}, {is_pro:true, is_developer:true})
       localStorage.setItem('hs_pro','true')
-    } else if(userProfile&&userProfile.is_pro){ localStorage.setItem('hs_pro','true') }
-    updateHeaderUI(); renderProfilePage()
-  }catch(e){console.warn('loadProfile:',e)}
+    } else if(userProfile && userProfile.is_pro){
+      localStorage.setItem('hs_pro','true')
+    }
+    
+    // Update cache with final state
+    try{ localStorage.setItem('hs_profile_cache', JSON.stringify({data:userProfile, ts:Date.now()})) }catch(e){}
+    
+  } catch(e){
+    console.warn('loadProfile error:',e)
+    // Use cached profile if available
+    try{
+      var cached = JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
+      if(cached && cached.data && (Date.now()-cached.ts) < 3600000){
+        userProfile = cached.data
+        console.log('Using cached profile')
+      }
+    }catch(ce){}
+  }
+  
+  updateHeaderUI()
+  renderProfilePage()
 }
+
+
+
+
+
+
+
 
 
 function updateHeaderUI() {
   var btn = document.getElementById('user-hdr-btn')
-  if (!btn) return
-  btn.onclick = currentUser ? openAccountModal : openAuth
-  if (currentUser) {
-    var initials = (currentUser.name || currentUser.email || '?')[0].toUpperCase()
-    var planLabel = userProfile && userProfile.is_developer ? 'Dev' : userProfile && userProfile.is_pro ? 'Pro' : ''
-    btn.innerHTML = '<div style="display:flex;align-items:center;gap:7px;cursor:pointer"><div style="width:28px;height:28px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text)">' + initials + '</div>' + (planLabel ? '<div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:var(--red);color:#fff;letter-spacing:.03em">' + planLabel + '</div>' : '') + '</div>'
-  } else {
+  if(!btn) return
+  btn.onclick = function(){ currentUser ? openAccountModal() : openAuth() }
+  if(!currentUser){
     btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
+    return
   }
+  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
+  var name = prefs.displayName || currentUser.name || currentUser.email.split('@')[0]
+  var initial = name[0].toUpperCase()
+  var isDev = !!(userProfile && userProfile.is_developer)
+  var isPro = !isDev && !!(userProfile && userProfile.is_pro)
+  var customColor = prefs.avatarColor
+  var avatarBg = isDev
+    ? 'linear-gradient(135deg,#7c3aed,#4f46e5)'
+    : customColor || 'linear-gradient(135deg,#e63946,#ffd60a)'
+  var badge = isDev
+    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;white-space:nowrap;letter-spacing:.02em">👑 Dev</span>'
+    : isPro
+    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;white-space:nowrap;letter-spacing:.02em">⭐ Pro</span>'
+    : ''
+  var badgeEmoji = prefs.badge ? ' ' + prefs.badge : ''
+  btn.innerHTML = '<div style="display:flex;align-items:center;gap:6px;cursor:pointer">'
+    + '<div style="width:30px;height:30px;border-radius:50%;background:' + avatarBg + ';border:2px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.4)">' + initial + '</div>'
+    + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + badgeEmoji + '</span>'
+    + badge
+    + '</div>'
 }
-
-
-
-
 
 
 function openAccountModal() {
