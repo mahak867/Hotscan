@@ -2406,7 +2406,7 @@ Analyse using:
 - Whether ₹${asking} is above/below/at fair value
 
 Return ONLY valid JSON:
-{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"2 specific sentences explaining the verdict with real market context","suggestion":"exact actionable advice — counter-offer amount or whether to buy immediately","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X vs fair value","negotiate_tip":"specific negotiation tactic for this car in Indian market","red_flags":"any concerns about this deal or empty string if none"}\``
+{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"2 specific sentences explaining the verdict with real market context","suggestion":"exact actionable advice — counter-offer amount or whether to buy immediately","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X vs fair value","negotiate_tip":"specific negotiation tactic for this car in Indian market","red_flags":"any concerns about this deal or empty string if none"}`
   try {
     var d = await groqText(prompt)
     stopTimer()
@@ -2970,27 +2970,26 @@ async function identifyMultipleCars(imageData) {
   var b64 = imageData.split(',')[1]
   var mime = imageData.split(';')[0].split(':')[1]
 
-  var sys = `You are the world's most precise Hot Wheels multi-car identification expert with encyclopaedic knowledge of every casting from 1968-2025.,
-    'When shown an image with MULTIPLE Hot Wheels cars you MUST:',
-    '1. Count every single car visible, even partially',
-    '2. Identify EACH car individually with complete precision',
-    '3. Never group or generalize — each car gets its own detailed entry',
-    '4. Scan systematically: top-left to bottom-right, or front-to-back',
-    '',
-    'For EACH car identify:',
-    '- Exact casting name and model year',
-    '- Color (Spectraflame/metallic = higher value)',
-    '- Wheel type (Real Riders rubber = Premium or TH)',
-    '- Any visible tampo/graphics',
-    '- Rarity: STH > TH > Vintage > Rare > Premium > Uncommon > Common',
-    '',
-    'RARITY CLUES:',
-    '- Spectraflame paint + rubber wheels + TH logo = Super Treasure Hunt (STH)',
-    '- Metalflake paint + TH logo = Treasure Hunt (TH)',
-    '- Real Riders rubber tires = at minimum Premium',
-    '- Red line on tires = Vintage Redline (pre-1977), very valuable',
-    '- Obvious paint/tampo error = Error Car, extremely valuable'
-  ].join('\n')
+  var sys = `You are the world's most precise Hot Wheels multi-car identification expert with encyclopaedic knowledge of every casting from 1968-2025.
+When shown an image with MULTIPLE Hot Wheels cars you MUST:
+1. Count every single car visible, even partially
+2. Identify EACH car individually with complete precision
+3. Never group or generalize — each car gets its own detailed entry
+4. Scan systematically: top-left to bottom-right, or front-to-back
+
+For EACH car identify:
+- Exact casting name and model year
+- Color (Spectraflame/metallic = higher value)
+- Wheel type (Real Riders rubber = Premium or TH)
+- Any visible tampo/graphics
+- Rarity: STH > TH > Vintage > Rare > Premium > Uncommon > Common
+
+RARITY CLUES:
+- Spectraflame paint + rubber wheels + TH logo = Super Treasure Hunt (STH)
+- Metalflake paint + TH logo = Treasure Hunt (TH)
+- Real Riders rubber tires = at minimum Premium
+- Red line on tires = Vintage Redline (pre-1977), very valuable
+- Obvious paint/tampo error = Error Car, extremely valuable`
 
   var usr = [
     'Carefully examine this image. Count and identify EVERY Hot Wheels car you can see.',
