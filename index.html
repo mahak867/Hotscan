@@ -903,7 +903,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     </div>
   </div>
   <div class="card"><div class="card-title">📸 Tips for best results</div><div style="font-size:12px;color:var(--text2);line-height:2">💡 White surface · 🔆 Bright light · 🎯 Side profile · 📦 Include card</div></div>
-  <div class="footer">HotScan India v4.0 · hotscan.in · For Indian collectors 🇮🇳</div>
+  <div class="footer">HotScan India v9.1 · hotscan.in · India's #1 Hot Wheels Scanner 🇮🇳</div>
 </div>
 
 <!-- ═══ COLLECTION PAGE ═══ -->
@@ -1170,6 +1170,42 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       </div>
     </div>
 
+    <!-- Customisation -->
+    <div class="card" id="customization-section">
+      <div class="card-title">🎨 Customise Profile</div>
+      <div style="margin-bottom:13px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:7px;font-weight:600;letter-spacing:.04em">DISPLAY NAME</div>
+        <div style="display:flex;gap:7px">
+          <input class="inp" id="custom-name" type="text" placeholder="Your collector name..." style="margin:0;flex:1" maxlength="28">
+          <button onclick="saveCustomName()" style="background:var(--red);color:#fff;border:none;padding:8px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Save</button>
+        </div>
+      </div>
+      <div style="margin-bottom:13px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;letter-spacing:.04em">COLLECTOR BADGE</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="badge-picker">
+          <span class="badge-opt" onclick="setBadge('🏎️')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🏎️</span>
+          <span class="badge-opt" onclick="setBadge('🔥')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🔥</span>
+          <span class="badge-opt" onclick="setBadge('🏆')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🏆</span>
+          <span class="badge-opt" onclick="setBadge('💎')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">💎</span>
+          <span class="badge-opt" onclick="setBadge('⚡')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">⚡</span>
+          <span class="badge-opt" onclick="setBadge('🚗')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🚗</span>
+          <span class="badge-opt" onclick="setBadge('🌟')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🌟</span>
+          <span class="badge-opt" onclick="setBadge('🇮🇳')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🇮🇳</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;letter-spacing:.04em">AVATAR COLOUR</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="color-picker">
+          <div onclick="setAvatarColor('#e63946')" data-color="#e63946" style="width:28px;height:28px;border-radius:50%;background:#e63946;cursor:pointer;transition:outline .15s"></div>
+          <div onclick="setAvatarColor('#7c3aed')" data-color="#7c3aed" style="width:28px;height:28px;border-radius:50%;background:#7c3aed;cursor:pointer;transition:outline .15s"></div>
+          <div onclick="setAvatarColor('#ffd60a')" data-color="#ffd60a" style="width:28px;height:28px;border-radius:50%;background:#ffd60a;cursor:pointer;transition:outline .15s"></div>
+          <div onclick="setAvatarColor('#2dc653')" data-color="#2dc653" style="width:28px;height:28px;border-radius:50%;background:#2dc653;cursor:pointer;transition:outline .15s"></div>
+          <div onclick="setAvatarColor('#ff6a00')" data-color="#ff6a00" style="width:28px;height:28px;border-radius:50%;background:#ff6a00;cursor:pointer;transition:outline .15s"></div>
+          <div onclick="setAvatarColor('#4cc9f0')" data-color="#4cc9f0" style="width:28px;height:28px;border-radius:50%;background:#4cc9f0;cursor:pointer;transition:outline .15s"></div>
+          <div onclick="setAvatarColor('#1a2f8a')" data-color="#1a2f8a" style="width:28px;height:28px;border-radius:50%;background:#1a2f8a;cursor:pointer;transition:outline .15s"></div>
+        </div>
+      </div>
+    </div>
     <!-- Actions -->
     <div class="card"><div class="card-title">Account</div>
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -1367,6 +1403,138 @@ function goPage(id){
   window.scrollTo({top:0, behavior:'smooth'})
 }
 var _goPageReady = true
+
+function fillBarcode(val){
+  var inp = document.getElementById('barcode-input')
+  if(inp){ inp.value=val; inp.focus() }
+  if(/^\d+$/.test(val.trim())) setBarcodeMode('barcode')
+  else setBarcodeMode('name')
+}
+function setBarcodeMode(mode){
+  var inp = document.getElementById('barcode-input')
+  var bBtn = document.getElementById('bmode-barcode')
+  var nBtn = document.getElementById('bmode-name')
+  var tipEl = document.getElementById('barcode-tip-text')
+  if(mode==='barcode'){
+    if(inp){ inp.placeholder='Barcode or UPC e.g. 027084879871'; inp.setAttribute('inputmode','numeric') }
+    if(tipEl) tipEl.textContent='Scan barcode on back of card. Hot Wheels UPCs start with 027084.'
+    if(bBtn){ bBtn.style.background='var(--surface3)'; bBtn.style.color='#fff' }
+    if(nBtn){ nBtn.style.background='transparent'; nBtn.style.color='var(--text2)' }
+  } else {
+    if(inp){ inp.placeholder='e.g. Bone Shaker STH 2023'; inp.removeAttribute('inputmode') }
+    if(tipEl) tipEl.textContent='Be specific: include year and rarity for best results.'
+    if(bBtn){ bBtn.style.background='transparent'; bBtn.style.color='var(--text2)' }
+    if(nBtn){ nBtn.style.background='var(--surface3)'; nBtn.style.color='#fff' }
+  }
+}
+function addBarcodeRecent(q){
+  var recent = JSON.parse(localStorage.getItem('hs_bc_recent')||'[]')
+  recent = [q].concat(recent.filter(function(r){return r!==q})).slice(0,5)
+  localStorage.setItem('hs_bc_recent', JSON.stringify(recent))
+  renderBarcodeRecent()
+}
+function renderBarcodeRecent(){
+  var el = document.getElementById('barcode-recent')
+  var list = document.getElementById('barcode-recent-list')
+  var recent = JSON.parse(localStorage.getItem('hs_bc_recent')||'[]')
+  if(!el||!list||!recent.length) return
+  el.style.display='block'
+  list.innerHTML = recent.map(function(q){
+    return '<span onclick="fillBarcode('+JSON.stringify(q)+')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:4px 9px;border-radius:20px;font-size:10px;cursor:pointer">'+q+'</span>'
+  }).join('')
+}
+
+// ── Missing function stubs ──
+function copyRefLink(){
+  var link = getRefLink ? getRefLink() : 'https://hotscan.in'
+  if(navigator.clipboard) navigator.clipboard.writeText(link).then(function(){ showToast && showToast('Link copied!') })
+  else { alert('Your link: ' + link) }
+}
+function handleUpgrade(){ closeProModal(); if(currentUser){ startPayment() } else { openAuth() } }
+function shareResultToGroup(){
+  if(!lastResult) return
+  var lines = ['🏎️ Just scanned with HotScan India!','','*'+lastResult.name+'* ('+( lastResult.rarity||'Common')+')','🇮🇳 ₹'+(lastResult.india_collector_inr||'?')+' | 🇺🇸 $'+(lastResult.us_collector_usd||'?'),'📈 '+(lastResult.investment||'Medium')+' investment',lastResult.india_insight?'💡 '+lastResult.india_insight:'','','Free at hotscan.in 🔍 #HotWheelsIndia']
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank')
+}
+function shareViaWA(){
+  var link = typeof getRefLink === 'function' ? getRefLink() : 'https://hotscan.in'
+  var txt = "India's first Hot Wheels scanner!\nScan any car → get live Indian prices.\nFree: "+link
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(txt),'_blank')
+}
+
+// ════════ PROFILE CUSTOMIZATION ════════
+function showToast(msg){
+  var t = document.getElementById('hs-toast')
+  if(t) t.remove()
+  t = document.createElement('div')
+  t.id = 'hs-toast'
+  t.textContent = msg
+  t.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:rgba(30,30,32,.95);color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.5);white-space:nowrap;border:1px solid rgba(255,255,255,.08);animation:hwSlideUp .2s ease'
+  document.body.appendChild(t)
+  setTimeout(function(){ if(t.parentNode) t.remove() }, 2200)
+}
+
+function saveCustomName(){
+  var inp = document.getElementById('custom-name')
+  if(!inp || !inp.value.trim()) return
+  var name = inp.value.trim()
+  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
+  prefs.displayName = name
+  localStorage.setItem('hs_prefs', JSON.stringify(prefs))
+  if(currentUser) currentUser.name = name
+  if(_sb && currentUser){
+    _sb.from('profiles').update({display_name:name}).eq('id',currentUser.id).then(function(){})
+  }
+  updateHeaderUI()
+  inp.value = ''
+  showToast('Name updated ✅')
+}
+
+function setBadge(emoji){
+  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
+  prefs.badge = emoji
+  localStorage.setItem('hs_prefs', JSON.stringify(prefs))
+  document.querySelectorAll('.badge-opt').forEach(function(el){
+    var active = el.textContent.trim() === emoji
+    el.style.borderColor = active ? 'var(--red)' : 'var(--border2)'
+    el.style.background = active ? 'rgba(230,57,70,.15)' : 'var(--surface2)'
+  })
+  updateHeaderUI()
+  showToast('Badge set ' + emoji)
+}
+
+function setAvatarColor(color){
+  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
+  prefs.avatarColor = color
+  localStorage.setItem('hs_prefs', JSON.stringify(prefs))
+  document.querySelectorAll('#color-picker div[data-color]').forEach(function(el){
+    el.style.outline = el.getAttribute('data-color') === color ? '2px solid #fff' : 'none'
+  })
+  updateHeaderUI()
+  showToast('Colour updated 🎨')
+}
+
+function initCustomization(){
+  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
+  if(prefs.badge){
+    document.querySelectorAll('.badge-opt').forEach(function(el){
+      var active = el.textContent.trim() === prefs.badge
+      el.style.borderColor = active ? 'var(--red)' : 'var(--border2)'
+      el.style.background = active ? 'rgba(230,57,70,.15)' : 'var(--surface2)'
+    })
+  }
+  if(prefs.avatarColor){
+    document.querySelectorAll('#color-picker div[data-color]').forEach(function(el){
+      el.style.outline = el.getAttribute('data-color') === prefs.avatarColor ? '2px solid #fff' : 'none'
+    })
+  }
+  var cnInp = document.getElementById('custom-name')
+  if(cnInp && prefs.displayName) cnInp.placeholder = prefs.displayName
+}
+
+function whatsappSupport(){
+  window.open('https://api.whatsapp.com/send?phone=919999999999&text='+encodeURIComponent('Hi! I need help with HotScan India app.'),'_blank')
+}
 // ── OAuth callback — catches Google redirect token ──
 if(window.location.hash && window.location.hash.includes('access_token')){
   window.history.replaceState(null,'',window.location.pathname+window.location.search)
@@ -3347,6 +3515,7 @@ function renderProfilePage() {
   document.getElementById('prof-scans-val').textContent = isPro() ? '∞' : used + '/' + FREE_SCANS
   document.getElementById('prof-scans-bar').style.width = isPro() ? '100%' : Math.min(used/FREE_SCANS*100, 100) + '%'
   if (isPro()) document.getElementById('prof-scans-bar').style.background = 'var(--green)'
+  initCustomization()
   // Recent scans
   var recentEl = document.getElementById('prof-recent')
   if (recentEl) {
