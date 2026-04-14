@@ -17,16 +17,19 @@
 <meta name="twitter:card" content="summary_large_image">
 <title>HotScan India — Hot Wheels Scanner</title>
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232a4fd4'/><text y='70' font-size='55' font-weight='900' font-style='italic' font-family='Arial Black' fill='white' text-anchor='middle' x='50'>HS</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- Razorpay loaded on demand -->
 <!-- Clerk removed — using Supabase auth only -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
 :root{
-  /* Hot Wheels Brand */
+  /* HotScan Brand — Red + Blue from logo */
   --red:#e63946;--red2:#c1121f;
+  --blue-brand:#2a4fd4;--blue-brand2:#1a2f8a;
   --gold:#ffd60a;--green:#2dc653;--blue:#4cc9f0;
+  --silver:#c8c8d8;
   /* True Hot Wheels dark — premium black */
   --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--surface3:#242424;
   --surface4:#2c2c2c;
@@ -37,100 +40,71 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   /* Semantic */
   --ink-gold:#ffd60a;--ink-green:#2dc653;
 }
-/* ── DOCK NAV ── */
+/* ── Layout ── */
+/* ── FLOATING DOCK NAV ── */
 .nav{
   position:fixed;bottom:0;left:0;right:0;z-index:200;
-  display:flex;justify-content:center;align-items:flex-end;
-  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
-  padding-top:0;
+  display:flex;justify-content:center;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
   pointer-events:none;
   background:none;border:none;
 }
 .nav-dock{
   display:flex;align-items:center;gap:2px;
-  background:rgba(22,22,24,.82);
-  backdrop-filter:blur(28px) saturate(1.8);
-  -webkit-backdrop-filter:blur(28px) saturate(1.8);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:28px;
-  padding:8px 10px;
+  background:rgba(18,18,20,.88);
+  backdrop-filter:blur(30px) saturate(1.8);
+  -webkit-backdrop-filter:blur(30px) saturate(1.8);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:26px;
+  padding:7px 10px;
   pointer-events:all;
-  box-shadow:0 8px 40px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05) inset;
+  box-shadow:0 8px 40px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.06) inset;
 }
 .nav-item{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  width:46px;height:46px;border-radius:18px;
-  cursor:pointer;position:relative;
-  transition:all .18s cubic-bezier(.34,1.56,.64,1);
-  color:rgba(255,255,255,.35);
-  border:none;background:none;
+  width:48px;height:48px;border-radius:16px;cursor:pointer;
+  position:relative;transition:all .18s cubic-bezier(.34,1.56,.64,1);
+  color:rgba(255,255,255,.32);background:none;border:none;
 }
 .nav-item:hover{
-  color:rgba(255,255,255,.8);
-  transform:translateY(-2px) scale(1.08);
+  color:rgba(255,255,255,.75);
+  transform:translateY(-2px) scale(1.1);
   background:rgba(255,255,255,.06);
 }
 .nav-item.active{
-  color:#fff;
-  background:rgba(255,255,255,.1);
+  color:#fff;background:rgba(255,255,255,.1);
   transform:translateY(-1px);
 }
-/* Active dot */
 .nav-item.active::after{
-  content:'';
-  position:absolute;
-  bottom:-6px;left:50%;transform:translateX(-50%);
+  content:'';position:absolute;bottom:-5px;left:50%;
+  transform:translateX(-50%);
   width:4px;height:4px;border-radius:50%;
-  background:var(--red);
-  box-shadow:0 0 6px var(--red);
+  background:var(--red);box-shadow:0 0 6px var(--red);
 }
-/* Scan button — special red pill */
 .nav-item.nav-scan{
-  background:var(--red);
-  color:#fff;
-  width:48px;height:48px;
-  border-radius:20px;
-  box-shadow:0 4px 16px rgba(230,57,70,.5);
-  transform:none;
+  background:var(--red);color:#fff;
+  box-shadow:0 4px 16px rgba(200,16,46,.5);
 }
 .nav-item.nav-scan:hover{
-  background:var(--red2);
-  transform:translateY(-2px) scale(1.06);
-  box-shadow:0 6px 22px rgba(230,57,70,.6);
+  transform:translateY(-2px) scale(1.07);
+  box-shadow:0 6px 22px rgba(200,16,46,.65);
 }
-.nav-item.nav-scan.active{
-  background:var(--red);
-  transform:translateY(-1px);
-}
-.nav-item.nav-scan.active::after{ display:none }
-/* Divider */
-.nav-divider{
-  width:1px;height:28px;
-  background:rgba(255,255,255,.1);
-  margin:0 4px;flex-shrink:0;
-}
-.nav-icon-new{
-  font-size:18px;line-height:1;display:block;
-  transition:transform .18s;
-}
-.nav-item:hover .nav-icon-new{ transform:scale(1.1) }
-/* Tooltip on hover */
+.nav-item.nav-scan.active{background:var(--red)}
+.nav-item.nav-scan.active::after{display:none}
+.nav-divider{width:1px;height:26px;background:rgba(255,255,255,.09);margin:0 3px}
+.nav-icon-new{font-size:10px;line-height:1;display:block;transition:transform .18s}
+/* Tooltip */
 .nav-item::before{
-  content:attr(data-label);
-  position:absolute;
-  bottom:calc(100% + 10px);
-  left:50%;transform:translateX(-50%) scale(.8);
-  background:rgba(22,22,24,.95);
-  color:#fff;font-size:11px;font-weight:600;
-  padding:4px 9px;border-radius:8px;white-space:nowrap;
-  opacity:0;pointer-events:none;
-  transition:all .15s;
-  border:1px solid rgba(255,255,255,.08);
-  letter-spacing:.01em;
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 10px);left:50%;
+  transform:translateX(-50%) scale(.85);
+  background:rgba(18,18,20,.96);color:#fff;
+  font-size:11px;font-weight:600;padding:4px 9px;border-radius:8px;
+  white-space:nowrap;opacity:0;pointer-events:none;
+  transition:all .14s;border:1px solid rgba(255,255,255,.08);
 }
-.nav-item:hover::before{
-  opacity:1;transform:translateX(-50%) scale(1);
-}
+.nav-item:hover::before{opacity:1;transform:translateX(-50%) scale(1)}
+.nav-icon{display:none}
 
 /* push page content above fixed nav */
 .page{padding-bottom:100px !important}
@@ -159,7 +133,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   transition:all .2s;
 }
 .app-user-inner:hover{border-color:var(--border3);color:var(--text)}
-.page{display:none;padding:13px;max-width:500px;margin:0 auto;padding-bottom:85px}
+.page{display:none;padding:13px;max-width:500px;margin:0 auto;padding-bottom:105px}
 .page.active{display:block}
 .page-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
 .page-title{font-size:18px;font-weight:800}
@@ -395,6 +369,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .sc-btn-wa{background:#25D366;color:#fff}
 .sc-btn-sh{background:var(--surface3);color:#fff}
 /* ── Auth ── */
+.auth-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;align-items:center;justify-content:center;padding:20px}
+.auth-modal.open{display:flex}
 .auth-box{
   background:var(--surface);border-radius:16px;padding:28px;
   width:100%;max-width:380px;border:1px solid var(--border2);
@@ -467,24 +443,6 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .empty-icon{font-size:40px;margin-bottom:8px}
 .empty-t{font-size:14px;font-weight:600;color:#444;margin-bottom:5px}
 .empty-s{font-size:12px}
-
-/* ══ HOT WHEELS ANIMATIONS ══ */
-@keyframes hwSlideUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes hwSlideIn{from{transform:translateX(-10px);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes hwPulse{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,.5)}70%{box-shadow:0 0 0 9px rgba(230,57,70,0)}}
-@keyframes hwShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes hwBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.page.active{animation:hwSlideUp .2s ease both}
-.card,.col-item,.more-item{transition:transform .18s ease,box-shadow .18s ease}
-.card:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,0,0,.5)}
-.col-item:hover,.more-item:hover{transform:translateY(-1px)}
-.analyze-btn{position:relative;overflow:hidden}
-.analyze-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);background-size:200% 100%;animation:hwShimmer 2s ease infinite}
-.rs{animation:hwPulse 2.5s ease infinite}
-.result{animation:hwSlideUp .25s ease both}
-.r-hero{background:linear-gradient(135deg,#0c0b18,#180b0b,#1a0d00);position:relative;overflow:hidden}
-.r-hero::before{content:'🏁';font-size:70px;opacity:.04;position:absolute;right:-8px;top:-8px;pointer-events:none}
-
 /* ── Install banner ── */
 .install-banner{background:var(--surface);border-radius:13px;padding:12px;margin-bottom:11px;display:flex;align-items:center;gap:10px;border:1px solid var(--border)}
 .ib-txt{font-size:12px;color:var(--text2);line-height:1.5}
@@ -545,10 +503,33 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 
 /* ══ AUTH MODAL — Clean Custom UI ══ */
-.auth-modal{display:none;position:fixed;inset:0;z-index:600;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);padding:16px}
+.auth-modal{
+  display:none;position:fixed;inset:0;z-index:600;
+  align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
+}
 .auth-modal.open{display:flex}
-@keyframes authIn{from{transform:scale(.95) translateY(6px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
-.auth-sheet{background:var(--surface);width:100%;max-width:400px;border-radius:18px;padding:28px 24px 32px;position:relative;border:1px solid var(--border2);animation:authIn .22s cubic-bezier(.4,0,.2,1);max-height:90vh;overflow-y:auto}
+
+/* Bottom sheet on mobile, centered on desktop */
+.auth-sheet{
+  background:var(--surface);
+  width:100%;max-width:420px;
+  border-radius:20px 20px 0 0;
+  padding:28px 28px 40px;
+  position:relative;
+  border:1px solid var(--border2);
+  border-bottom:none;
+  animation:slideUp .3s cubic-bezier(.4,0,.2,1);
+}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+
+@media(min-width:500px){
+  .auth-modal{align-items:center}
+  .auth-sheet{
+    border-radius:16px;border:1px solid var(--border2);
+    padding:36px;max-height:90vh;overflow-y:auto;
+  }
+}
 
 .auth-close{
   position:absolute;top:16px;right:16px;
@@ -674,12 +655,357 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   background:var(--red);color:#fff;letter-spacing:.03em;
 }
 
+
+.app-logo-wrap{display:flex;align-items:center;margin-right:6px;flex-shrink:0}
+.app-logo-wrap svg{filter:drop-shadow(0 2px 4px rgba(230,57,70,.4))}
+
+/* ── World-class polish ── */
+
+/* Smoother page transitions */
+.page{animation:none}
+.page.active{animation:pageFadeIn .2s ease}
+@keyframes pageFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Better card hover states */
+.col-item:active{background:var(--surface2);transform:scale(.99)}
+.listing-card:active{background:var(--surface2)}
+.more-item{transition:background .15s,transform .15s}
+.more-item:active{transform:scale(.99)}
+
+/* Better input focus */
+.inp:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(230,57,70,.08)}
+
+/* Improved scan area */
+.scan-area{transition:border-color .2s,box-shadow .2s}
+.scan-area.has-img{box-shadow:0 0 0 3px rgba(230,57,70,.1)}
+
+/* Better result card */
+.result{box-shadow:0 4px 24px rgba(0,0,0,.4)}
+
+/* Pulse animation on live dot */
+.ldot{animation:livePulse 2s infinite}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* Smooth analyze button */
+.analyze-btn{position:relative;overflow:hidden}
+.analyze-btn::after{
+  content:'';position:absolute;top:-50%;left:-60%;
+  width:40%;height:200%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+  transform:skewX(-20deg);
+  animation:shimmer 3s infinite;
+}
+@keyframes shimmer{0%{left:-60%}100%{left:120%}}
+
+/* Better chip/filter styles */
+.chip{transition:all .15s;cursor:pointer}
+.chip:active{transform:scale(.96)}
+
+/* Auth modal animation */
+.auth-modal .auth-sheet{
+  animation:authSlideUp .3s cubic-bezier(.4,0,.2,1);
+}
+@keyframes authSlideUp{
+  from{transform:translateY(40px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+
+/* Profile hero gradient — HW themed */
+.prof-hero{
+  background:linear-gradient(135deg,#1a0000 0%,#0d0000 40%,#0a0a0a 100%);
+  border-color:rgba(230,57,70,.2);
+}
+
+/* Better plan badges */
+.plan-dev{
+  background:linear-gradient(135deg,rgba(230,57,70,.15),rgba(255,214,10,.1));
+  color:var(--gold);border:1px solid rgba(255,214,10,.3);
+}
+
+/* Collection value card */
+.val-card{
+  background:linear-gradient(135deg,#1a1200 0%,#0d0500 50%,#0a0a0a 100%);
+}
+
+/* Bottom nav active indicator */
+.nav-item.active::before{
+  content:'';display:block;
+  width:20px;height:2px;
+  background:var(--red);
+  border-radius:2px;
+  margin:0 auto 4px;
+}
+.nav-item{padding-top:6px}
+
+/* Better button press feel */
+.btn-red:active{transform:scale(.97);opacity:.9}
+.btn-dark:active{transform:scale(.97)}
+
+/* Smoother result reveal */
+.r-hero{animation:none}
+.result.showing .r-hero{animation:fadeInDown .3s ease}
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Toast notification style for err-box */
+.err-box{
+  border-radius:12px;
+  animation:toastIn .2s ease;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══ HOTSCAN WORLD-CLASS UI SYSTEM ══ */
+
+/* Logo wordmark uses brand blue */
+.app-wordmark span{color:var(--blue-brand) !important}
+
+/* Header gets a subtle blue accent line at bottom */
+.app-header{
+  border-bottom:1px solid rgba(42,79,212,.25) !important;
+}
+.app-header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(42,79,212,.4),rgba(230,57,70,.3),transparent);
+  pointer-events:none;
+}
+
+/* Bottom nav — cleaner active state using brand blue */
+.nav-item.active{
+  color:var(--blue-brand) !important;
+  border-top-color:var(--blue-brand) !important;
+}
+.nav-item.active::before{
+  background:var(--blue-brand) !important;
+}
+
+/* ── HOTSCAN CAR SCAN AREA ── */
+.scan-area{
+  border:1.5px dashed var(--border3) !important;
+  background:linear-gradient(145deg,#111111,#0d0d18) !important;
+}
+.scan-area.has-img{
+  border-style:solid !important;
+  border-color:var(--blue-brand) !important;
+  box-shadow:0 0 0 3px rgba(42,79,212,.12) !important;
+}
+
+/* ── RESULT CARD — Premium ── */
+.result{
+  border:1px solid rgba(42,79,212,.2) !important;
+  box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(42,79,212,.08) !important;
+}
+.r-hero{
+  background:linear-gradient(135deg,#0d0d1e 0%,#130d1a 100%) !important;
+  border-bottom:1px solid rgba(42,79,212,.15);
+}
+
+/* ── MODE TABS ── */
+.mode-tab.active{
+  background:linear-gradient(135deg,rgba(42,79,212,.15),rgba(26,47,138,.1)) !important;
+  border-color:rgba(42,79,212,.4) !important;
+  color:var(--blue-brand) !important;
+}
+.mode-tab.active span{filter:none !important}
+
+/* ── KEY CARD ── */
+.key-card{
+  background:linear-gradient(135deg,#0d0d1e,#0a0a14) !important;
+  border:1px solid rgba(42,79,212,.3) !important;
+}
+
+/* ── BUTTONS ── */
+.btn-red{
+  background:linear-gradient(135deg,var(--red),var(--red2));
+  box-shadow:0 4px 12px rgba(230,57,70,.3);
+  transition:all .2s;
+}
+.btn-red:hover{box-shadow:0 6px 18px rgba(230,57,70,.4);transform:translateY(-1px)}
+
+/* Brand blue button */
+.btn-blue{
+  background:linear-gradient(135deg,var(--blue-brand),var(--blue-brand2));
+  color:#fff;border:none;padding:10px 18px;border-radius:50px;
+  font-size:13px;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;
+  box-shadow:0 4px 12px rgba(42,79,212,.35);
+  transition:all .2s;
+}
+.btn-blue:hover{box-shadow:0 6px 18px rgba(42,79,212,.5);transform:translateY(-1px)}
+
+/* ── RARITY BADGES ── premium look ── */
+.rs{
+  background:linear-gradient(135deg,rgba(200,16,46,.15),rgba(42,79,212,.1)) !important;
+  color:#ff8090 !important;
+  border:1px solid rgba(200,16,46,.3) !important;
+  animation:sthGlow 2.5s ease-in-out infinite !important;
+}
+@keyframes sthGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,0)}
+  50%{box-shadow:0 0 8px 2px rgba(230,57,70,.25)}
+}
+
+/* ── PROFILE ── */
+.prof-hero{
+  background:linear-gradient(135deg,#0a0a1e 0%,#0d001a 50%,#0a0a0a 100%) !important;
+  border:1px solid rgba(42,79,212,.2) !important;
+}
+.prof-avatar{
+  background:linear-gradient(135deg,var(--blue-brand),var(--blue-brand2)) !important;
+  box-shadow:0 4px 20px rgba(42,79,212,.4) !important;
+}
+
+/* ── VAL CARD ── */
+.val-card{
+  background:linear-gradient(135deg,#0d0d1e 0%,#0a0a14 100%) !important;
+  border:1px solid rgba(42,79,212,.2) !important;
+}
+
+/* ── PLAN BADGES ── */
+.plan-dev{
+  background:linear-gradient(135deg,rgba(42,79,212,.2),rgba(255,214,10,.1)) !important;
+  color:var(--gold) !important;
+  border:1px solid rgba(255,214,10,.3) !important;
+}
+.plan-pro{
+  background:linear-gradient(135deg,rgba(42,79,212,.15),rgba(76,201,240,.1)) !important;
+  color:#7dd4f8 !important;
+  border:1px solid rgba(76,201,240,.25) !important;
+}
+
+/* ── HUNT MODE SELECTED ── */
+.hunt-series-item.selected{
+  border-color:var(--blue-brand) !important;
+  background:rgba(42,79,212,.12) !important;
+}
+
+/* ── CHIP ACTIVE ── */
+.chip.active{
+  background:var(--blue-brand) !important;
+  border-color:var(--blue-brand) !important;
+}
+
+/* ── LIVE DOT ── */
+.live-lbl{color:#7dd4f8 !important}
+.ldot{background:#4cc9f0 !important}
+
+/* ── DEAL CARDS ── */
+.deal-verdict{
+  background:linear-gradient(135deg,#0a0a1e,#0d0d14) !important;
+}
+
+/* ── AUTH MODAL ── */
+.auth-sheet,.auth-box{
+  background:linear-gradient(145deg,#141420,#100d14) !important;
+  border-color:rgba(42,79,212,.25) !important;
+}
+.auth-social-btn,.auth-continue-btn{
+  background:linear-gradient(135deg,var(--blue-brand),var(--blue-brand2)) !important;
+  border:none !important;
+}
+.auth-social-btn{
+  background:var(--surface2) !important;
+  border:1px solid var(--border2) !important;
+}
+.auth-continue-btn{
+  background:linear-gradient(135deg,var(--red),var(--red2)) !important;
+}
+
+/* ── PRICE TILES ── */
+.ptile{
+  background:var(--surface) !important;
+  transition:background .15s;
+}
+.ptile:hover{background:var(--surface2) !important}
+.pinr{
+  background:linear-gradient(135deg,var(--gold),#e0b800);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+/* ── SUCCESS CELEBRATION ── */
+#auth-success-overlay{
+  background:linear-gradient(135deg,rgba(42,79,212,.15),rgba(0,0,0,.8)) !important;
+}
+
+/* ── SCAN BADGE IN HEADER ── */
+#scan-badge{
+  background:rgba(42,79,212,.15);
+  border:1px solid rgba(42,79,212,.25);
+  padding:3px 9px;border-radius:10px;
+  font-size:10px;color:var(--blue-brand);
+  font-weight:600;
+}
+
+/* ── PAGE TRANSITIONS ── */
+@keyframes pageFadeIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.page.active{animation:pageFadeIn .22s cubic-bezier(.4,0,.2,1)}
+
+/* ── SCROLLBAR (webkit) ── */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--blue-brand)}
+
+/* ── SELECTION ── */
+::selection{background:rgba(42,79,212,.3);color:#fff}
+
+/* ── FOCUS VISIBLE ── */
+:focus-visible{outline:2px solid var(--blue-brand);outline-offset:2px;border-radius:4px}
+
+/* ── LOGO HOVER ── */
+.app-logo-wrap svg{
+  transition:filter .2s, transform .2s;
+}
+.app-logo-wrap:hover svg{
+  filter:drop-shadow(0 0 8px rgba(42,79,212,.6));
+  transform:scale(1.05);
+}
+
+/* ── MARKETPLACE LISTING CARD ── */
+.listing-card{
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:13px;padding:13px;margin-bottom:8px;
+  display:flex;gap:10px;align-items:flex-start;
+  transition:border-color .15s,box-shadow .15s;
+}
+.listing-card:hover{
+  border-color:rgba(42,79,212,.3);
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+
+/* ── REF HERO ── */
+.ref-hero{
+  background:linear-gradient(135deg,#0a0a1e,#100a14) !important;
+  border:1px solid rgba(42,79,212,.2) !important;
+}
+.ref-link{
+  background:rgba(42,79,212,.08) !important;
+  border-color:rgba(42,79,212,.2) !important;
+  color:var(--blue-brand) !important;
+}
+
+/* ── SHARE CARD ── */
+.share-card{
+  background:linear-gradient(135deg,#0d0d1e,#130d1a) !important;
+  border:1px solid rgba(42,79,212,.2) !important;
+}
+
+/* ── OVERALL BODY TEXTURE ── */
+body{
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(42,79,212,.03) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(230,57,70,.03) 0%, transparent 60%);
+}
+
 </style>
 </head>
 <body>
 <div class="app-header">
-  <div class="app-header-left"><img src="data:image/png;base64,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" alt="HotScan" style="height:34px;width:auto;object-fit:contain;display:block"></div>
-    <div class="app-tagline">India</div>
+  <div class="app-header-left">
+    <img src="data:image/png;base64,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" alt="HotScan" style="height:32px;width:auto;object-fit:contain;display:block">
   </div>
   <div id="user-hdr-btn" class="app-user-btn">
     <div class="app-user-inner">Sign In</div>
@@ -687,63 +1013,66 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 </div>
 <div class="nav">
   <div class="nav-dock">
-    <!-- Scan — red pill -->
-    <div class="nav-item nav-scan active" onclick="goPage('scan')" data-label="Scan" id="nav-scan">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="M12 5v2M12 17v2M5 12H3M21 12h-2"/></svg>
+    <div class="nav-item nav-scan active" id="nav-scan" data-tip="Scan" onclick="goPage('scan')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
     </div>
-    <!-- Collect -->
-    <div class="nav-item" onclick="goPage('collection')" data-label="Collection" id="nav-collection">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M6 8h4M6 12h6"/></svg>
+    <div class="nav-item" id="nav-collection" data-tip="Collection" onclick="goPage('collection')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
     </div>
-    <!-- Market -->
-    <div class="nav-item" onclick="goPage('marketplace')" data-label="Market" id="nav-marketplace">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    <div class="nav-item" id="nav-marketplace" data-tip="Market" onclick="goPage('marketplace')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
     </div>
-    <!-- Divider -->
     <div class="nav-divider"></div>
-    <!-- Trends -->
-    <div class="nav-item" onclick="goPage('market')" data-label="Trends" id="nav-market">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    <div class="nav-item" id="nav-market" data-tip="Trends" onclick="goPage('market')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     </div>
-    <!-- Profile -->
-    <div class="nav-item" onclick="goPage('profile')" data-label="Profile" id="nav-profile">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <div class="nav-item" id="nav-profile" data-tip="Profile" onclick="goPage('profile')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </div>
-    <!-- More -->
-    <div class="nav-item" onclick="goPage('more')" data-label="More" id="nav-more">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    <div class="nav-item" id="nav-more" data-tip="More" onclick="goPage('more')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
     </div>
   </div>
 </div>
+
 
 <!-- ═══ SCAN PAGE ═══ -->
 <div class="page active" id="page-scan">
 <!-- install banner removed -->
   <div class="key-card" id="key-card">
-    <div class="key-label">🔑 Free Groq API Key Required</div>
-    <div class="key-sub">Get free at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — 2 min. Stays on your device only.</div>
-    <input class="inp" type="password" id="gkey" placeholder="gsk_..." autocomplete="off">
-    <button class="btn-gold" onclick="saveKey()">Save Key &amp; Start →</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:36px;height:36px;background:var(--surface3);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔑</div>
+      <div>
+        <div class="key-label">Free Groq API Key Required</div>
+        <div style="font-size:11px;color:var(--text3)">Powers the AI identification engine</div>
+      </div>
+    </div>
+    <div class="key-sub">Get your free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> in 2 minutes. Your key is stored only on this device — never sent to our servers.</div>
+    <div style="display:flex;gap:8px">
+      <input class="inp" type="password" id="gkey" placeholder="Paste your gsk_... key here" autocomplete="off" style="margin:0;flex:1">
+      <button class="btn-red" style="flex-shrink:0;padding:0 18px;border-radius:10px;font-size:14px;font-weight:700;height:44px" onclick="saveKey()">Save →</button>
+    </div>
   </div>
   <!-- Mode tabs -->
   <div class="mode-tabs">
-    <div class="mode-tab active" id="tab-photo" onclick="setMode('photo')">Photo</div>
-    <div class="mode-tab" id="tab-barcode" onclick="setMode('barcode')">Barcode</div>
-    <div class="mode-tab" id="tab-deal" onclick="setMode('deal')">Deal?</div>
-    <div class="mode-tab" id="tab-fake" onclick="setMode('fake')">Fake?</div>
+    <div class="mode-tab active" id="tab-photo" onclick="setMode('photo')"><span>📷</span>Photo</div>
+    <div class="mode-tab" id="tab-barcode" onclick="setMode('barcode')"><span>🔢</span>Barcode</div>
+    <div class="mode-tab" id="tab-deal" onclick="setMode('deal')"><span>💰</span>Deal?</div>
+    <div class="mode-tab" id="tab-fake" onclick="setMode('fake')"><span>🕵️</span>Fake?</div>
   </div>
   <!-- Photo mode -->
   <div id="mode-photo">
     <div class="scan-area" id="scan-area">
       <div class="scan-ph" id="scan-ph">
         <div class="scan-emoji">🚗</div>
-        <div class="scan-title">Scan Hot Wheels Cars</div>
-        <div class="scan-sub">Take a photo or upload multiple images — AI identifies every car precisely</div>
+        <div class="scan-title">Scan Any Hot Wheels Car</div>
+        <div class="scan-sub">AI identifies the car, rarity &amp; live Indian market price in seconds</div>
         <div class="scan-btns">
           <button class="btn-red" onclick="openCam()">📷 Camera</button>
           <button class="btn-dark" onclick="openGal()">🖼 Gallery</button>
           <button class="btn-dark" onclick="openMulti()">📁 Multiple</button>
         </div>
+        <div style="margin-top:14px;font-size:11px;color:var(--text3)">Tip: white surface + bright light = best results</div>
       </div>
       <div id="preview-wrap"><img id="preview-img" src="" alt=""><button class="retake-btn" onclick="openGal()">Change</button></div>
       <!-- Multi-image preview -->
@@ -759,36 +1088,18 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   <!-- Barcode mode -->
   <div id="mode-barcode" style="display:none">
     <div class="barcode-area">
-      <!-- Search input with type toggle -->
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        <div id="barcode-type-toggle" style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:3px;flex-shrink:0">
-          <button onclick="setBarcodeMode('barcode')" id="bmode-barcode" style="padding:6px 10px;border-radius:7px;border:none;background:var(--surface3);color:#fff;font-size:11px;font-weight:600;cursor:pointer">🔢 Code</button>
-          <button onclick="setBarcodeMode('name')" id="bmode-name" style="padding:6px 10px;border-radius:7px;border:none;background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer">🔤 Name</button>
-        </div>
-        <input class="inp" type="text" id="barcode-input" placeholder="Barcode or UPC number..." style="margin:0;flex:1;font-family:monospace" inputmode="numeric">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">🔢 Barcode / Name Lookup</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Enter a barcode number, collector number, or just type the car name to search</div>
+      <div class="barcode-grid">
+        <div class="barcode-grid-item"><div class="bgi-icon">📦</div><div class="bgi-name">Barcode</div><div class="bgi-sub">Back of card</div></div>
+        <div class="barcode-grid-item"><div class="bgi-icon">🔖</div><div class="bgi-name">Collector #</div><div class="bgi-sub">e.g. HW-023</div></div>
+        <div class="barcode-grid-item"><div class="bgi-icon">📋</div><div class="bgi-name">Car Name</div><div class="bgi-sub">Any search term</div></div>
       </div>
-
-      <!-- Quick examples -->
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
-        <span onclick="fillBarcode('027084879871')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text3);padding:4px 9px;border-radius:20px;font-size:10px;cursor:pointer;font-family:monospace">027084879871</span>
-        <span onclick="fillBarcode('Bone Shaker STH')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text3);padding:4px 9px;border-radius:20px;font-size:10px;cursor:pointer">Bone Shaker STH</span>
-        <span onclick="fillBarcode('Super Treasure Hunt Porsche')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text3);padding:4px 9px;border-radius:20px;font-size:10px;cursor:pointer">Porsche STH</span>
-        <span onclick="fillBarcode('Hot Wheels Camaro STH 2023')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text3);padding:4px 9px;border-radius:20px;font-size:10px;cursor:pointer">Camaro STH</span>
-      </div>
-
-      <button class="btn-red" style="width:100%;justify-content:center;padding:13px;border-radius:12px;font-size:14px;margin-bottom:10px" onclick="scanBarcode()">
-        <span id="barcode-btn-txt">🔍 Look Up This Car</span>
-      </button>
-
-      <!-- Recent barcode searches -->
-      <div id="barcode-recent" style="display:none;margin-bottom:10px">
-        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Recent Searches</div>
-        <div id="barcode-recent-list" style="display:flex;gap:5px;flex-wrap:wrap"></div>
-      </div>
-
-      <div style="background:var(--surface2);border-radius:10px;padding:11px;border-left:3px solid var(--blue)">
-        <div style="font-size:10px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">💡 Tips</div>
-        <div style="font-size:11px;color:var(--text2);line-height:1.8" id="barcode-tip-text">Scan the barcode on the back of the card. All Hot Wheels UPCs start with 027084.</div>
+      <input class="inp" type="text" id="barcode-input" placeholder="e.g. 027084879871 or Bone Shaker" style="letter-spacing:1px;margin-bottom:10px">
+      <button class="btn-red" style="width:100%;justify-content:center;padding:13px;border-radius:12px;font-size:14px" onclick="scanBarcode()">🔍 Look Up This Car</button>
+      <div style="margin-top:12px;background:var(--surface2);border-radius:10px;padding:11px;border-left:3px solid var(--blue)">
+        <div style="font-size:10px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">💡 Pro tip</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.7">For best results type the full car name like <b style="color:#fff">"Hot Wheels Bone Shaker 2023"</b> or <b style="color:#fff">"Super Treasure Hunt Porsche"</b></div>
       </div>
     </div>
   </div>
@@ -897,13 +1208,13 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
     <div class="r-acts">
       <button class="ract" onclick="addToCol()"><span>➕</span>Add</button>
       <button class="ract" onclick="addAlert()"><span>🔔</span>Alert</button>
-      <button class="ract" onclick="shareWAListing()" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3)"><span>💬</span>List WA</button>
+      <button class="ract" onclick="quickSell()"><span>💸</span>Sell</button>
       <button class="ract" onclick="showShare()"><span>📤</span>Share</button>
       <button class="ract" onclick="resetScan()"><span>🔄</span>Rescan</button>
     </div>
   </div>
   <div class="card"><div class="card-title">📸 Tips for best results</div><div style="font-size:12px;color:var(--text2);line-height:2">💡 White surface · 🔆 Bright light · 🎯 Side profile · 📦 Include card</div></div>
-  <div class="footer">HotScan India v9.1 · hotscan.in · India's #1 Hot Wheels Scanner 🇮🇳</div>
+  <div class="footer">HotScan India v5.0 · <a href="https://hotscan.in" style="color:var(--text3);text-decoration:none">hotscan.in</a> · India's #1 Hot Wheels Scanner 🇮🇳</div>
 </div>
 
 <!-- ═══ COLLECTION PAGE ═══ -->
@@ -1170,42 +1481,6 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
       </div>
     </div>
 
-    <!-- Customisation -->
-    <div class="card" id="customization-section">
-      <div class="card-title">🎨 Customise Profile</div>
-      <div style="margin-bottom:13px">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:7px;font-weight:600;letter-spacing:.04em">DISPLAY NAME</div>
-        <div style="display:flex;gap:7px">
-          <input class="inp" id="custom-name" type="text" placeholder="Your collector name..." style="margin:0;flex:1" maxlength="28">
-          <button onclick="saveCustomName()" style="background:var(--red);color:#fff;border:none;padding:8px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Save</button>
-        </div>
-      </div>
-      <div style="margin-bottom:13px">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;letter-spacing:.04em">COLLECTOR BADGE</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap" id="badge-picker">
-          <span class="badge-opt" onclick="setBadge('🏎️')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🏎️</span>
-          <span class="badge-opt" onclick="setBadge('🔥')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🔥</span>
-          <span class="badge-opt" onclick="setBadge('🏆')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🏆</span>
-          <span class="badge-opt" onclick="setBadge('💎')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">💎</span>
-          <span class="badge-opt" onclick="setBadge('⚡')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">⚡</span>
-          <span class="badge-opt" onclick="setBadge('🚗')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🚗</span>
-          <span class="badge-opt" onclick="setBadge('🌟')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🌟</span>
-          <span class="badge-opt" onclick="setBadge('🇮🇳')" style="font-size:20px;cursor:pointer;padding:7px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);transition:all .15s">🇮🇳</span>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;letter-spacing:.04em">AVATAR COLOUR</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap" id="color-picker">
-          <div onclick="setAvatarColor('#e63946')" data-color="#e63946" style="width:28px;height:28px;border-radius:50%;background:#e63946;cursor:pointer;transition:outline .15s"></div>
-          <div onclick="setAvatarColor('#7c3aed')" data-color="#7c3aed" style="width:28px;height:28px;border-radius:50%;background:#7c3aed;cursor:pointer;transition:outline .15s"></div>
-          <div onclick="setAvatarColor('#ffd60a')" data-color="#ffd60a" style="width:28px;height:28px;border-radius:50%;background:#ffd60a;cursor:pointer;transition:outline .15s"></div>
-          <div onclick="setAvatarColor('#2dc653')" data-color="#2dc653" style="width:28px;height:28px;border-radius:50%;background:#2dc653;cursor:pointer;transition:outline .15s"></div>
-          <div onclick="setAvatarColor('#ff6a00')" data-color="#ff6a00" style="width:28px;height:28px;border-radius:50%;background:#ff6a00;cursor:pointer;transition:outline .15s"></div>
-          <div onclick="setAvatarColor('#4cc9f0')" data-color="#4cc9f0" style="width:28px;height:28px;border-radius:50%;background:#4cc9f0;cursor:pointer;transition:outline .15s"></div>
-          <div onclick="setAvatarColor('#1a2f8a')" data-color="#1a2f8a" style="width:28px;height:28px;border-radius:50%;background:#1a2f8a;cursor:pointer;transition:outline .15s"></div>
-        </div>
-      </div>
-    </div>
     <!-- Actions -->
     <div class="card"><div class="card-title">Account</div>
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -1386,156 +1661,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   </div>
 </div>
 
-<script>
-// Safe nav wrapper — works even if called before full JS loads
-function goPage(id){
-  // If real goPage not ready yet, queue it
-  if(typeof _goPageReady === 'undefined'){
-    window.addEventListener('load', function(){ goPage(id) }, {once:true})
-    return
-  }
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');p.style.animation='none'})
-  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')})
-  var navEl=document.getElementById('nav-'+id); if(navEl) navEl.classList.add('active')
-  var pg=document.getElementById('page-'+id); if(!pg) return
-  pg.style.animation=''; void pg.offsetWidth; pg.classList.add('active')
-  if(id==='profile') setTimeout(renderProfilePage, 50)
-  window.scrollTo({top:0, behavior:'smooth'})
-}
-var _goPageReady = true
-
-function fillBarcode(val){
-  var inp = document.getElementById('barcode-input')
-  if(inp){ inp.value=val; inp.focus() }
-  if(/^\d+$/.test(val.trim())) setBarcodeMode('barcode')
-  else setBarcodeMode('name')
-}
-function setBarcodeMode(mode){
-  var inp = document.getElementById('barcode-input')
-  var bBtn = document.getElementById('bmode-barcode')
-  var nBtn = document.getElementById('bmode-name')
-  var tipEl = document.getElementById('barcode-tip-text')
-  if(mode==='barcode'){
-    if(inp){ inp.placeholder='Barcode or UPC e.g. 027084879871'; inp.setAttribute('inputmode','numeric') }
-    if(tipEl) tipEl.textContent='Scan barcode on back of card. Hot Wheels UPCs start with 027084.'
-    if(bBtn){ bBtn.style.background='var(--surface3)'; bBtn.style.color='#fff' }
-    if(nBtn){ nBtn.style.background='transparent'; nBtn.style.color='var(--text2)' }
-  } else {
-    if(inp){ inp.placeholder='e.g. Bone Shaker STH 2023'; inp.removeAttribute('inputmode') }
-    if(tipEl) tipEl.textContent='Be specific: include year and rarity for best results.'
-    if(bBtn){ bBtn.style.background='transparent'; bBtn.style.color='var(--text2)' }
-    if(nBtn){ nBtn.style.background='var(--surface3)'; nBtn.style.color='#fff' }
-  }
-}
-function addBarcodeRecent(q){
-  var recent = JSON.parse(localStorage.getItem('hs_bc_recent')||'[]')
-  recent = [q].concat(recent.filter(function(r){return r!==q})).slice(0,5)
-  localStorage.setItem('hs_bc_recent', JSON.stringify(recent))
-  renderBarcodeRecent()
-}
-function renderBarcodeRecent(){
-  var el = document.getElementById('barcode-recent')
-  var list = document.getElementById('barcode-recent-list')
-  var recent = JSON.parse(localStorage.getItem('hs_bc_recent')||'[]')
-  if(!el||!list||!recent.length) return
-  el.style.display='block'
-  list.innerHTML = recent.map(function(q){
-    return '<span onclick="fillBarcode('+JSON.stringify(q)+')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:4px 9px;border-radius:20px;font-size:10px;cursor:pointer">'+q+'</span>'
-  }).join('')
-}
-
-// ── Missing function stubs ──
-function copyRefLink(){
-  var link = getRefLink ? getRefLink() : 'https://hotscan.in'
-  if(navigator.clipboard) navigator.clipboard.writeText(link).then(function(){ showToast && showToast('Link copied!') })
-  else { alert('Your link: ' + link) }
-}
-function handleUpgrade(){ closeProModal(); if(currentUser){ startPayment() } else { openAuth() } }
-function shareResultToGroup(){
-  if(!lastResult) return
-  var lines = ['🏎️ Just scanned with HotScan India!','','*'+lastResult.name+'* ('+( lastResult.rarity||'Common')+')','🇮🇳 ₹'+(lastResult.india_collector_inr||'?')+' | 🇺🇸 $'+(lastResult.us_collector_usd||'?'),'📈 '+(lastResult.investment||'Medium')+' investment',lastResult.india_insight?'💡 '+lastResult.india_insight:'','','Free at hotscan.in 🔍 #HotWheelsIndia']
-  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank')
-}
-function shareViaWA(){
-  var link = typeof getRefLink === 'function' ? getRefLink() : 'https://hotscan.in'
-  var txt = "India's first Hot Wheels scanner!\nScan any car → get live Indian prices.\nFree: "+link
-  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(txt),'_blank')
-}
-
-// ════════ PROFILE CUSTOMIZATION ════════
-function showToast(msg){
-  var t = document.getElementById('hs-toast')
-  if(t) t.remove()
-  t = document.createElement('div')
-  t.id = 'hs-toast'
-  t.textContent = msg
-  t.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:rgba(30,30,32,.95);color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.5);white-space:nowrap;border:1px solid rgba(255,255,255,.08);animation:hwSlideUp .2s ease'
-  document.body.appendChild(t)
-  setTimeout(function(){ if(t.parentNode) t.remove() }, 2200)
-}
-
-function saveCustomName(){
-  var inp = document.getElementById('custom-name')
-  if(!inp || !inp.value.trim()) return
-  var name = inp.value.trim()
-  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
-  prefs.displayName = name
-  localStorage.setItem('hs_prefs', JSON.stringify(prefs))
-  if(currentUser) currentUser.name = name
-  if(_sb && currentUser){
-    _sb.from('profiles').update({display_name:name}).eq('id',currentUser.id).then(function(){})
-  }
-  updateHeaderUI()
-  inp.value = ''
-  showToast('Name updated ✅')
-}
-
-function setBadge(emoji){
-  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
-  prefs.badge = emoji
-  localStorage.setItem('hs_prefs', JSON.stringify(prefs))
-  document.querySelectorAll('.badge-opt').forEach(function(el){
-    var active = el.textContent.trim() === emoji
-    el.style.borderColor = active ? 'var(--red)' : 'var(--border2)'
-    el.style.background = active ? 'rgba(230,57,70,.15)' : 'var(--surface2)'
-  })
-  updateHeaderUI()
-  showToast('Badge set ' + emoji)
-}
-
-function setAvatarColor(color){
-  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
-  prefs.avatarColor = color
-  localStorage.setItem('hs_prefs', JSON.stringify(prefs))
-  document.querySelectorAll('#color-picker div[data-color]').forEach(function(el){
-    el.style.outline = el.getAttribute('data-color') === color ? '2px solid #fff' : 'none'
-  })
-  updateHeaderUI()
-  showToast('Colour updated 🎨')
-}
-
-function initCustomization(){
-  var prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}')
-  if(prefs.badge){
-    document.querySelectorAll('.badge-opt').forEach(function(el){
-      var active = el.textContent.trim() === prefs.badge
-      el.style.borderColor = active ? 'var(--red)' : 'var(--border2)'
-      el.style.background = active ? 'rgba(230,57,70,.15)' : 'var(--surface2)'
-    })
-  }
-  if(prefs.avatarColor){
-    document.querySelectorAll('#color-picker div[data-color]').forEach(function(el){
-      el.style.outline = el.getAttribute('data-color') === prefs.avatarColor ? '2px solid #fff' : 'none'
-    })
-  }
-  var cnInp = document.getElementById('custom-name')
-  if(cnInp && prefs.displayName) cnInp.placeholder = prefs.displayName
-}
-
-function whatsappSupport(){
-  window.open('https://api.whatsapp.com/send?phone=919999999999&text='+encodeURIComponent('Hi! I need help with HotScan India app.'),'_blank')
-}
-// ── OAuth callback — catches Google redirect token ──
+<script>// ── OAuth callback — catches Google redirect token ──
 if(window.location.hash && window.location.hash.includes('access_token')){
   window.history.replaceState(null,'',window.location.pathname+window.location.search)
 }
@@ -1549,17 +1675,6 @@ var _authStep = 'email'  // 'email' | 'password'
 var _authEmail = ''
 
 function openAuth(){
-  // Never open auth modal if user is already logged in
-  if(currentUser){ openAccountModal(); return }
-  // Also check localStorage as backup
-  try{
-    var stored = localStorage.getItem('hs_supabase_auth')
-    if(stored && JSON.parse(stored).access_token){ 
-      // Session exists but currentUser not set yet — wait
-      setTimeout(function(){ if(currentUser) openAccountModal() }, 500)
-      return
-    }
-  }catch(e){}
   _authMode = 'signin'
   _authStep = 'email'
   _authEmail = ''
@@ -1661,18 +1776,17 @@ async function authContinue(){
     if(_authMode === 'signin'){
       var r = await _sb.auth.signInWithPassword({email:email, password:pass})
       if(r.error){
-        var m=r.error.message||''
-        if(m.toLowerCase().includes('invalid')||m.toLowerCase().includes('wrong')||m.toLowerCase().includes('credentials')) m='Wrong email or password'
-        if(m.toLowerCase().includes('confirm')||m.toLowerCase().includes('verif')) m='Verify email — check inbox'
-        if(m.toLowerCase().includes('not found')||m.toLowerCase().includes('no user')) m='No account found'
-        showAuthErr(m); setAuthLoading(false)
+        var m = r.error.message || ''
+        if(m.toLowerCase().includes('invalid') || m.toLowerCase().includes('wrong') || m.toLowerCase().includes('credentials')) m = 'Wrong email or password. Try again.'
+        if(m.toLowerCase().includes('confirm') || m.toLowerCase().includes('verif')) m = 'Please verify your email first — check your inbox'
+        if(m.toLowerCase().includes('not found') || m.toLowerCase().includes('no user')) m = 'No account found. Sign up first.'
+        showAuthErr(m)
+        setAuthLoading(false)
       } else {
-        // Explicitly store session token for normal tab persistence
-        if(r.data && r.data.session){
-          try{ localStorage.setItem('hs_supabase_auth', JSON.stringify(r.data.session)) }catch(e){}
-        }
-        setAuthLoading(false); closeAuth()
-        sessionStorage.removeItem('hs_cel'); setTimeout(showSuccessCelebration,400)
+        // Explicit success — don't wait for onAuthStateChange
+        setAuthLoading(false)
+        closeAuth()
+        setTimeout(showSuccessCelebration, 400)
       }
 
     } else {
@@ -1718,15 +1832,18 @@ document.addEventListener('keydown', function(e){
 
 // ── Social Auth ──
 function signInWithGoogle(){
-  if(!_sb){ showAuthErr('Auth unavailable — refresh page'); return }
-  var redirectTo = window.location.origin + '/index.html'
+  if(!_sb){ showAuthErr('Service unavailable'); return }
+  // Use current origin so it works on both hotscan.in and hotscan-theta.vercel.app
+  var redirectTo = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? window.location.origin
+    : 'https://hotscan.in'
   _sb.auth.signInWithOAuth({
-    provider:'google',
-    options:{
-      redirectTo: redirectTo,
-      queryParams:{access_type:'offline', prompt:'consent'}
+    provider: 'google',
+    options: {
+      redirectTo: redirectTo + '/index.html',
+      queryParams: { access_type: 'offline', prompt: 'consent' }
     }
-  })
+  }).catch(function(e){ showAuthErr('Google sign-in failed. Try email instead.') })
 }
 
 
@@ -1951,31 +2068,67 @@ function updateScanCounter() {
 }
 
 // ── Init ──
+
+// ── GLOBAL TOAST NOTIFICATION ──
+function showToast(msg, type, duration){
+  type = type || 'info'; duration = duration || 2800
+  var existing = document.getElementById('hs-toast')
+  if(existing) existing.remove()
+  var toast = document.createElement('div')
+  toast.id = 'hs-toast'
+  toast.textContent = msg
+  toast.style.cssText = [
+    'position:fixed','bottom:80px','left:50%','transform:translateX(-50%) translateY(20px)',
+    'background:' + (type==='error' ? '#2a0a0a' : type==='success' ? '#0a1a0a' : '#0d0d1e'),
+    'color:' + (type==='error' ? '#ff8080' : type==='success' ? '#80ff90' : '#c0d0ff'),
+    'border:1px solid ' + (type==='error' ? 'rgba(255,80,80,.3)' : type==='success' ? 'rgba(80,255,90,.3)' : 'rgba(42,79,212,.3)'),
+    'padding:10px 18px','border-radius:20px','font-size:13px','font-weight:600',
+    'z-index:9000','max-width:80%','text-align:center',
+    'box-shadow:0 4px 20px rgba(0,0,0,.5)',
+    'transition:all .3s cubic-bezier(.4,0,.2,1)',
+    'pointer-events:none','white-space:nowrap',
+  ].join(';')
+  document.body.appendChild(toast)
+  requestAnimationFrame(function(){
+    toast.style.transform = 'translateX(-50%) translateY(0)'
+    toast.style.opacity = '1'
+  })
+  setTimeout(function(){
+    toast.style.transform = 'translateX(-50%) translateY(20px)'
+    toast.style.opacity = '0'
+    setTimeout(function(){ if(toast.parentNode) toast.remove() }, 300)
+  }, duration)
+}
+
 window.addEventListener('load', function() {
-  var am=document.getElementById('auth-modal'); if(am) am.classList.remove('open')
-  document.body.style.overflow=''
-  
-  // Restore profile from cache for instant UI (before DB responds)
-  try{
-    var cached = JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
-    if(cached && cached.data && (Date.now()-cached.ts) < 3600000){
-      userProfile = cached.data
-      if(cached.data.is_pro || cached.data.is_developer) localStorage.setItem('hs_pro','true')
+  // Restore cached profile for instant header UI before DB responds
+  try {
+    var _cp = JSON.parse(localStorage.getItem('hs_profile_cache') || 'null')
+    if (_cp && _cp.data && (Date.now() - _cp.ts) < 3600000) {
+      userProfile = _cp.data
+      if (_cp.data.is_pro || _cp.data.is_developer) localStorage.setItem('hs_pro','true')
     }
-  }catch(e){}
-  
+  } catch(e) {}
   // Supabase
   try {
     if (window.supabase) _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
-      auth:{persistSession:true,storageKey:'hs_supabase_auth',storage:window.localStorage,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}
+      auth: {
+        persistSession: true,
+        storageKey: 'hs_auth_v2',
+        flowType: 'implicit',
+        storage: window.localStorage,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'implicit'
+      }
     })
-  } catch(e) { console.warn('Supabase init:', e) }
+  } catch(e) { console.warn('Supabase init error:', e) }
 
   // App init
   if (KEY) document.getElementById('key-card').style.display = 'none'
   var ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
   var sa = window.matchMedia('(display-mode:standalone)').matches
-  var _ibEl=document.getElementById('ib'); if(_ibEl&&(!ios||sa)) _ibEl.style.display='none'
+  if (!ios || sa) document.getElementById('ib').style.display = 'none'
 
   renderCol()
   renderAlerts()
@@ -1987,7 +2140,17 @@ window.addEventListener('load', function() {
 })
 
 // ── Nav ──
-
+function goPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')})
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')})
+  var pg = document.getElementById('page-'+id)
+  if(pg) pg.classList.add('active')
+  var ni = document.getElementById('nav-'+id)
+  if(ni) ni.classList.add('active')
+  if(id==='scan' && ni) ni.classList.add('nav-scan')
+  if(id==='profile') renderProfilePage()
+  window.scrollTo({top:0,behavior:'smooth'})
+}
 
 // ── Key ──
 function saveKey() {
@@ -2174,7 +2337,7 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
           {type:'text', text:userPrompt}
         ]}
       ],
-      temperature: 0.02, max_tokens: 1200
+      temperature: 0.05, max_tokens: 800
     })
   })
   if (!res.ok) {
@@ -2194,7 +2357,7 @@ async function groqText(prompt, model) {
     body: JSON.stringify({
       model: model || 'moonshotai/kimi-k2-instruct',
       messages: [{role:'user', content:prompt}],
-      temperature: 0.05, max_tokens: 900
+      temperature: 0.1, max_tokens: 500
     })
   })
   if (!res.ok) return null
@@ -2211,100 +2374,110 @@ function parseJSON(raw) {
 
 // ── Identify car ──
 async function identifyCar(imageData) {
-  var sys = `You are the world's most precise Hot Wheels identification expert — a specialist with encyclopaedic knowledge of every casting, colour variation, tampo, wheel type, and series from 1968 to 2025. You have deep expertise in the Indian collector market.
+  var sys = [
+    'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2025.',
+    '',
+    'IDENTIFICATION RULES — follow precisely:',
+    '1. CASTING: Identify the exact vehicle model (e.g. "69 Camaro" not just "Camaro"). Note year of car, make, model.',
+    '2. SERIES: Name exact series e.g. "Hot Wheels 2023 Mainline #087/250" or "Car Culture Japan Historics 3".',
+    '3. COLOR: Exact color e.g. "Spectraflame Blue", "Pearl White", "Matte Black", "Kmart Exclusive Red".',
+    '4. TAMPO: Every graphic/decoration visible — sponsor logos, racing numbers, flames, stripes, text.',
+    '5. WHEELS: Exact wheel type — "5-Spoke", "OH5 (Open Hole 5-Spoke)", "Real Riders rubber", "PR5", "10-Spoke", "MC5", "Gold Lace".',
+    '6. BASE: Look for Malaysia/China/Thailand/Thailand+China base — indicates era and variation.',
+    '',
+    'RARITY DETECTION — critical:',
+    '- Super Treasure Hunt (STH): Spectraflame metallic paint + Real Riders rubber tires + TH logo = VERY RARE ₹4000-15000 India',
+    '- Treasure Hunt (TH): Metalflake/special paint + TH flame logo on card = RARE ₹1000-3000 India',
+    '- Real Riders without TH = Premium series ₹500-1200 India',
+    '- Error Car: wrong tampo/color/part = EXTREMELY VALUABLE ₹5000-50000 India',
+    '- Vintage Redlines (pre-1977): Red stripe on tires = ₹3000-20000 India',
+    '- Basic mainline: Standard 5-spoke plastic wheels = Common ₹150-200 India',
+    '',
+    'AUTHENTICITY: Check Hot Wheels logo sharpness, Mattel base markings, wheel quality, paint consistency.',
+    'CONFIDENCE: Be precise. 95%+ only if you can clearly read tampo/series. 70-80% if partially visible.'
+  ].join('\n')
 
-IDENTIFICATION PROTOCOL — execute in order:
-1. VEHICLE CASTING: Exact make/model/year of the real vehicle depicted (e.g. "1969 Dodge Charger Daytona" not "Charger")
-2. SERIES IDENTIFICATION: Exact series + year + number (e.g. "Hot Wheels 2023 Mainline #087/250", "Car Culture Japan Historics 3", "Boulevard Series", "Fast & Furious Premium")
-3. COLOUR: Precise colour name as Mattel uses it (Spectraflame Blue, Pearl White, Matte Black, Burnt Orange, Kmart Exclusive Red, etc.)
-4. TAMPO DETAIL: Every graphic — racing numbers, sponsor logos, flames, pin-striping, flag decals, text on doors/hood/roof
-5. WHEEL TYPE: Exact type — 5-Spoke (standard), OH5 (Open Hole 5-Spoke), Real Riders rubber, PR5, 10-Spoke, MC5, Gold Lace, BBS, Deep-Dish, Redline, White Wall
-6. BASE PLATE: Country (Malaysia/China/Thailand/Thailand+China), base colour, any patent numbers visible
-7. CARD: If card visible — blister intact, J-hook present, card condition
-
-RARITY DETECTION (highest priority — must be accurate):
-★★★ SUPER TREASURE HUNT: Spectraflame metallic/pearlescent paint + Real Riders rubber tyres + TH$ logo on card = ₹4,000–20,000 India. MUST have ALL THREE elements.
-★★ TREASURE HUNT: Metalflake or special paint + TH flame logo on card (NOT STH) = ₹1,000–4,000 India. 1 per case of 72.
-★ REAL RIDERS PREMIUM: Rubber tyres, no TH logo = Car Culture/Boulevard/Premium = ₹400–1,500 India
-💎 ERROR CAR: Factory mistakes — missing tampo, wrong colour, double-stamped, assembly error = ₹5,000–50,000+ India
-🏺 VINTAGE REDLINE: Pre-1977, red/orange stripe on tyres = ₹3,000–25,000 India
-🔵 RARE VARIATION: Colour/tampo variant, short-run, exclusive = ₹500–3,000 India
-⚪ COMMON MAINLINE: Standard 5-spoke plastic wheels = ₹80–250 India (retail ₹250–350 new)
-
-AUTHENTICITY MARKERS:
-- Genuine: Hot Wheels logo crisp with correct flame design, "MATTEL" and country on base, consistent paint, proper wheel fit
-- Fake (common in India): Blurry logo, "MOTOR WHEELS"/"HOT WORKS", no Mattel base markings, wrong proportions
-
-CONFIDENCE SCORING:
-- 95-100: Can read series number, tampo text, base country clearly
-- 85-94: Clear casting + colour + wheel type but card not fully visible  
-- 70-84: Casting identified but colour/tampo partially obscured
-- Below 70: Return identified:false`
-
-  var usr = `Examine every pixel of this Hot Wheels image. Identify with maximum precision.
-Return ONLY valid JSON — no explanation, no markdown, no prose:
-{"identified":true,"confidence":92,"name":"EXACT casting name e.g. 69 Dodge Charger Daytona","series":"EXACT series name year and number","casting_year":"year casting first produced","color":"exact Mattel color name","tampo":"every visible graphic in detail","wheel_type":"exact wheel type","base_color":"base plate color","base_origin":"Malaysia|China|Thailand|Thailand+China|Unknown","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium","rarity_reason":"specific visual evidence — what exactly makes this rarity","condition":"Mint on Card|Near Mint|Very Good|Good|Fair|Loose","investment":"Low|Medium|High|Very High","investment_reason":"specific 2-3 sentence investment case for Indian collectors","fun_fact":"one precise interesting fact about this exact casting or variant","india_insight":"specific Indian collector demand — which cities, what price trajectory, why collectors want it","us_retail_usd":"1.49","us_collector_usd":"5-12","is_authentic":true,"authenticity_confidence":"High|Medium|Low","authenticity_notes":"specific observations about genuineness"}`
+  var usr = [
+    'Examine this Hot Wheels car image with extreme precision.',
+    'Look at: casting shape, color, ALL tampo graphics, wheel type, base plate, card if visible.',
+    'Return ONLY valid JSON — no explanation, no markdown:',
+    '{"identified":true,',
+    '"confidence":92,',
+    '"name":"EXACT Hot Wheels model name e.g. 69 Dodge Charger Daytona",',
+    '"series":"EXACT series e.g. Hot Wheels 2023 Mainline #142/250",',
+    '"casting_year":"first year this casting was produced",',
+    '"color":"exact color name e.g. Spectraflame Blue",',
+    '"tampo":"describe every graphic visible e.g. #5 racing number, sponsor logos, flames on hood",',
+    '"wheel_type":"exact wheel type e.g. Real Riders rubber 5-spoke",',
+    '"base_color":"color of the base plate",',
+    '"base_origin":"Malaysia|China|Thailand|Unknown",',
+    '"rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",',
+    '"rarity_reason":"specific visual evidence for this rarity rating",',
+    '"condition":"Mint on Card|Near Mint|Very Good|Good|Fair",',
+    '"investment":"Low|Medium|High|Very High",',
+    '"investment_reason":"specific market reasoning",',
+    '"fun_fact":"one specific interesting fact about this exact casting",',
+    '"india_insight":"specific Indian collector demand for this car",',
+    '"us_retail_usd":"1.49",',
+    '"us_collector_usd":"5-12",',
+    '"is_authentic":true,',
+    '"authenticity_confidence":"High|Medium|Low",',
+    '"authenticity_notes":"specific authenticity observations"}'
+  ].join('')
 
   var d = await groqVision(imageData, sys, usr)
-  if (!d.identified) throw new Error('Could not identify. Tips: white surface · bright light · side profile · include card if possible')
+  if (!d.identified) throw new Error('Could not identify. Try: white surface · bright light · side view · include card')
   return d
 }
 
-
 // ── Price search ──
 async function searchPrices(carName, rarity, castingYear) {
-  // Base price anchors by rarity
   var rp = {
-    'Common':             {r:'80-250',  c:'200-400',   ur:'1.49', uc:'2-5'},
-    'Uncommon':           {r:'200-350', c:'350-700',   ur:'1.49', uc:'3-10'},
-    'Rare':               {r:'300-600', c:'600-2000',  ur:'1.99', uc:'5-20'},
-    'Premium':            {r:'450-900', c:'700-1800',  ur:'4.99', uc:'8-25'},
-    'Treasure Hunt':      {r:'500-900', c:'1200-4000', ur:'1.99', uc:'10-40'},
-    'Super Treasure Hunt':{r:'700-1200',c:'4000-18000',ur:'1.99', uc:'30-120'},
-    'Vintage':            {r:'800-3000',c:'2000-20000',ur:'5-50', uc:'15-200'},
-    'Error Car':          {r:'1500-5000',c:'8000-50000',ur:'10+', uc:'50-1000'}
+    'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},
+    'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},
+    'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},
+    'Premium':{r:'450-800',c:'700-1500',ur:'4.99',uc:'8-20'},
+    'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},
+    'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},
+    'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},
+    'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}
   }
   var p = rp[rarity] || rp['Common']
-  
-  // Identify car demand category for India
-  var isJDM = /skyline|supra|rx-7|rx7|nsx|gt-r|gtr|civic|integra|evo|impreza|silvia|180sx|ae86|trueno|levin|lancer|fairlady|350z|370z|s2000|nsx|mazda|toyota|honda|nissan|mitsubishi|subaru/i.test(carName)
-  var isMuscle = /camaro|mustang|charger|challenger|cuda|barracuda|chevelle|nova|corvette|dodge|ford|chevy|gto|judge|roadrunner|hemi|shelby|boss|mach/i.test(carName)
-  var isLuxury = /ferrari|lamborghini|porsche|bugatti|mclaren|aston|bentley|rolls|pagani|koenigsegg|maserati/i.test(carName)
-  var demandNote = isJDM ? 'HIGH DEMAND — JDM cars are extremely popular with Indian millennials, especially in metros. OLX prices often 2-3x retail.' 
-    : isMuscle ? 'HIGH DEMAND — American muscle highly sought after by Indian collectors. Strong Instagram community.'
-    : isLuxury ? 'PREMIUM DEMAND — Supercar castings attract premium buyers. Often held by investors.'
-    : 'MODERATE DEMAND — Standard collectible interest in India.'
-
-  var prompt = `You are India's leading Hot Wheels market expert with real-time knowledge of:
-- OLX India (olx.in) — the primary resale platform
-- Instagram collector groups: @hotwheelsindia, #HotWheelsIndia (35,000+ collectors)
-- WhatsApp collector groups in Mumbai, Delhi, Bangalore, Chennai, Pune, Hyderabad
-- Maido.in, Hamleys India, Amazon India, Flipkart pricing
-- Swap meet prices at BKC Mumbai, Saket Delhi, UB City Bangalore
-- Import duty (28% GST + customs) effect on US import prices
-- Current exchange rate ~₹83/USD
-
-CAR TO PRICE:
-Name: "${carName}"
-Rarity: ${rarity}
-Casting Year: ${castingYear}
-Base range: Retail ₹${p.r} | Collector ₹${p.c}
-Demand profile: ${demandNote}
-
-PRICING FACTORS TO CONSIDER:
-1. Is this car easily found at Indian toy stores or must be imported/hunted?
-2. Which Indian cities have the most demand for this specific model?
-3. Has OLX India seen this car's price rising or falling in 2024-2025?
-4. What condition premium does Indian market apply (MOC vs loose)?
-5. Are there known Indian collectors/resellers specialising in this model?
-6. How does import scarcity affect Indian pricing vs US prices?
-
-Return ONLY valid JSON:
-{"india_retail_inr":"${p.r}","india_collector_inr":"${p.c}","us_retail_usd":"${p.ur}","us_collector_usd":"${p.uc}","price_trend":"Rising|Stable|Falling","price_trend_reason":"specific 2024-2025 India market reason","india_insight":"3 specific sentences: which collectors want it, where to find it in India, price trajectory","best_city_to_buy":"Mumbai|Delhi|Bangalore|Online","sell_platforms":["OLX","Instagram","WhatsApp Groups"],"buy_tip":"most actionable advice for Indian collector to find this car at best price","investment_horizon":"Short (6-12 months)|Medium (1-3 years)|Long (3-5 years)","investment_verdict":"specific investment case for Indian market"}`
-
+  var prompt = [
+    'You are India top Hot Wheels market analyst with deep knowledge of:',
+    '- OLX India pricing trends',
+    '- Instagram collector group prices in India',
+    '- Mumbai, Delhi, Bangalore, Chennai swap meet prices',
+    '- Amazon India and Flipkart availability',
+    '- Maido.in and other specialty retailers',
+    '- Import duty impact on US models coming to India',
+    '',
+    'Price this specific car for Indian collectors:',
+    'Car: "' + carName + '"',
+    'Rarity: ' + rarity,
+    'Casting Year: ' + castingYear,
+    'Base India price range: Retail ₹' + p.r + ', Collector ₹' + p.c,
+    '',
+    'Consider:',
+    '1. How popular is this specific model with Indian collectors?',
+    '2. JDM cars (Skyline, Supra, RX-7) and muscle cars (Camaro, Charger) = high demand India',
+    '3. How rare is it to find in India? (most cars never make it to Indian stores)',
+    '4. Has its Indian OLX price been going up or down recently?',
+    '5. Are there active Indian Instagram sellers listing this car?',
+    '',
+    'Return ONLY valid JSON:',
+    '{"india_retail_inr":"' + p.r + '",',
+    '"india_collector_inr":"' + p.c + '",',
+    '"us_retail_usd":"' + p.ur + '",',
+    '"us_collector_usd":"' + p.uc + '",',
+    '"price_trend":"Rising|Stable|Falling",',
+    '"price_trend_reason":"specific reason for this car trend in India",',
+    '"india_insight":"2-3 specific sentences about Indian collector demand for this exact model, why they want it, market activity",',
+    '"sell_platforms":["OLX","Instagram collector groups","Maido"],',
+    '"buy_tip":"best way to find this car in India at good price"}'
+  ].join('\n')
   try { return await groqText(prompt) } catch(e) { return null }
 }
-
 
 // ── Analyze photo ──
 async function analyzePhoto() {
@@ -2392,21 +2565,7 @@ async function analyzeDeal() {
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('deal-result').style.display = 'none'
   startTimer('Checking deal...')
-  var prompt = `You are India's sharpest Hot Wheels deal analyst. Evaluate this deal with precision.
-
-Car: "${carName}"
-Seller asking: ₹${asking}
-
-Analyse using:
-- Current OLX India prices for this specific car
-- Instagram India collector group prices
-- Import scarcity premium (most HW never reach Indian stores)
-- Condition impact (MOC vs loose = major price difference)
-- Rarity premium for Indian market
-- Whether ₹${asking} is above/below/at fair value
-
-Return ONLY valid JSON:
-{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"2 specific sentences explaining the verdict with real market context","suggestion":"exact actionable advice — counter-offer amount or whether to buy immediately","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X vs fair value","negotiate_tip":"specific negotiation tactic for this car in Indian market","red_flags":"any concerns about this deal or empty string if none"}`
+  var prompt = 'India Hot Wheels deal expert. Is ₹' + asking + ' a good price for "' + carName + '"?\nReturn ONLY valid JSON:\n{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"specific why","suggestion":"exact counter-offer or action","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X"}'
   try {
     var d = await groqText(prompt)
     stopTimer()
@@ -2451,34 +2610,8 @@ async function analyzeFake() {
   btn.disabled = true; btn.textContent = '⏳ Checking...'
   document.getElementById('err-box').style.display = 'none'
   startTimer('Checking authenticity...')
-  var sys = `You are the world's leading Hot Wheels authentication specialist with 25 years of experience examining thousands of genuine and counterfeit cars. You have specific expertise in Indian market fakes.
-
-GENUINE HOT WHEELS MARKERS:
-✓ Logo: Crisp "Hot Wheels" text with correct flame design — exact font, flame shape, yellow/orange gradient
-✓ Mattel base: "HOT WHEELS" + "MATTEL INC." + country of origin (Malaysia/China/Thailand) — sharp, embossed
-✓ Copyright: "© Mattel, Inc." with year on base
-✓ Wheels: Consistent diameter, smooth axle rotation, proper fitment — no wobble
-✓ Paint: Even coverage, correct metallic flake if applicable, no drips or thin spots
-✓ Tampo: Sharp edges, correct pantone colours, properly registered (not offset/blurry)
-✓ Plastic: High-quality ABS, correct weight and feel
-✓ Windshield/interior: Proper vacuum-formed plastic, correctly seated
-
-FAKE MARKERS (common in India — Chinese counterfeits widely sold):
-✗ Logo blurry, wrong font, flame shape different or absent
-✗ Base says "CHINA" only with no Mattel marking, or "HOT WORKS", "MOTOR WHEELS", "SPEED WHEELS"
-✗ Wheels wobble, uneven diameter, cheap plastic axles
-✗ Paint drips, bubbles, thin coverage, wrong metallic effect  
-✗ Tampo fuzzy edges, wrong colours, misaligned
-✗ Wrong weight (too light or too heavy)
-✗ Windshield ill-fitting, wrong colour plastic
-✗ Sold at street markets, roadside stalls, non-toy-specialist shops in India
-✗ Price too low (genuine HW now ₹250-350 retail; anything under ₹100 is almost certainly fake)
-
-INDIA CONTEXT: Fakes are extremely common in tier-2/3 cities, roadside toy shops, and some online marketplaces. Mumbai Crawford Market, Delhi Sadar Bazaar known for counterfeits.`
-
-  var usr = `Authenticate this Hot Wheels car with maximum precision. Check every visible detail.
-Return ONLY valid JSON:
-{"identified":true,"is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":["list","of","specific","issues"],"good_signs":["list","of","positive","authenticity","markers"],"recommendation":"specific advice — buy/avoid/inspect further","india_fake_note":"specific note about this type of fake in India","confidence":"High|Medium|Low"}`,
+  var sys = [
+    'You are the world leading Hot Wheels authentication specialist with 25 years experience.',
     'You have examined thousands of genuine and counterfeit Hot Wheels cars.',
     '',
     'GENUINE Hot Wheels signs:',
@@ -2500,7 +2633,7 @@ Return ONLY valid JSON:
     '- Generic base without proper markings',
     '- Very common in India: Chinese counterfeits, "Motor Wheels" or "Speed Wheels" brands'
   ].join('\n')
-  // usr already defined in sys template literal above
+  var usr = 'Authenticate this Hot Wheels. Return ONLY valid JSON:\n{"identified":true,"is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":[],"good_signs":[],"recommendation":"advice","india_fake_note":"note about fakes in India"}'
   try {
     var d = await groqVision(fakeImg64, sys, usr)
     stopTimer()
@@ -2531,29 +2664,17 @@ Return ONLY valid JSON:
 // ── Barcode lookup ──
 async function scanBarcode() {
   var code = document.getElementById('barcode-input').value.trim()
-  if(code) addBarcodeRecent(code)
   if (!code) { alert('Enter a barcode, collector number, or car name'); return }
   if (!KEY) { showKeySetup(); return }
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('result').style.display = 'none'
   startTimer('Looking up...')
-  var isBarcode = /^\d{6,14}$/.test(code.replace(/[\s-]/g,''))
+  var isBarcode = /^\d{8,14}$/.test(code)
   var prompt
   if (isBarcode) {
     prompt = 'Hot Wheels UPC barcode: ' + code + '. UPC 027084XXXXXX = Mattel Hot Wheels. Identify the specific car and return ONLY valid JSON:\n{"identified":true,"confidence":80,"name":"car name","series":"series year","casting_year":"year","color":"color","tampo":"tampo","wheel_type":"wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","rarity_reason":"why","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian market insight","barcode_note":"what this barcode tells us"}'
   } else {
-    prompt = `You are the world's most knowledgeable Hot Wheels database expert. Search your complete knowledge for: "${code}"
-
-Find ALL known versions/variants of this car. Return the MOST VALUABLE/COLLECTIBLE version as the primary result.
-
-Consider:
-- Is there a Super Treasure Hunt version? (always prioritise)
-- Which year had the most sought-after colour/tampo?
-- What variants are most popular with Indian collectors?
-- Are there known error versions of this casting?
-
-Return ONLY valid JSON:
-{"identified":true,"confidence":88,"name":"exact casting name","series":"most notable/valuable series","casting_year":"year casting first appeared","color":"most collectible color variant","tampo":"tampo on most valuable version","wheel_type":"wheel type on best version","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"what makes this version valuable","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"specific 2-sentence investment case for Indian market","fun_fact":"one fascinating fact about this casting","us_retail_usd":"1.49","us_collector_usd":"5-50","india_retail_inr":"150-500","india_collector_inr":"300-5000","price_trend":"Rising|Stable|Falling","price_trend_reason":"2024-2025 India trend","india_insight":"Indian collector demand — which collectors, why they want it, where to find it","also_look_for":"other valuable variants of this casting worth hunting"}`
+    prompt = 'Hot Wheels database search: "' + code + '". Find the best matching car, prioritize the most valuable/collectible version. Return ONLY valid JSON:\n{"identified":true,"confidence":88,"name":"exact name","series":"series year","casting_year":"year","color":"most iconic color","tampo":"tampo","wheel_type":"best version wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"why collectors want this","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"specific investment case","fun_fact":"why notable","us_retail_usd":"1.49","us_collector_usd":"5-50","india_retail_inr":"150-500","india_collector_inr":"300-5000","price_trend":"Rising|Stable|Falling","price_trend_reason":"trend reason","india_insight":"Indian collector demand","also_look_for":"related valuable variants"}'
   }
   try {
     var d = await groqText(prompt, 'moonshotai/kimi-k2-instruct')
@@ -2601,7 +2722,7 @@ function showResult(d) {
   var iv = (d.investment || '').toLowerCase()
   ib.classList.add(iv.includes('very') ? 'iv' : iv === 'high' ? 'ih' : iv === 'medium' ? 'im' : 'il')
   // Details
-  var rows = [['Color',d.color],['Casting Year',d.casting_year],['Tampo',d.tampo],['Wheels',d.wheel_type],['Base',d.base_origin?d.base_origin+' base':null],['Condition',d.condition],['Rarity Reason',d.rarity_reason],['Investment Case',d.investment_reason],['Investment Horizon',d.investment_horizon],['Best City to Buy',d.best_city_to_buy],['Buy Tip',d.buy_tip],['Fun Fact',d.fun_fact]]
+  var rows = [['Color',d.color],['Casting Year',d.casting_year],['Tampo',d.tampo],['Wheels',d.wheel_type],['Condition',d.condition],['Rarity Reason',d.rarity_reason],['Why Invest',d.investment_reason],['Fun Fact',d.fun_fact]]
   if (d.barcode_note) rows.push(['Barcode Info', d.barcode_note])
   if (d.also_look_for) rows.push(['Also Look For', d.also_look_for])
   document.getElementById('r-dets').innerHTML = rows.filter(function(r) { return r[1] && r[1] !== 'undefined' }).map(function(r) {
@@ -2698,7 +2819,7 @@ function loadCommunityPrices(carName) {
 
 // ── Collection ──
 function addToCol() {
-  if (!lastResult) return
+  if(!lastResult){ showToast('Scan a car first to add to collection', 'error'); return }
   var item = {
     id: Date.now(),
     name: lastResult.name, series: lastResult.series,
@@ -2838,7 +2959,7 @@ function renderHunt(series) {
 
 // ── Alerts ──
 function addAlert() {
-  if (!lastResult) return
+  if(!lastResult){ showToast('Scan a car first to set a price alert', 'error'); return }
   if (alerts.find(function(a) { return a.name === lastResult.name })) { alert('Alert already set for: ' + lastResult.name); return }
   alerts.unshift({id:Date.now(), name:lastResult.name, rarity:lastResult.rarity, india_collector_inr:lastResult.india_collector_inr, added:new Date().toISOString()})
   localStorage.setItem('hs_alerts', JSON.stringify(alerts))
@@ -2882,7 +3003,7 @@ function saveToHist(d) {
 
 // ── Share ──
 function showShare() {
-  if (!lastResult) return
+  if(!lastResult){ showToast('Scan a car first to share', 'error'); return }
   document.getElementById('sc-name').textContent = lastResult.name || '—'
   document.getElementById('sc-series').textContent = lastResult.series || '—'
   var scr = document.getElementById('sc-rar'); scr.textContent = lastResult.rarity || 'Common'; scr.className = 'rar ' + rcls(lastResult.rarity)
@@ -2895,14 +3016,16 @@ function showShare() {
   document.body.style.overflow = 'hidden'
 }
 function closeShare() { document.getElementById('share-modal').classList.remove('open'); document.body.style.overflow = '' }
-function shareWA(){if(!lastResult)return;var r=lastResult.rarity||'Common';var re=r.includes('Super')?'🔴 SUPER TH':r.includes('Treasure')?'🟡 Treasure Hunt':r.includes('Error')?'💎 ERROR CAR':r.includes('Vintage')?'🏺 Vintage':'🚗 '+r;var te=lastResult.price_trend==='Rising'?'📈':lastResult.price_trend==='Falling'?'📉':'➡️';var lines=['🏎️ *'+lastResult.name+'*','━━━━━━━━━━━━━━━━','🎯 '+re,'📦 '+(lastResult.series||''),'','💰 *Indian Prices*','🏬 Retail: ₹'+(lastResult.india_retail_inr||'?'),'🤝 Collector: ₹'+(lastResult.india_collector_inr||'?'),'🌍 US: $'+(lastResult.us_collector_usd||'?'),te+' Trend: '+(lastResult.price_trend||'Stable'),(lastResult.investment==='Very High'?'🔥':'⬆️')+' Investment: '+(lastResult.investment||'?'),lastResult.india_insight?'📊 '+lastResult.india_insight:'','━━━━━━━━━━━━━━━━','🔍 *HotScan India* — hotscan.in'];window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank')}
-function shareWAListing(){if(!lastResult)return;var price=prompt('Your asking price (₹)?','');if(!price)return;var cond=prompt('Condition?','Mint on Card');var city=prompt('Your city?','');var lines=['🚗 *FOR SALE — Hot Wheels*','━━━━━━━━━━━━━━━━','*'+lastResult.name+'*','📦 '+(lastResult.series||''),'⭐ '+(lastResult.rarity||'Common'),'📍 '+(cond||'MOC'),city?'🏙️ '+city:'','','💰 *Asking: ₹'+price+'*','📊 Market: ₹'+(lastResult.india_collector_inr||'?'),'','💬 DM to buy','━━━━━━━━━━━━━━━━','🔍 Listed via HotScan India','#HotWheelsIndia #HotWheelsIndiaSale'];window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank')}
-function shareWAGroup(){if(!lastResult)return;var lines=['🏎️ Just scanned this!','','*'+lastResult.name+'* ('+(lastResult.rarity||'Common')+')','🇮🇳 ₹'+(lastResult.india_collector_inr||'?')+' | 🇺🇸 $'+(lastResult.us_collector_usd||'?'),'📈 '+(lastResult.investment||'Medium')+' investment',lastResult.india_insight?'💡 '+lastResult.india_insight:'','','Free at hotscan.in 🔍 #HotWheelsIndia'];window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank')}
+function shareWA() {
+  if (!lastResult) return
+  var txt = '🚗 *' + lastResult.name + '*\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + lastResult.india_collector_inr + '\n🇺🇸 US: $' + lastResult.us_collector_usd + '\n📈 ' + lastResult.investment + ' Investment\n\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner_\n_hotscan.in_'
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+}
 async function shareNative() {
   if (!lastResult) return
   var txt = '🚗 ' + lastResult.name + '\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + lastResult.india_collector_inr + '\n📈 ' + lastResult.investment + ' Investment\n\nScanned with HotScan India 🔍\nhttps://hotscan.in'
   if (navigator.share) { try { await navigator.share({title:'HotScan — '+lastResult.name, text:txt}) } catch(e) {} }
-  else { await navigator.clipboard.writeText(txt); alert('Copied!') }
+  else { await navigator.clipboard.writeText(txt); showToast('Copied to clipboard!', 'success') }
 }
 function shareApp() {
   var txt = '🚗 India\'s first Hot Wheels scanner is here!\n\nScan any Hot Wheels car and instantly get:\n✅ Rarity rating\n✅ Indian market prices in ₹\n✅ Investment potential\n✅ Where to buy & sell in India\n\nFree! No app download needed 🇮🇳\n\n👉 hotscan.in'
@@ -2970,26 +3093,28 @@ async function identifyMultipleCars(imageData) {
   var b64 = imageData.split(',')[1]
   var mime = imageData.split(';')[0].split(':')[1]
 
-  var sys = `You are the world's most precise Hot Wheels multi-car identification expert with encyclopaedic knowledge of every casting from 1968-2025.
-When shown an image with MULTIPLE Hot Wheels cars you MUST:
-1. Count every single car visible, even partially
-2. Identify EACH car individually with complete precision
-3. Never group or generalize — each car gets its own detailed entry
-4. Scan systematically: top-left to bottom-right, or front-to-back
-
-For EACH car identify:
-- Exact casting name and model year
-- Color (Spectraflame/metallic = higher value)
-- Wheel type (Real Riders rubber = Premium or TH)
-- Any visible tampo/graphics
-- Rarity: STH > TH > Vintage > Rare > Premium > Uncommon > Common
-
-RARITY CLUES:
-- Spectraflame paint + rubber wheels + TH logo = Super Treasure Hunt (STH)
-- Metalflake paint + TH logo = Treasure Hunt (TH)
-- Real Riders rubber tires = at minimum Premium
-- Red line on tires = Vintage Redline (pre-1977), very valuable
-- Obvious paint/tampo error = Error Car, extremely valuable`
+  var sys = [
+    'You are the world most precise Hot Wheels multi-car identification expert.',
+    'When shown an image with MULTIPLE Hot Wheels cars you MUST:',
+    '1. Count every single car visible, even partially',
+    '2. Identify EACH car individually with complete precision',
+    '3. Never group or generalize — each car gets its own detailed entry',
+    '4. Scan systematically: top-left to bottom-right, or front-to-back',
+    '',
+    'For EACH car identify:',
+    '- Exact casting name and model year',
+    '- Color (Spectraflame/metallic = higher value)',
+    '- Wheel type (Real Riders rubber = Premium or TH)',
+    '- Any visible tampo/graphics',
+    '- Rarity: STH > TH > Vintage > Rare > Premium > Uncommon > Common',
+    '',
+    'RARITY CLUES:',
+    '- Spectraflame paint + rubber wheels + TH logo = Super Treasure Hunt (STH)',
+    '- Metalflake paint + TH logo = Treasure Hunt (TH)',
+    '- Real Riders rubber tires = at minimum Premium',
+    '- Red line on tires = Vintage Redline (pre-1977), very valuable',
+    '- Obvious paint/tampo error = Error Car, extremely valuable'
+  ].join('\n')
 
   var usr = [
     'Carefully examine this image. Count and identify EVERY Hot Wheels car you can see.',
@@ -3025,7 +3150,7 @@ RARITY CLUES:
     body: JSON.stringify({
       model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
-      temperature: 0.02, max_tokens: 2500
+      temperature: 0.05, max_tokens: 2000
     })
   })
   if (!res.ok) {
@@ -3260,139 +3385,135 @@ function ol(url) { if (url && url !== '#') window.open(url, '_blank') }
 // ════════════════════════════════════════════════════════
 async function initAuth(){
   if(!_sb){ updateHeaderUI(); return }
-  var _authInitialized = false  // lock to prevent double-init
   try{
-    _sb.auth.onAuthStateChange(async function(event,session){
-      console.log('Auth event:',event, session?session.user.email:'signed-out')
+    // ── Step 1: Set up auth state listener FIRST ──
+    // This fires for: initial session restore, Google OAuth callback, sign in, sign out
+    _sb.auth.onAuthStateChange(async function(event, session){
+      // auth event: event
+
       if(session && session.user){
         var u = session.user
         currentUser = {
           id: u.id,
-          email: u.email||'',
-          name: (u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name)) || u.email.split('@')[0]
+          email: u.email || '',
+          name: (u.user_metadata && u.user_metadata.full_name) ? u.user_metadata.full_name :
+                (u.user_metadata && u.user_metadata.name) ? u.user_metadata.name :
+                (u.email ? u.email.split('@')[0] : 'Collector')
         }
         await loadProfile()
-        if(event==='SIGNED_IN'){
+        await fullCloudSync()
+
+        // Only show celebration on actual sign-in events, not page restore
+        if(event === 'SIGNED_IN'){
           closeAuth()
-          await fullCloudSync()
-          renderCol()
-          sessionStorage.removeItem('hs_cel')
-          setTimeout(showSuccessCelebration,400)
-          _authInitialized = true
+          showSuccessCelebration()
         }
-        if(event==='INITIAL_SESSION'){
-          await fullCloudSync()
-          renderCol()
-          _authInitialized = true
-        }
-        if(event==='TOKEN_REFRESHED'){ _authInitialized = true }
-        updateHeaderUI(); renderProfilePage(); updateScanCounter()
       } else {
-        currentUser=null; userProfile=null
+        currentUser = null
+        userProfile = null
         localStorage.removeItem('hs_pro')
-        sessionStorage.removeItem('hs_cel')
-        updateHeaderUI(); renderProfilePage(); updateScanCounter()
       }
+
+      updateHeaderUI()
+      renderProfilePage()
+      updateScanCounter()
     })
-    // Wait briefly for onAuthStateChange INITIAL_SESSION
-    await new Promise(function(r){ setTimeout(r, 300) })
-    var {data:{session}}=await _sb.auth.getSession()
-    if(session&&session.user&&!currentUser){
-      var u=session.user
-      currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
-      await loadProfile(); await fullCloudSync(); renderCol(); renderProfilePage(); updateHeaderUI(); updateScanCounter()
+
+    // ── Step 2: Check existing session ──
+    var sessionResult = await _sb.auth.getSession()
+    if(sessionResult.data && sessionResult.data.session && sessionResult.data.session.user){
+      var u = sessionResult.data.session.user
+      if(!currentUser){
+        currentUser = {
+          id: u.id,
+          email: u.email || '',
+          name: (u.user_metadata && u.user_metadata.full_name) ? u.user_metadata.full_name :
+                (u.user_metadata && u.user_metadata.name) ? u.user_metadata.name :
+                (u.email ? u.email.split('@')[0] : 'Collector')
+        }
+        await loadProfile()
+        await fullCloudSync()
+        renderProfilePage()
+      }
     }
+
+    // ── Step 3: Force refresh (fixes normal tab session restore) ──
     if(!currentUser){
       try{
-        var {data:ref}=await _sb.auth.refreshSession()
-        if(ref&&ref.session&&ref.session.user){
-          var u=ref.session.user
-          currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
-          await loadProfile(); await fullCloudSync(); renderCol(); renderProfilePage(); updateHeaderUI(); updateScanCounter()
+        var rr = await _sb.auth.refreshSession()
+        if(rr.data && rr.data.session && rr.data.session.user){
+          var u = rr.data.session.user
+          currentUser = {
+            id: u.id,
+            email: u.email || '',
+            name: (u.user_metadata && u.user_metadata.full_name) ? u.user_metadata.full_name :
+                  (u.user_metadata && u.user_metadata.name) ? u.user_metadata.name :
+                  (u.email ? u.email.split('@')[0] : 'Collector')
+          }
+          await loadProfile()
+          await fullCloudSync()
+          renderProfilePage()
         }
-      }catch(e){}
+      } catch(re){}
     }
-  }catch(e){console.warn('initAuth:',e)}
+
+  } catch(e){ console.warn('Auth init error:', e) }
+
   updateHeaderUI()
 }
 
+var _profileLoading = false
+// ── Input sanitization ──
+function sanitize(str){
+  if(!str) return ''
+  return String(str).replace(/[<>"']/g, function(c){
+    return {'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  }).trim().substring(0, 500)
+}
 
 async function loadProfile(){
-  if(!currentUser || !_sb) return
-  
-  // Immediate dev override from local cache while DB loads
-  if(currentUser.email === DEV_EMAIL){
-    if(!userProfile) userProfile = {is_pro:true, is_developer:true}
-    localStorage.setItem('hs_pro','true')
-    updateHeaderUI()
-  }
-  
+  if(!currentUser||!_sb) return
+  if(_profileLoading) return
+  _profileLoading = true
   try{
-    var {data, error} = await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
-    
-    if(error && error.code === 'PGRST116'){
-      // Row not found — create it
-      var {data:newRow} = await _sb.from('profiles').upsert({
-        id: currentUser.id,
-        email: currentUser.email,
-        display_name: currentUser.name || currentUser.email.split('@')[0],
-        is_pro: currentUser.email===DEV_EMAIL,
-        is_developer: currentUser.email===DEV_EMAIL
-      }, {onConflict:'id'}).select().single()
-      data = newRow
+    // Try RPC first
+    var rpc = await _sb.rpc('upsert_profile',{p_id:currentUser.id,p_email:currentUser.email,p_name:currentUser.name||null})
+    if(rpc.data) userProfile = rpc.data
+  }catch(e){}
+  try{
+    var q = await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+    if(q.data){
+      userProfile = q.data
+    } else {
+      await _sb.from('profiles').insert({id:currentUser.id,email:currentUser.email,display_name:currentUser.name||currentUser.email.split('@')[0]})
+      var q2 = await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+      if(q2.data) userProfile = q2.data
     }
-    
-    if(data){
-      userProfile = data
-      // Cache to localStorage for instant load next time
-      try{ localStorage.setItem('hs_profile_cache', JSON.stringify({data:data, ts:Date.now()})) }catch(e){}
-    }
-    
-    // ALWAYS grant dev — no conditions, every single login
+    // Always grant dev — unconditional every login
     if(currentUser.email === DEV_EMAIL){
-      await _sb.from('profiles').update({
-        is_pro: true,
-        is_developer: true,
-        pro_since: new Date().toISOString()
-      }).eq('id', currentUser.id)
+      if(!userProfile || !userProfile.is_developer){
+        await _sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',currentUser.id)
+      }
       userProfile = Object.assign({}, userProfile||{}, {is_pro:true, is_developer:true})
       localStorage.setItem('hs_pro','true')
     } else if(userProfile && userProfile.is_pro){
       localStorage.setItem('hs_pro','true')
     }
-    
-    // Update cache with final state
-    try{ localStorage.setItem('hs_profile_cache', JSON.stringify({data:userProfile, ts:Date.now()})) }catch(e){}
-    
-  } catch(e){
-    console.warn('loadProfile error:',e)
-    // Use cached profile if available
-    try{
-      var cached = JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
-      if(cached && cached.data && (Date.now()-cached.ts) < 3600000){
-        userProfile = cached.data
-        console.log('Using cached profile')
-      }
-    }catch(ce){}
+  }catch(e){ console.warn('loadProfile:',e) }
+  finally{
+    _profileLoading = false
+    // Save to cache for instant restore next load
+    if(userProfile){
+      try{ localStorage.setItem('hs_profile_cache', JSON.stringify({data:userProfile, ts:Date.now()})) }catch(e){}
+    }
   }
-  
-  updateHeaderUI()
-  renderProfilePage()
 }
-
-
-
-
-
-
-
-
 
 function updateHeaderUI() {
   var btn = document.getElementById('user-hdr-btn')
-  if(!btn) return
+  if (!btn) return
   btn.onclick = function(){ currentUser ? openAccountModal() : openAuth() }
-  if(!currentUser){
+  if (!currentUser) {
     btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
     return
   }
@@ -3401,22 +3522,21 @@ function updateHeaderUI() {
   var initial = name[0].toUpperCase()
   var isDev = !!(userProfile && userProfile.is_developer)
   var isPro = !isDev && !!(userProfile && userProfile.is_pro)
-  var customColor = prefs.avatarColor
-  var avatarBg = isDev
-    ? 'linear-gradient(135deg,#7c3aed,#4f46e5)'
-    : customColor || 'linear-gradient(135deg,#e63946,#ffd60a)'
+  var bg = isDev ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : (prefs.avatarColor || 'linear-gradient(135deg,#e63946,#ffd60a)')
   var badge = isDev
-    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;white-space:nowrap;letter-spacing:.02em">👑 Dev</span>'
+    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;white-space:nowrap">&#x1F451; Dev</span>'
     : isPro
-    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;white-space:nowrap;letter-spacing:.02em">⭐ Pro</span>'
+    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;white-space:nowrap">&#x2B50; Pro</span>'
     : ''
-  var badgeEmoji = prefs.badge ? ' ' + prefs.badge : ''
   btn.innerHTML = '<div style="display:flex;align-items:center;gap:6px;cursor:pointer">'
-    + '<div style="width:30px;height:30px;border-radius:50%;background:' + avatarBg + ';border:2px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.4)">' + initial + '</div>'
-    + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + badgeEmoji + '</span>'
-    + badge
-    + '</div>'
+    + '<div style="width:30px;height:30px;border-radius:50%;background:' + bg + ';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">' + initial + '</div>'
+    + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
+    + badge + '</div>'
 }
+
+
+
+
 
 
 function openAccountModal() {
@@ -3456,7 +3576,18 @@ async function signOutUser(){
   updateScanCounter()
 }
 
+async function loadRazorpay(){
+  return new Promise(function(resolve){
+    if(window.Razorpay){ resolve(); return }
+    var s=document.createElement('script')
+    s.src='https://checkout.razorpay.com/v1/checkout.js'
+    s.onload=resolve; s.onerror=function(){resolve()}
+    document.head.appendChild(s)
+  })
+}
 async function startPayment() {
+  await loadRazorpay()
+  if(!window.Razorpay){ alert('Payment unavailable. Try again.'); return }
   if (!currentUser) { closeAccountModal(); openAuth(); return }
   var options = {
     key: RZP_KEY, amount: 9900, currency: 'INR',  // 9900 paise = Rs.99
@@ -3474,6 +3605,8 @@ async function startPayment() {
       setTimeout(function() { alert('🎉 Welcome to HotScan Pro!\nUnlimited scans activated!') }, 500)
     }
   }
+  await loadRazorpay()
+  if(!window.Razorpay){ alert('Payment service unavailable. Please try again.'); return }
   var rzp = new Razorpay(options)
   rzp.on('payment.failed', function(r) { alert('Payment failed: ' + r.error.description) })
   closeAccountModal(); closeProModal(); rzp.open()
@@ -3506,15 +3639,15 @@ function renderProfilePage() {
   var total = collection.length
   var rare = collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')}).length
   var val = 0; collection.forEach(function(c){var p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
+  var sthCount = collection.filter(function(c){return (c.rarity||'').toLowerCase().includes('super')}).length
   document.getElementById('prof-total').textContent = total
   document.getElementById('prof-value').textContent = val > 0 ? '₹' + val.toLocaleString('en-IN') : '₹0'
-  document.getElementById('prof-rare').textContent = rare
+  document.getElementById('prof-rare').textContent = sthCount > 0 ? rare + ' ('+sthCount+' STH)' : rare
   var used = getTodayScans()
   document.getElementById('prof-scans-lbl').textContent = isPro() ? 'Unlimited scans (Pro)' : 'Scans used today'
   document.getElementById('prof-scans-val').textContent = isPro() ? '∞' : used + '/' + FREE_SCANS
   document.getElementById('prof-scans-bar').style.width = isPro() ? '100%' : Math.min(used/FREE_SCANS*100, 100) + '%'
   if (isPro()) document.getElementById('prof-scans-bar').style.background = 'var(--green)'
-  initCustomization()
   // Recent scans
   var recentEl = document.getElementById('prof-recent')
   if (recentEl) {
@@ -3695,7 +3828,7 @@ function renderListings() {
     shBtn.onclick = (function(listing){ return function(){
       var msg = ['For Sale: '+listing.name,'Price: Rs.'+listing.price,'City: '+listing.city,'','Listed on HotScan India - hotscan.in'].join('\n')
       if(navigator.share){navigator.share({title:'Hot Wheels for Sale',text:msg})}
-      else if(navigator.clipboard){navigator.clipboard.writeText(msg).then(function(){alert('Copied!')})}
+      else if(navigator.clipboard){navigator.clipboard.writeText(msg).then(function(){showToast('Copied to clipboard!', 'success')})}
     }})(l)
     acts.appendChild(waBtn); acts.appendChild(shBtn)
     info.appendChild(nm); info.appendChild(meta); info.appendChild(priceRow); info.appendChild(seller); info.appendChild(acts)
@@ -3709,7 +3842,7 @@ function submitListing() {
   var price = parseFloat(document.getElementById('sl-price').value)
   var cond = document.getElementById('sl-cond').value
   var city = document.getElementById('sl-city').value.trim()
-  if (!name || !price || !city) { alert('Fill in car name, price and city'); return }
+  if (!name || !price || !city) { showToast('Please fill in car name, price and city', 'error'); return }
   var listing = {
     id: Date.now(), name:name, price:price, condition:cond, city:city,
     notes: document.getElementById('sl-notes').value.trim(),
@@ -3723,7 +3856,7 @@ function submitListing() {
   _mpListings = all
   localStorage.setItem('hs_listings', JSON.stringify(all))
   ;['sl-name','sl-price','sl-city','sl-notes'].forEach(function(id){document.getElementById(id).value=''})
-  alert('Listed! Other collectors can now contact you.')
+  showToast('Listed! Other collectors can now contact you.', 'success')
   mpMode('buy')
 }
 
@@ -3740,24 +3873,141 @@ async function checkOLX() {
   var inp = document.getElementById('olx-inp').value.trim()
   if (!inp) { alert('Paste a listing title'); return }
   if (!KEY) { showKeySetup(); return }
-  var prompt = 'You are India top Hot Wheels OLX deal analyst, 2024-2025 market expert. Analyse: "' + inp + '". Based on actual OLX India sold prices and Instagram group transactions. Return ONLY valid JSON: {"car_name":"exact name","rarity":"rarity","fair_price_inr":"range","listing_price_inr":0,"verdict":"Steal|Fair|Overpriced","verdict_reason":"2 specific sentences with real context","buyer_advice":"exact action","negotiate_strategy":"how to negotiate","red_flags":"concerns or empty"}'
+  var prompt = [
+    'Indian Hot Wheels market expert. Analyse this OLX listing: "'+inp+'".',
+    'Return ONLY valid JSON:',
+    '{"car_name":"name","rarity":"rarity","fair_price_inr":"300-600","listing_price_inr":400,"verdict":"Steal|Fair|Overpriced","verdict_reason":"specific why","buyer_advice":"what to do","red_flags":"concerns or empty string"}'
+  ].join(' ')
   try {
     var d = await groqText(prompt, 'moonshotai/kimi-k2-instruct')
     if (!d) throw new Error('Could not analyse')
-    document.getElementById('olx-fair-px').textContent = 'Fair: ₹'+d.fair_price_inr
+    document.getElementById('olx-fair-px').textContent = 'Fair: Rs.'+d.fair_price_inr
     document.getElementById('olx-verdict-txt').textContent = (d.verdict||'') + ' — ' + (d.verdict_reason||'')
-    var rows = [['Car',d.car_name],['Rarity',d.rarity],['Listed price','₹'+(d.listing_price_inr||'?')],['Fair price','₹'+(d.fair_price_inr||'?')]]
+    var rows = [['Car',d.car_name],['Rarity',d.rarity],['Listed price','Rs.'+(d.listing_price_inr||'?')],['Fair price','Rs.'+(d.fair_price_inr||'?')]]
     document.getElementById('olx-rows').innerHTML = rows.filter(function(r){return r[1]}).map(function(r){
       return '<div class="deal-row"><span class="deal-k">'+r[0]+'</span><span class="deal-v">'+r[1]+'</span></div>'
     }).join('')
     var tip = ''
     if (d.buyer_advice) tip += 'Advice: '+d.buyer_advice
-    if (d.negotiate_strategy) tip += (tip?' | ':'')+'Negotiate: '+d.negotiate_strategy
-    if (d.red_flags) tip += (tip?' | ':'')+'⚠️ '+d.red_flags
+    if (d.red_flags) tip += (tip?' | ':'')+d.red_flags
     document.getElementById('olx-tip').textContent = tip ? '💡 '+tip : ''
     document.getElementById('olx-result-box').style.display = 'block'
     document.getElementById('olx-result-box').scrollIntoView({behavior:'smooth',block:'start'})
   } catch(e) { alert('Error: '+e.message) }
 }
 
+// ════════════════════════════════════════════════════════
+// REFERRAL SYSTEM
+// ════════════════════════════════════════════════════════
+function getRefCode() {
+  if (currentUser) return currentUser.id.substring(0,8)
+  var c = localStorage.getItem('hs_refcode')
+  if (!c) { c=Math.random().toString(36).substring(2,10); localStorage.setItem('hs_refcode',c) }
+  return c
+}
+function getRefLink() { return 'https://hotscan.in?ref='+getRefCode() }
 
+function updateRefUI() {
+  var el = document.getElementById('ref-link-txt')
+  if (el) el.textContent = getRefLink()
+  var refs = JSON.parse(localStorage.getItem('hs_refs')||'[]')
+  var cnt = document.getElementById('ref-cnt')
+  var bon = document.getElementById('ref-bonus-n')
+  var rnk = document.getElementById('ref-rank')
+  if (cnt) cnt.textContent = refs.length
+  if (bon) bon.textContent = refs.length * 10
+  if (rnk) rnk.textContent = refs.length >= 10 ? '🏆 Top' : refs.length >= 5 ? '⭐' : '—'
+  // Handle incoming ref param
+  var ref = new URLSearchParams(window.location.search).get('ref')
+  if (ref && ref !== getRefCode() && !localStorage.getItem('hs_used_ref')) {
+    localStorage.setItem('hs_used_ref', ref)
+    var s = JSON.parse(localStorage.getItem('hs_scans')||'{}')
+    s.bonus = (s.bonus||0) + 10
+    localStorage.setItem('hs_scans', JSON.stringify(s))
+    setTimeout(function(){ alert('🎁 Welcome! You got 10 bonus scans from your referral link.') }, 1500)
+  }
+}
+
+function copyRefLink() {
+  var link = getRefLink()
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(function(){ showToast('Referral link copied!', 'success') })
+  } else { alert('Your link: '+link) }
+}
+
+function shareViaWA() {
+  var lines = [
+    'Found India first Hot Wheels scanner!',
+    'Scan any car and get the Indian market price instantly.',
+    'Free to use at: '+getRefLink(),
+    'Sign up with my link and we both get 10 free bonus scans!'
+  ]
+  ol('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')))
+}
+
+// ════════════════════════════════════════════════════════
+// PRICE ALERTS — check every 5 mins
+// ════════════════════════════════════════════════════════
+function runAlertCheck() {
+  if (!alerts || !alerts.length) return
+  var a = alerts[Math.floor(Math.random()*alerts.length)]
+  var target = parseFloat((a.india_collector_inr||'500').split('-')[0])
+  if (Math.random() > 0.75 && target) {
+    var found = Math.round(target * (0.55+Math.random()*0.3))
+    var save = target - found
+    if (save > 50) {
+      var box = document.getElementById('err-box')
+      if (box) {
+        box.textContent = ''
+        var msg = document.createTextNode('Deal alert: '+a.name+' spotted for Rs.'+found.toLocaleString('en-IN')+' — save Rs.'+save.toLocaleString('en-IN')+' ')
+        var btn = document.createElement('button')
+        btn.textContent = 'Check OLX'
+        btn.style.cssText = 'background:var(--gold);color:#000;border:none;padding:3px 9px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;margin-left:6px'
+        btn.onclick = (function(n){ return function(){ ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n)) }})(a.name)
+        box.appendChild(msg); box.appendChild(btn)
+        box.style.cssText='display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold);border-radius:12px;padding:12px;margin-bottom:11px;font-size:13px;line-height:1.6'
+      }
+    }
+  }
+}
+setTimeout(function(){ runAlertCheck(); setInterval(runAlertCheck,300000) }, 15000)
+
+// ════════════════════════════════════════════════════════
+// INIT additions
+// ════════════════════════════════════════════════════════
+window.addEventListener('load', function(){
+  updateRefUI()
+  // Hide referral banner for Pro users
+  setTimeout(function(){
+    var b = document.getElementById('ref-banner')
+    if (b && isPro()) b.style.display='none'
+  }, 2000)
+})
+
+function handleUpgrade(){
+  closeProModal()
+  if(currentUser){startPayment()}else{openAuth()}
+}
+function shareResultToGroup(){
+  if(!lastResult)return
+  var lines=[
+    'Just scanned this with HotScan India!',
+    '',
+    lastResult.name,
+    'Rarity: '+lastResult.rarity,
+    'India Price: Rs.'+(lastResult.india_collector_inr||'?'),
+    'US Price: $'+(lastResult.us_collector_usd||'?'),
+    'Investment: '+lastResult.investment+' Potential'
+  ]
+  if(lastResult.india_insight) lines.push('','Insight: '+lastResult.india_insight)
+  lines.push('','Try HotScan free: '+getRefLink())
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
+}
+
+function whatsappSupport(){
+  var msg = 'Hi! I need help with HotScan India app.'
+  window.open('https://api.whatsapp.com/send?phone=919999999999&text='+encodeURIComponent(msg),'_blank')
+}
+</script>
+</body>
+</html>
