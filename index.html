@@ -92,7 +92,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .nav-item.nav-scan.active{background:var(--red)}
 .nav-item.nav-scan.active::after{display:none}
 .nav-divider{width:1px;height:26px;background:rgba(255,255,255,.09);margin:0 3px}
-.nav-icon-new{font-size:10px;line-height:1;display:block;transition:transform .18s}
+
 /* Tooltip */
 .nav-item::before{
   content:attr(data-tip);
@@ -104,7 +104,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   transition:all .14s;border:1px solid rgba(255,255,255,.08);
 }
 .nav-item:hover::before{opacity:1;transform:translateX(-50%) scale(1)}
-.nav-icon{display:none}
+
 
 /* push page content above fixed nav */
 .page{padding-bottom:100px !important}
@@ -735,7 +735,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   border-radius:2px;
   margin:0 auto 4px;
 }
-.nav-item{padding-top:6px}
+
 
 /* Better button press feel */
 .btn-red:active{transform:scale(.97);opacity:.9}
@@ -769,15 +769,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 }
 
 /* Bottom nav — cleaner active state using brand blue */
-.nav-item.active{
-  color:var(--blue-brand) !important;
-  border-top-color:var(--blue-brand) !important;
-}
-.nav-item.active::before{
-  background:var(--blue-brand) !important;
-}
 
-/* ── HOTSCAN CAR SCAN AREA ── */
+
+
+
 .scan-area{
   border:1.5px dashed var(--border3) !important;
   background:linear-gradient(145deg,#111111,#0d0d18) !important;
@@ -1000,132 +995,136 @@ body{
     radial-gradient(ellipse at 80% 20%, rgba(230,57,70,.03) 0%, transparent 60%);
 }
 
-/* ════════════ ANIMATED FLOATING DOCK ════════════ */
-/* Dock container */
+
+/* ═══════════════════════════════════════════
+   HOTSCAN COLLAPSING DOCK NAV
+   Click → collapses to single icon. Hover → re-expands.
+   ═══════════════════════════════════════════ */
 .nav{
   position:fixed;bottom:0;left:0;right:0;z-index:200;
   display:flex;justify-content:center;align-items:flex-end;
-  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
-  pointer-events:none;background:none;border:none;
-  transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px);
+  pointer-events:none;background:none !important;border:none !important;
 }
 .nav-dock{
-  display:flex;align-items:center;gap:3px;
-  background:rgba(12,12,14,.92);
-  backdrop-filter:blur(32px) saturate(2);
-  -webkit-backdrop-filter:blur(32px) saturate(2);
+  display:flex;align-items:center;
+  background:rgba(12,12,16,.93);
+  backdrop-filter:blur(32px) saturate(1.9);
+  -webkit-backdrop-filter:blur(32px) saturate(1.9);
   border:1px solid rgba(255,255,255,.1);
-  border-radius:28px;
-  padding:8px 12px;
+  border-radius:30px;
+  padding:8px 8px;
   pointer-events:all;
-  box-shadow:0 8px 48px rgba(0,0,0,.65),0 1px 0 rgba(255,255,255,.07) inset;
-  animation:dockSlideUp .5s cubic-bezier(.34,1.56,.64,1) both;
+  box-shadow:0 10px 50px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.08) inset;
+  gap:0;
+  overflow:hidden;
+  transition:gap .35s cubic-bezier(.4,0,.2,1),padding .35s cubic-bezier(.4,0,.2,1);
+  animation:dockUp .45s cubic-bezier(.34,1.56,.64,1) both;
 }
-@keyframes dockSlideUp{
-  from{transform:translateY(100px);opacity:0}
-  to{transform:translateY(0);opacity:1}
+@keyframes dockUp{from{transform:translateY(90px);opacity:0}to{transform:translateY(0);opacity:1}}
+.nav-dock:hover{
+  gap:3px;
+  padding:8px 12px;
 }
-/* Nav item base */
 .nav-item{
   position:relative;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  width:50px;height:50px;border-radius:18px;cursor:pointer;
-  color:rgba(255,255,255,.28);background:none;border:none;outline:none;
-  transition:color .2s ease,background .2s ease,transform .25s cubic-bezier(.34,1.56,.64,1);
+  display:flex;align-items:center;justify-content:center;
+  width:0;height:50px;border-radius:18px;
+  cursor:pointer;outline:none;border:none;
+  color:rgba(255,255,255,0) !important;
+  background:transparent !important;
+  overflow:hidden;flex-shrink:0;
+  opacity:0;
+  transition:width .35s cubic-bezier(.4,0,.2,1),color .25s,opacity .25s,transform .22s cubic-bezier(.34,1.56,.64,1),background .2s;
   -webkit-tap-highlight-color:transparent;
-  user-select:none;
 }
-/* Hover lift */
-.nav-item:hover{
-  color:rgba(255,255,255,.8);
-  background:rgba(255,255,255,.07);
-  transform:translateY(-4px) scale(1.12);
+.nav-item svg{
+  flex-shrink:0;min-width:19px;
+  opacity:0;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .2s;
 }
-/* Active state */
+/* Expanded — hover over dock shows all */
+.nav-dock:hover .nav-item{
+  width:50px;
+  color:rgba(255,255,255,.32) !important;
+  opacity:1;
+}
+.nav-dock:hover .nav-item svg{ opacity:1; }
+.nav-dock:hover .nav-item:hover{
+  color:rgba(255,255,255,.9) !important;
+  background:rgba(255,255,255,.08) !important;
+  transform:translateY(-4px);
+}
+.nav-dock:hover .nav-item:hover svg{ transform:scale(1.15); }
+/* Active — always visible, even when collapsed */
 .nav-item.active{
-  color:#fff;
-  background:rgba(255,255,255,.11);
-  transform:translateY(-2px);
+  width:52px !important;height:52px;
+  color:rgba(255,255,255,.95) !important;
+  background:transparent !important;
+  opacity:1 !important;
+  transform:translateY(-1px);
 }
-/* Active pulse dot */
+.nav-item.active svg{ opacity:1 !important; }
 .nav-item.active::after{
-  content:'';
-  position:absolute;bottom:-7px;left:50%;
+  content:'';position:absolute;bottom:-8px;left:50%;
   transform:translateX(-50%);
   width:4px;height:4px;border-radius:50%;
   background:var(--red);
-  box-shadow:0 0 8px var(--red),0 0 16px rgba(200,16,46,.4);
-  animation:dotPulse 2s ease infinite;
+  box-shadow:0 0 8px rgba(200,16,46,.9),0 0 18px rgba(200,16,46,.5);
+  animation:dotGlow 2s ease infinite;
 }
-@keyframes dotPulse{
-  0%,100%{box-shadow:0 0 8px var(--red),0 0 16px rgba(200,16,46,.4)}
-  50%{box-shadow:0 0 12px var(--red),0 0 24px rgba(200,16,46,.6)}
+@keyframes dotGlow{
+  0%,100%{box-shadow:0 0 8px rgba(200,16,46,.9),0 0 18px rgba(200,16,46,.5)}
+  50%{box-shadow:0 0 14px rgba(200,16,46,1),0 0 28px rgba(200,16,46,.7)}
 }
-/* Scan button — red pill */
-.nav-item.nav-scan-btn{
-  background:var(--red);color:#fff;
-  width:52px;height:52px;border-radius:20px;
+/* Scan button */
+.nav-scan-btn{
+  background:var(--red) !important;
+  color:#fff !important;
+  width:54px !important;height:54px !important;
+  border-radius:20px;
   box-shadow:0 4px 20px rgba(200,16,46,.55);
-  transition:color .2s,background .2s,transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s;
+  opacity:1 !important;
 }
-.nav-item.nav-scan-btn:hover{
-  transform:translateY(-5px) scale(1.1);
-  box-shadow:0 8px 28px rgba(200,16,46,.75);
-  background:#d4112b;
+.nav-dock:hover .nav-scan-btn{ color:#fff !important; }
+.nav-scan-btn:hover,.nav-dock:hover .nav-scan-btn:hover{
+  background:#c8102e !important;
+  transform:translateY(-5px) !important;
+  box-shadow:0 8px 30px rgba(200,16,46,.75) !important;
 }
-.nav-item.nav-scan-btn.active{
-  background:var(--red);
-  transform:translateY(-2px) scale(1.03);
-}
-.nav-item.nav-scan-btn.active::after{display:none}
+.nav-scan-btn.active::after{ display:none !important; }
 /* Divider */
 .nav-divider{
-  width:1px;height:28px;
-  background:rgba(255,255,255,.1);
-  margin:0 4px;flex-shrink:0;
-  border-radius:1px;
+  width:0;height:28px;flex-shrink:0;margin:0;
+  background:rgba(255,255,255,.12);border-radius:1px;
+  opacity:0;
+  transition:width .35s cubic-bezier(.4,0,.2,1),opacity .3s,margin .35s;
 }
+.nav-dock:hover .nav-divider{ width:1px;opacity:1;margin:0 4px; }
 /* Tooltip */
 .nav-item::before{
   content:attr(data-tip);
   position:absolute;bottom:calc(100% + 12px);left:50%;
-  transform:translateX(-50%) translateY(4px) scale(.9);
-  background:rgba(12,12,14,.98);color:#fff;
-  font-size:11px;font-weight:600;letter-spacing:.01em;
-  padding:5px 10px;border-radius:8px;
-  white-space:nowrap;opacity:0;pointer-events:none;
+  transform:translateX(-50%) translateY(4px);
+  background:rgba(12,12,16,.97);color:#fff;
+  font-size:11px;font-weight:600;padding:5px 10px;
+  border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;
   border:1px solid rgba(255,255,255,.1);
-  box-shadow:0 4px 16px rgba(0,0,0,.4);
-  transition:opacity .15s,transform .15s;
+  transition:opacity .15s .1s,transform .15s .1s;
 }
-.nav-item:hover::before{
-  opacity:1;
-  transform:translateX(-50%) translateY(0) scale(1);
-}
-/* Icon click ripple */
-.nav-item:active{transform:translateY(-1px) scale(.96) !important}
-/* Hide old nav text */
-.nav-icon,.nav-icon-new{display:none !important}
-/* Page padding */
-.page{padding-bottom:108px !important}
-
-/* ════ PAGE TRANSITIONS ════ */
-.page{animation:none}
-.page.active{animation:pageIn .22s cubic-bezier(.4,0,.2,1) both}
-@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-/* ════ HW ANIMATIONS ════ */
-@keyframes hwSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes hwFadeIn{from{opacity:0}to{opacity:1}}
-@keyframes hwPulse{0%,100%{box-shadow:0 0 0 0 rgba(200,16,46,.4)}70%{box-shadow:0 0 0 8px transparent}}
+.nav-dock:hover .nav-item:hover::before{ opacity:1;transform:translateX(-50%) translateY(0); }
+.nav-icon,.nav-icon-new{ display:none !important; }
+.page{ padding-bottom:110px !important; }
+.page.active{ animation:pgIn .2s ease both; }
+@keyframes pgIn{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes hwSlideUp{ from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes hwPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(200,16,46,.35)} 70%{box-shadow:0 0 0 8px transparent} }
 @keyframes hwShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes hwBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-@keyframes hwSpin{to{transform:rotate(360deg)}}
-.card{animation:hwSlideUp .2s ease both;transition:transform .18s ease,box-shadow .18s ease}
-.card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.5)}
-.result{animation:hwSlideUp .25s ease both}
-.analyze-btn{animation:hwBounce 2.5s ease infinite}
-.rs,.analyze-btn:not(:disabled){animation:hwPulse 2.5s ease infinite}
+@keyframes hwBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.card{transition:transform .18s,box-shadow .18s}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.result{animation:hwSlideUp .22s ease both}
+
 </style>
 </head>
 <body>
@@ -1133,30 +1132,30 @@ body{
   <div class="app-header-left">
     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEMAAAAqCAYAAADoMebhAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAdIElEQVR42q2ad5xdVbn3v2uXU+fMmd4zk8mkV5IQElKUFkS6V5CrwJVruSAKQRQUS1REEFADgr4gRYoo1dCjhBZCAklIIAkxk5lkkplMy/Ry+t57Pe8f58xkUN/717s/nz1lr73KftZTfs/vWQoQ/ukylIUWFwDTsAjklaPsAIgCjNw9oZsa/wEioECN/Z97Uyn1iddFjQ2hxp4AMuE9mdCWbVcIohRK1PEu/7SG7ONsw4Qpsy+LQiaMhcq+b/t8JEe6/2VIlDIQ0YTyKqiecSGFFUuRQCWiFIiBUgpBgwhKGbk+uUXI8YUpZWQnU2Q/AAXay/5WuUlFcitW478FyX1Stm92XAGR4wtV/7R7Sv3LozHRiEhuzXJ8I7SAoVBKoV2hqirKrg03YE3QBwyl0OJRP/s8KuZ+A1eV4GRSiJvOTZid0rDC+IJ5KHV8AiS7I572EK3xMsnsQ6VyimRgBfKwbf+Enc/20VrwnDRebh4wQDy0CKZpY9thLNsHuCATBCo6pxDZPmNaMfYsp0tZjZCxWTXa88g4acRxcT1NOpNhdKD1uDBUThDTT7icivlr6BscxNL9KEOhDDMnBo0yLZyRZlr3vE06zfEFqOxftmlSWFhJtObToOzs2J6Lsiz6mp+jv+cwKHtsySAKv09RWDmLSMVKtOegtIOyfYQDUVKxHjoPvcFA927SsT7QSUS8CXs/pml6/DuyFjdBkyYIRRkmkYhJzYzL8RUvQhkJ3GQfsZGOrDCypuFRWnUi5fOupq+vB8s0Uab1SSsSwfaHObz9WZbPjTNn7hJSyRQYoD0Py/JxsKWRv298gwV1p+F5LqAwDQs3MUB/06NcfukF2V02FJ7nEgwGefet1/lofxtza07BTcUJ5ZfgxLvYs/l2vPhuFi+o5+JLljCl4dMEQgFEjwlfjfuGMQ8jIhio4z5JqXHBGMDAwCA33Ph9yqZ+EVMyWIaNm+oinYplhSEiGEpRd8JXGI1lsCY4McXxSVEG2knixTv49o2/JVpey8DAIAIkEw5z5zTw1obn2Lg5jmkHcZxhDGVh+P30tTWxYMEcrv/Rbezcsx+f7SeZSjN/1lRiw3H2dMYQ7RGJRuk68AId+x7gK18+ly9d9iNC0RKGRlLERuO4nodWWWertc75FsXYdxwXkIybhlIGiUSSubMaUOkhtLqTUNFUMpkk4XA+bmYUAGvMYUZLZuAvmE9qOIahzHFPPy5xBMO0iQ93UBz16BvJ8M6edzFzTiMVT2DbsOmtTQTzGxDxEBE0GsMwGek/wJR5NbyzbTeNTYcIBnzEEymUOGzbtoNw4ekEAnk0vnMrEdnB3197lmhRDe9/sIeuY01YFti2hWkaGJAVhJKsk1Vq3ETkuDsaX7dpGKRSKRYtmMdPf/IdrLxZWIEikkO9+PxBkgNHs8IY07FQwVQ8bWQnMI4HmePhSbAsP/GBw1RXRHGxKC3Ix29bGKbCSUfx2yb79x8iUnI2jpPOLcXD0B6ZeBvlVSswDEVtZRmWrcC0cDIpWo50MGnZPBo3/4pS3x6effkNDhzsZtOOd4hEwlRWFRP0WQR9Pny2iWkqlJF1+CgwlJoQklVWKxAkBwUED9sfZf0zf+HZpzZwwtl/IJ1KoBRYpsHoYFtOGGND2MV42sLIOcrxQC4KlIC4mKZNfLCZykXV+Pwhigv0cecZ9NPW3sHR9n6K51TiuU62TQwymREMd4CCshpCPhOrMIyhwPTlsXvHZpJOHvHevWR6X+TRTZvZ29RB57E+Jk+qBCAvz494mkTSIe2oXMg+HjUMpTCMMVNRZCN+NrJlMprOrl7e+NtdvP7yc0xb8RPMcB1OMo5ohWFoYkMdOWFILlzaEbR4WdOQ4xohSlAYSE7C6dFWCiuWkhf2oQJhPJ3FAIbtY9fOncQTQmWoBPHc7KINk1RyAJ+ZIFxYQXFRhEwmg2WZpDImH+/+mEBeOa0fP8eab19HiiDi9lJXVYL2NKGAj/0Hu9i95xCthw9wrKOFTCKR23nJCeP4erVWE6KKRyo1wlB/L2nXx6xVtxMoX0omPgqmkcMemtRo75iZZBXA8uWPozPEGPcX48hOGTjpESTTT2lVDQWRINoxEQHThKRj0vjxPix/GYYviJNMgWFi+3zE+44SCvuorqyiMD+PTCqD329zqL2fQy1HUNqhvDzC/MUrETdDeVkJnquxbcW2XQf56/pX2Lft7yRjCexQFba/AEwfiD6+cTLBrEUQ0WhlEcybQ9WceRRULsM1fDjxUZRhZDfZNEBSJON9Y2aSG8TwIaI/Aa6O26FGmX4y8aMoGWBKfT3lxRFSyTRaBJ9tcqRrhM72Nnz5NZhi4Kqs1E3LIjl0iPKKcmoqS4gE/aRMg1AgQP9AEwMDo6QzGaZMraSyooziaJhEOoNtGvQOxHjrrffZtvEpKqaezfRVl2AEijCMAMqwxkHUJyF7bkM1aDSChet5pNIj4KQxDDMXdhWmZYEzQCreCygsJDeUFT4OKZT8U2gVTMsmFjtGQTRETWUVkZAfyzDRnsbvN0jGu+jr7SFasgJsHxYahcKyA6RiXdQvnEJZSQE+8TBMk6DfR2dHJ5mUoFSAYDiPSCRINBLGMAz8PpvBuMOBjzdRPvkM5px2O309h9FOBtEZRGU3zsgJQo8BsAkpgYggOmtOylCIIWN5AKI1lj+Alx7EdTMoZWQ1QwDDDqFFj6PCT0QS0RimRXygmUmT6qiqLMNn+tA+A8/18Af89PT2crStmwr/ILptByIeShkE/QEGj+1h5ow1hP02nqsIWBaeCK1HDuN6QfzhApKxBI6rCQeD2cWjmDm5mnPPOoO77n6Cgn+8TKS4ATuvBMPwo0XwtIN2HbTjgHaPw/8JYEwbAqKPJ35jiiMepmmTTvTk3jWzwlAoDCuY6/RPKY+MJaKa2MBBpi2fSXlJPkopbNvGMi0M08JJxlm+bD7a24vwcTZ5UyZO2mHxwgaWr1pGQX6I4ZE4SjyGkw5th1sw7FJ8kVJ6et7jWG8fy+c34LoegmCZipt/8mPqa8p45tnnaPswyWjSh2uW4I9MIhgpJxypJhStIhCKYigfWgtOJpHNc0Tn/KDKJmfjGa2gPY3PZxPv6RrXJAvJginLDuQSHzVuJuOATpmIM4qT7GHmzAspzA+jXRefZKGu6zlcdOFqLjj/TIZjKeLJBAMDA/T39jM0MIjjZIgN9NHc1ExpaTlFRfkovzA62Iv21RAunEL7h8+wY/vHLJ5TT11VxSf249o113LtmmsZGurncEszzU3NNDY2cbBlP03Nb9J+cJiRhInhryS/dAYFZQsJF9chYpJODGedqVaAHs9etQi2pRgdPJr7Vp3DGYaJYCE6m5pnb40YWZtUhkk6MUDAl8IXKuDpF95AtIdt+wgEAwjQ3t7ORzt3sP/jPQz29WMYkBcJE4mEMTExTYNkOk0mk6G6upIzP3sOmYwQyCvFH67BVRW8+/pLRIsKmVIZoSgawRMwDAPPy6LNQDBIKFjIzIWrOOnTnyVo22gvw8hIP+1tRzjQeIAdH+xix863+ceHFvnVp1E14zNkUg6eG8MwrJzL0HgISlySI0fHLcASwDRD2FYQT+usLfn8+P1hnFQCN5PA9JkkR3spKPQTLChmJOkSsG062jvZtWM7e3dtR9wks2dO49IvnM/cefMoKCjAcVxGYzE818U0TSKRfEBzuKWFv65/nt0fbie/Ih+q5lE3/0ts2fQL6qY0ICeezKZte4jHE1knaRjYloVl5QCzaCzLwrZ95IWCRPPzqKosZ9HKs7jgC1cQsGDnjnf5/e/+wMbXXqbhxOsIRqaQTAyhDDNLWmFhmJpELqwyBiwC4Wpmnv4wngeGZZMZ2k/XoS1Uz/oM4aJ6/P4obXueZGZVI1/42ho2/f1ldu94l/jIAIsXLuSc885l+cpVlFVU8MSfnuS5Z56nubWTzu5enJEkkAVzdihI3aRSzj7rdP7r8kuwbZPvf//7bNzcytQlVyKpPg7vuoczz17N6nM+TyRajONmyGQyeK6bvbUejxCGYWRhuZElnVAGfl+AsuJ8FsydztTacp79y+N87Rvfp3Le9wgWzyWVSuRyGIOqygBbn7qYVKJ/nCCSQKSemaf9AdcTDJ3gyHs38JnT57B1+wEGEtUEolMYbHmTkuIY1ZMmM6m6lM/9x4Ws+vSp1FTXMDwap6W1g2Q6w/atW/jBDdeDUYYvWogxxoWI4LkOmXQC0sOg4KpvXMGdd97KC+uf4do1P8ZXejrRkhq6Dmwk5B9m/oLZLFq8hEm1k4gWFuILhPDZPgzDzDpFNWbRGtEuKicgUZBxNaGAnzNPXcLGDRs495z/ZPZpd6MD5ehMBssfoCQ/weYnL8plv7lAEy6aybRP/w6NYrh7F0b3A7S0NNLW1s4rL6+nrfUwkWgxUxqmM3/+fErKKxkYGaH3WD/JVAqthby8MPmRMAVFUdY/+wI3Xv8DMukMYE7gRHTuJstaEaegsIpXXnmeoN/ky1dcwd69XZihUrxEL9A3wY0GKSgsoKS0mGi0gEh+ISWlRVRV1TCloYFp06ZTWVlFIBTAcRxG4zHi8SSO43D2acu49pqr+f2DW1hw1jpGYwOE8grIM46w9a9fz2qK5Mwkv2whk1esw8Kgs3kDtcE32bL1Xdo6++gdHMVzPTKuQ/exXgwl1FSXU1KYT9BnEQ7nYVomR4520NLaSXFhIdVVZRw6eIi9H35AOu3gafA8bzzDNE0DZSoCvgDJxCh54TyuufZbuJ7HhldfBi0ow8plpgZKQTrtMDoymqUVMejvH2RwoI+Ojk5GRkcYHR0FFJOnNHDKKaew7OSV2EE/hw61EsmP4JMUSxevYvLJt+HZpUQKi9BDm9j9+lqUYSLay0UTcwzEaAzDIp1yMEyLYMDPyHA7HccG6O3rZ86saZQXRXjjtb/xxsY3ONjSQTQa5lOfWsZXvnIFp69axvpXNrL9oz1UlpYyb/FyLMvOUgJj2WWOc1A5stg0DbSn+fvb7xEMBJg87QRQgqFMtNZoLYyMDFNblM/cGVP4d5ejNd3dPRzr7GDLli088+SfeOD+33Pa6tVcdMmltHf2MHP6ZGbOnMzRrr0U156BMhTpWO8nxrEATCsPULheglCkks7mIXr6BvAHAoTDYRKJDqZPn8rhlsNc/vnvMTBwmLxoHeWlxXQf6+XudXdy97p13HbbHfz317/KY0+vZ1/jQQYHB3BdD9dx0dqbwETloI8WtGShsas14rgM9feDaeI6DqFgAEcbfOqUlVx0/hk89Mc/8dCDD7F79z8QEQoK8jnnnDO56ptXU1JehhWO8uWv/Q/XrrmW9957n1/efgevb3yd6773U5IZj/LyEg583EmhOFimkBg9OpGbzgrDUD6UaFwnQV7hJA72Jti06W0Wnbicg4dbCQQD9Bw7xg1r1qB0mh+uvY28vDzKqyrp6enB5/Px6MOPcNNN1xNLeZy8chkbN75NUVEJidhItlSgPllrGYsIWgTPdbFsi5eefY7yympaDjUzpa6Wj7Y3cf4XLuGUlUtZc/V1bHxtPZNqZ3HRxRdjWiY9PT08+MDDPPnk0zzwyONMmTaNLdv38MF7W9m3eyehYJh3Nr3P4PAwyWSajJPJYgwvg4UmNdr9CaY+y4GaFtpz0W4G7Q+RX7mCe+5ax/2PnUx3zwD1k2v5xdof4aaHuPEHt7Dl/e28/fe/cfuvbuOJvzzDyFCcb3zzqwwO9PKrO27jiZOeIzbSz5y5M6moWkgsFsMyTQzDGJ9bGVmIrAxFwB/gaGsrOyrKOenkZWScJJMbGigoreS8C87jjttuZ+Nr6/nyV65h1qxZbN++nRNOXETacfn13b/l3rt/w5cu+g8ee3o9DdPqufeudTzx1J9p72hn+wcfUVBQwNDQIB3t3QTDDXhODNFJEjkeYwyVGgDKDOA6Lp7nkIgPUTP7XLZsOcAdt/6cM04/hf7eHnbv3MRZ515ExaQa9u39GBRUVldgKJPWQ81see8j/uPiS0gnB3jr9TeZt3gpD933O4ry85g1bSoN9ZOpn1xL/eRaGqbU0VBfx9SGeqZOrmP+nFm8/+5mLrv8Uo51tDJz5ixajxxhxpy5HNi3j5fXP8mSpadRWVXL92/4Js+/sIFotJA/P/owd93zCFd/+3sEAn7W/XodjuMyZ85s/vjQA/z2N+uYu2AxeZEobW2HaWvrJJBfhutk0JIkk+z792YiOo3oDApNJj1IOBLi1RfX09c7wIxZszEMm8qaWrqP9fLDH99Ef183LW2dXPLFS7jsy5fS1HgAwUSpADt37mTV6aspKqnkpu9cz2X/dRnpjJOl5sarkNkEUXsu8USS7Tvep6SsmB3b36O+voFjnZ1Eo/m8//5WwGHJsqUE8/K46ad3kEikiMVTnPO5L1FRM5lMBhafdDJbN28iHhvlL88+y0P338eTT/yF/7nmekJBPy/99WnSbhDbysdVDjo9hJuJ/auZYFh4bhzPTaDsELG+JgL+DI8++RxP/fkJHnvoflABArbJfffcT393Mz/62S2sWrGCv736MuufeZrW1g7WfOc6RIRw0ORTS+exfNE9dHe0k0rFcylPjgqcENezEQNWLj+Z0VicC847h1Qqhd8XoKi0ghef+TMQJBAK8NgfH6a8JMJ/Xn4F5ZVVTK2v4fFHHuTQ/o+oq6vl3U1Jfr72JwQDPg4fauJHP/s5M2bPYfcH7/HCM09SXPcFkpk4wXCAVKwXrb3xcupxYSgLJz2Km4ljGDZD3Y0smFlHQUEJV37rOgpLyrj79p8insPCRfPp6S7hlFNW8uGHO1m44ATuuet+5i1Ygm2CYWTYv+8gl1x8WbZmG8ziEEMZuZBqjPsLw1C4nofoLHkLQjqdzoZLx0W0R+vhFpQBYb+f7s5ejnV1cE1xMUcOtaLF4eUXn+Pr37iBQwebUMrCRDO5bhJXXXMNddNm0PTxP7j1JzdihqZjRSaRSg0SzK8kPnrkE7XlcWFo18NJjeK5CXyGQXr4AHPnnU8o5Gd/YzOz5y4gGC7imaef4M6772X6tOnc+cs7ePaph/nGNTew/sUnOdjczK9uvw2thc72/XS27+f/5/XBju38eO0NlFWU89ifnmDDCy9w1+/v5bf3PYH2Ujzy4O+ZPmM+T61/HlfD4MAgb735GrffvJb+oSDRSStJxgezBLbnEu9vPn5qYCLOEPHwnGG0myCR6UepYVaffS4lJUVUV5ejVSXfuemn3H7zD/nFT9Zy8y03s2rVUurraigqzmdksI977l5H65GDnLziDKqqynDcXOVcVK6CDyid5RY8jc4dKxgnXbRG5yrmnudlq/yGQTAU5EhLCxteeZ6KinJOPXUl71eW87nPnUc44KOyqpxvXvVNPC/Nf3/tCnp7u3jrjTd56fnnefvNzVh59YQqZpNIDWIqC40P5Y4w1PPRBA51vN5sSaTuIkwripYkxHuI9Wzhwos/TzQ/D9cTHNchGAyw9Z33aNy/Cwiw5KTFlJWV0tXVw66d2wFNOFLCt751JWVlpWQyDjrHR9i2hedpBD1eD3U9PYFMy9H+kiuA6zHWW+H3++ju7uaRPz7JUH8LlZV1fOas1QQCAdraOnn1lQ2Agz8QZe68eXS0d9Hd1QNmiEjZVLQRwHUdDCOIKI0vWIWfIXoPPTtehz0uDNMnwYozgADipnBTA+hMP14yAzjj6Te4GP4Qfp+N42ncRAxIAya+vChKmbgueMnBXB+ZcLBlLIpbuTEzuUTNntBu5ZK4iXPauXF82HlRPNdBp+JAPNduYPgLAQPtuuB5qHA5tt+PiMJxNJga2/SBMrEDJQRsi6H2VxA3hfzTOR1lmAEJlq/A82wsSZAXAlcbxFJZRjXk14SDNqm0w0jcJT04iBk0qZ1URn4kwPBwgiNHOlGmH9uESCRLumQLOjn+1NSkHYvhnj5Kq0qorChBtEdP7xAjoykwbJJDQ1gBg9pJFeTnhYjFU/T2DZFyPERZZBIxCgr8+GwT7cFILIMybDzXJRyyCPhtEskUo7EMpmlgmUIkz0fGgXhSY/ry8ds+Ev078JxR/vXoD2DaYYnWnCnKmi9XXfND6e/rlXV3/U5QlQKT5Pf/50Hp7+uRtT+7UyAiX/ji1fLBzg9FRIuISCadkhdf3iDFpbNl9dlfEs9zZHBgULq7u2VgoF9SqZSkUglZtvwz8rOb75Th4SEZu7TnygWf/6pAkVz8n1fK9h27xscVEXnr7c0SiMwQzHpZeeoF0tXdJX39vdLY1CRl1QvECMwU7Cp55dW/yUBfn+zdu1fqpy0RZZTKld+8UQb6++RXv7lXUDUSKFkihq947KyUjJ+bmnBbyrQQ7SHuCEsWz6WouITDrR0gfUAhS5acSFFxKbv3/oMLL/ocT/35dwD88ZG/cKS1hYsuuojzzjmL+//g8fDDj/PCC69QXVPLSUsW0trWyVtvbabrWA+nnXIya3/8XV7d8Br33vs7iksqOfuzZ7Jj+wdcdsUXefyP9wLw6ONPsX9/E7NnzeDIkVbS8Ti2z2TdnT+joryCgaERZkybxuJF89jw0kYKygqYP28+hcXFFBYXc+/dt3LO2Wcye9Z0CouK6ew8BpJAMjHQiX/xE59MW30l4i9cIsqukW3bdojWIu0dXXKgqVn2NzbJ0PCojMYSsmzFGfKPxkPieq58+avXCUQF8mXxss9IIpmW4aERqa1fJICs/dkvRWstP79tnUBQICD33PugiIgcPNQqjz76J7nyyuslv7BeQnmTpLu3XzIZR774X1cJ5AtUCZQKvkkCRfKta38gIiJrrvue3HzLnaK1llt/uU4Ufpkxe4UMjySksfGg7Nm7T0RELr3sq3L/Hx4REZFzzv+SQFTsUIMYhu/fasTYbSjDxHGS5EfDlJWWMRpL8u6723n/vQ9obDyIZdo0N7eglKKsrJT+gUFeevk1IAKY5EfCKBRHO7oYHo5hWqUsWDAfpRQth1oxzXx8ebVc9+2buPLq7/LBzl0sX76C++77NZs3vcLq1asIhcJ0H+vn+Rc2AGEws7VeHJf6qQ2sXfsdjrZ38trG1znW3YvWwpIlixCgqDCfcCTI/sYDXHPN9cQTadau/SFLl57I0HCco21HsxShl55w/On/cfnClYI1RRpmnCjHevpk774mMXwVAsgJi06ReNKRl17ZKAXF1bK/6bAkU47c+et7ZMEJn5LPnnOJbPvgIxER+cGPbxEISSg6Wd7ZukOGRhKy8pTzBYolXDRdrvn2D2XZijOltn6WrFy1Wg4e7pCe/iE5edVqOXS4XWKxtPzmrvvkxBNPk1PP+JzccutdMmv2Irnvgcck44l0dPRKb++A9PYPS3fvoBxp75S8/Go5+9xLxNNaHv/TMwLIbbfdJcmUK61Hu2Rf40EpLZ8mUCKmr1yUMv5XzcAfmSRQKqeuvlBSjshLr74hlq9ELCsoV139XfFE5OFH/yyAnH/hF6WxqUWSSUcSybQkUhnp7u6TW37xa7H9xYIqlCnTFsnho91y8HC7TKqbKxCVyVMXSt/gsDiuSDyRlsGhmLR1HJPv3vgjAUsuvezr0nK4VdIZT1JpRzxP5MCBQ3Ld9TdKPOXK25u3yfwFJ8nsOSfJrNkL5Z2t27ImcN7F8tX/uVZERO64/W5RypBwuEhefPE1iScc2bptl9h2sSizPOc81f8qDGWGasTLONRUljFv3gza2zvZu2cvCk19QwNTp06hre0oBxobEclQXV3H0qUnkZ8fYXBwkMbGZg4c2AcqDyUehUVRTjxpIYlEivff24HnuPgDPuom1zK5rpbKynJGY3F279nLwab9GGYY7SWorZ3C4hMXkJ+fT1/vIDt27KC2to6q6koaDzTR1PgREAJSnLBoGXW1kzjQ1Ew67TBn9jQONrdk14imrKyKFSuWcaynh61btqEMXxYT6Rjyv1jJ/wUmucVccQhWUAAAAABJRU5ErkJggg==" alt="HotScan" style="height:32px;width:auto;object-fit:contain;display:block">
   </div>
-  <div id="user-hdr-btn" class="app-user-btn" onclick="if(typeof openAuth==='function'){currentUser?openAccountModal():openAuth()}">
+  <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
     <div class="app-user-inner">Sign In</div>
   </div>
 </div>
 <div class="nav">
   <div class="nav-dock">
-    <div class="nav-item nav-scan active" id="nav-scan" data-tip="Scan" onclick="goPage('scan')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
+    <div class="nav-item nav-scan-btn active" id="nav-scan" data-tip="Scan" onclick="goPage('scan')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="M12 5v2M12 17v2M5 12H3M21 12h-2"/></svg>
     </div>
     <div class="nav-item" id="nav-collection" data-tip="Collection" onclick="goPage('collection')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
     </div>
     <div class="nav-item" id="nav-marketplace" data-tip="Market" onclick="goPage('marketplace')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-item" id="nav-market" data-tip="Trends" onclick="goPage('market')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     </div>
     <div class="nav-item" id="nav-profile" data-tip="Profile" onclick="goPage('profile')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </div>
     <div class="nav-item" id="nav-more" data-tip="More" onclick="goPage('more')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
     </div>
   </div>
 </div>
@@ -1801,14 +1800,14 @@ var _authStep = 'email'  // 'email' | 'password'
 var _authEmail = ''
 
 function openAuth(){
-  if(currentUser){openAccountModal();return}
-  _authMode = 'signin'
-  _authStep = 'email'
-  _authEmail = ''
-  document.getElementById('auth-modal').classList.add('open')
-  document.body.style.overflow = 'hidden'
+  if(currentUser){ openAccountModal(); return }
+  _authMode='signin'; _authStep='email'; _authEmail=''
+  var modal=document.getElementById('auth-modal')
+  if(!modal) return
+  modal.classList.add('open')
+  document.body.style.overflow='hidden'
   resetAuthForm()
-  setTimeout(function(){ var inp=document.getElementById('auth-email-inp'); if(inp) inp.focus() }, 300)
+  setTimeout(function(){ var i=document.getElementById('auth-email-inp'); if(i) i.focus() }, 200)
 }
 
 function closeAuth(){
@@ -1819,17 +1818,28 @@ function closeAuth(){
 
 
 function resetAuthForm(){
-  document.getElementById('auth-email-inp').value = ''
-  document.getElementById('auth-pass-inp').value = ''
-  document.getElementById('auth-pass-field').style.display = 'none'
-  document.getElementById('auth-err-msg').textContent = ''
-  document.getElementById('auth-verify-step').style.display = 'none'
-  document.getElementById('auth-email-form').style.display = 'block'
-  document.getElementById('auth-btn-txt').textContent = 'Continue'
-  document.getElementById('auth-spinner').style.display = 'none'
-  document.getElementById('auth-continue-btn').disabled = false
-  updateAuthSwitchUI()
+  var e=document.getElementById('auth-email-inp')
+  var p=document.getElementById('auth-pass-inp')
+  var pf=document.getElementById('auth-pass-field')
+  var em=document.getElementById('auth-err-msg')
+  var bt=document.getElementById('auth-btn-txt')
+  var sp=document.getElementById('auth-spinner')
+  var bn=document.getElementById('auth-continue-btn')
+  var uf=document.getElementById('auth-username-field')
+  var vs=document.getElementById('auth-verify-step')
+  var ef=document.getElementById('auth-email-form')
+  if(e) e.value=''
+  if(p) p.value=''
+  if(pf) pf.style.display='none'
+  if(em) em.textContent=''
+  if(bt){ bt.textContent='Continue'; bt.style.display='block' }
+  if(sp) sp.style.display='none'
+  if(bn){ bn.disabled=false }
+  if(uf) uf.style.display='none'
+  if(vs) vs.style.display='none'
+  if(ef) ef.style.display='block'
 }
+
 
 function toggleAuthMode(){
   _authMode = _authMode === 'signin' ? 'signup' : 'signin'
@@ -1875,78 +1885,61 @@ function showAuthErr(msg){
 }
 
 async function authContinue(){
-  var email = document.getElementById('auth-email-inp').value.trim()
+  var email=document.getElementById('auth-email-inp').value.trim()
   if(!email){ showAuthErr('Enter your email address'); return }
   if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showAuthErr('Enter a valid email'); return }
-
-  if(_authStep === 'email'){
-    _authEmail = email
-    _authStep = 'password'
-    document.getElementById('auth-pass-field').style.display = 'block'
-    var usernameField = document.getElementById('auth-username-field')
-    if(usernameField && _authMode === 'signup') usernameField.style.display = 'block'
-    document.getElementById('auth-btn-txt').textContent = _authMode === 'signin' ? 'Sign In' : 'Create Account'
-    document.getElementById('auth-err-msg').textContent = ''
-    setTimeout(function(){ document.getElementById('auth-pass-inp').focus() }, 80)
+  if(_authStep==='email'){
+    _authEmail=email; _authStep='password'
+    document.getElementById('auth-pass-field').style.display='block'
+    var uf=document.getElementById('auth-username-field')
+    if(uf&&_authMode==='signup') uf.style.display='block'
+    var bt=document.getElementById('auth-btn-txt')
+    if(bt) bt.textContent=_authMode==='signin'?'Sign In':'Create Account'
+    document.getElementById('auth-err-msg').textContent=''
+    setTimeout(function(){ var p=document.getElementById('auth-pass-inp'); if(p) p.focus() },80)
     return
   }
-
-  var pass = document.getElementById('auth-pass-inp').value
+  var pass=document.getElementById('auth-pass-inp').value
   if(!pass){ showAuthErr('Enter your password'); return }
-  if(_authMode === 'signup' && pass.length < 6){ showAuthErr('Password must be at least 6 characters'); return }
-  if(!_sb){ showAuthErr('Service unavailable — please try Google sign in'); return }
-
-  setAuthLoading(true)
-  showAuthErr('')
-
+  if(_authMode==='signup'&&pass.length<6){ showAuthErr('Password must be at least 6 characters'); return }
+  if(!_sb){ showAuthErr('Service unavailable — please refresh the page'); return }
+  setAuthLoading(true); showAuthErr('')
+  // Safety net: never leave spinner stuck
+  var _to=setTimeout(function(){ setAuthLoading(false); showAuthErr('Request timed out — try again') },15000)
   try{
-    if(_authMode === 'signin'){
-      var r = await _sb.auth.signInWithPassword({email:email, password:pass})
+    if(_authMode==='signin'){
+      var r=await _sb.auth.signInWithPassword({email:email,password:pass})
+      clearTimeout(_to)
       if(r.error){
-        var m = r.error.message || ''
-        if(m.toLowerCase().includes('invalid') || m.toLowerCase().includes('wrong') || m.toLowerCase().includes('credentials')) m = 'Wrong email or password. Try again.'
-        if(m.toLowerCase().includes('confirm') || m.toLowerCase().includes('verif')) m = 'Please verify your email first — check your inbox'
-        if(m.toLowerCase().includes('not found') || m.toLowerCase().includes('no user')) m = 'No account found. Sign up first.'
-        showAuthErr(m)
-        setAuthLoading(false)
+        var m=r.error.message||''
+        if(m.toLowerCase().includes('invalid')||m.toLowerCase().includes('wrong')||m.toLowerCase().includes('credentials')) m='Wrong email or password'
+        else if(m.toLowerCase().includes('confirm')||m.toLowerCase().includes('verif')) m='Verify your email first — check inbox'
+        else if(m.toLowerCase().includes('not found')||m.toLowerCase().includes('no user')) m='No account found — sign up first'
+        showAuthErr(m); setAuthLoading(false)
       } else {
-        // Explicit success — don't wait for onAuthStateChange
-        setAuthLoading(false)
-        closeAuth()
-        setTimeout(showSuccessCelebration, 400)
+        setAuthLoading(false); closeAuth()
+        setTimeout(showSuccessCelebration,300)
       }
-
     } else {
-      var username = document.getElementById('auth-username-inp') ? document.getElementById('auth-username-inp').value.trim() : ''
-      var displayName = username || email.split('@')[0]
-      var sr = await _sb.auth.signUp({
-        email: email,
-        password: pass,
-        options:{
-          emailRedirectTo: window.location.origin,
-          data:{ full_name: displayName, username: username || null }
-        }
-      })
+      var sr=await _sb.auth.signUp({email:email,password:pass,options:{emailRedirectTo:window.location.origin,data:{full_name:email.split('@')[0]}}})
+      clearTimeout(_to)
       if(sr.error){
-        var sm = sr.error.message || ''
-        if(sm.toLowerCase().includes('already') || sm.toLowerCase().includes('registered')) sm = 'Account already exists. Sign in instead.'
+        var sm=sr.error.message||''
+        if(sm.toLowerCase().includes('already')||sm.toLowerCase().includes('registered')) sm='Account already exists — sign in instead'
         showAuthErr(sm)
-        setAuthLoading(false)
-        return
+      } else {
+        if(!sr.data||!sr.data.session){
+          var ef=document.getElementById('auth-email-form')
+          var vs=document.getElementById('auth-verify-step')
+          if(ef) ef.style.display='none'
+          if(vs) vs.style.display='block'
+        }
       }
       setAuthLoading(false)
-      if(!sr.data || !sr.data.session){
-        // Email verification required
-        document.getElementById('auth-email-form').style.display = 'none'
-        document.getElementById('auth-verify-step').style.display = 'block'
-      }
-      // If session exists, onAuthStateChange handles it
     }
-  } catch(e){
-    showAuthErr('Something went wrong. Please try again.')
-    setAuthLoading(false)
-  }
+  }catch(e){ clearTimeout(_to); showAuthErr('Something went wrong — please try again'); setAuthLoading(false) }
 }
+
 
 
 // Handle Enter key
@@ -2242,7 +2235,6 @@ window.addEventListener('load', function() {
       auth: {
         persistSession: true,
         storageKey: 'hs_auth_v2',
-        flowType: 'implicit',
         storage: window.localStorage,
         autoRefreshToken: true,
         detectSessionInUrl: true,
@@ -2268,26 +2260,24 @@ window.addEventListener('load', function() {
 
 // ── Nav ──
 function goPage(id){
-  // Remove active from all pages with exit animation
-  document.querySelectorAll('.page.active').forEach(function(p){
-    p.classList.remove('active')
-  })
-  // Update dock
-  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')})
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active') })
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active') })
+  var pg = document.getElementById('page-'+id)
+  if(pg) pg.classList.add('active')
   var ni = document.getElementById('nav-'+id)
   if(ni){
     ni.classList.add('active')
     // Bounce the icon
     var svg = ni.querySelector('svg')
     if(svg){
-      svg.style.transform = 'scale(1.2)'
-      setTimeout(function(){ svg.style.transform = '' }, 200)
+      svg.style.transform = 'scale(1.3)'
+      setTimeout(function(){ svg.style.transform = '' }, 180)
     }
+    // After selecting, briefly blur the dock so it collapses
+    var dock = document.querySelector('.nav-dock')
+    if(dock) dock.blur()
   }
-  // Show new page
-  var pg = document.getElementById('page-'+id)
-  if(pg){ pg.classList.add('active') }
-  if(id==='profile') renderProfilePage()
+  if(id === 'profile') renderProfilePage()
   window.scrollTo({top:0, behavior:'smooth'})
 }
 
@@ -2476,7 +2466,7 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
           {type:'text', text:userPrompt}
         ]}
       ],
-      temperature: 0.02, max_tokens: 1400
+      temperature: 0.05, max_tokens: 800
     })
   })
   if (!res.ok) {
@@ -2496,7 +2486,7 @@ async function groqText(prompt, model) {
     body: JSON.stringify({
       model: model || 'moonshotai/kimi-k2-instruct',
       messages: [{role:'user', content:prompt}],
-      temperature: 0.03, max_tokens: 1000
+      temperature: 0.1, max_tokens: 500
     })
   })
   if (!res.ok) return null
@@ -2861,7 +2851,7 @@ function showResult(d) {
   var iv = (d.investment || '').toLowerCase()
   ib.classList.add(iv.includes('very') ? 'iv' : iv === 'high' ? 'ih' : iv === 'medium' ? 'im' : 'il')
   // Details
-  var rows = [['Color',d.color],['Year',d.casting_year],['Base',d.base_origin],['Tampo',d.tampo],['Wheels',d.wheel_type],['Condition',d.condition],['Rarity',d.rarity_reason],['Investment',d.investment_reason],['Fun Fact',d.fun_fact],['Buy Tip',d.buy_tip],['Also Hunt',d.also_look_for]]
+  var rows = [['Color',d.color],['Casting Year',d.casting_year],['Tampo',d.tampo],['Wheels',d.wheel_type],['Condition',d.condition],['Rarity Reason',d.rarity_reason],['Why Invest',d.investment_reason],['Fun Fact',d.fun_fact]]
   if (d.barcode_note) rows.push(['Barcode Info', d.barcode_note])
   if (d.also_look_for) rows.push(['Also Look For', d.also_look_for])
   document.getElementById('r-dets').innerHTML = rows.filter(function(r) { return r[1] && r[1] !== 'undefined' }).map(function(r) {
@@ -3289,7 +3279,7 @@ async function identifyMultipleCars(imageData) {
     body: JSON.stringify({
       model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
-      temperature: 0.02, max_tokens: 2500
+      temperature: 0.05, max_tokens: 2000
     })
   })
   if (!res.ok) {
@@ -3524,66 +3514,46 @@ function ol(url) { if (url && url !== '#') window.open(url, '_blank') }
 // ════════════════════════════════════════════════════════
 async function initAuth(){
   if(!_sb){ updateHeaderUI(); return }
-  // Clear modal on load
-  var _am = document.getElementById('auth-modal')
-  if(_am) _am.classList.remove('open')
-  document.body.style.overflow = ''
-
+  var am=document.getElementById('auth-modal'); if(am) am.classList.remove('open')
+  document.body.style.overflow=''
   try{
-    // Layer 1: Auth state listener
-    _sb.auth.onAuthStateChange(async function(event, session){
-      if(session && session.user){
-        var u = session.user
-        currentUser = {
-          id: u.id, email: u.email||'',
-          name: (u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]
-        }
+    _sb.auth.onAuthStateChange(async function(event,session){
+      if(session&&session.user){
+        var u=session.user
+        currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
         await loadProfile()
-        if(event==='SIGNED_IN'){
-          closeAuth()
-          setTimeout(showSuccessCelebration, 300)
-        }
+        if(event==='SIGNED_IN'){ closeAuth(); setTimeout(showSuccessCelebration,300) }
         if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
-          fullCloudSync().then(function(){renderCol()})
+          fullCloudSync().then(function(){renderCol()}).catch(function(){})
         }
         updateHeaderUI(); renderProfilePage(); updateScanCounter()
       } else {
-        currentUser = null; userProfile = null
+        currentUser=null; userProfile=null
         localStorage.removeItem('hs_pro')
         updateHeaderUI(); renderProfilePage(); updateScanCounter()
       }
     })
-
-    // Layer 2: Check existing session
-    var sr = await _sb.auth.getSession()
-    if(sr.data && sr.data.session && sr.data.session.user && !currentUser){
-      var u = sr.data.session.user
-      currentUser = {
-        id: u.id, email: u.email||'',
-        name: (u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]
-      }
+    var sr=await _sb.auth.getSession()
+    if(sr.data&&sr.data.session&&sr.data.session.user&&!currentUser){
+      var u=sr.data.session.user
+      currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
       await loadProfile()
-      fullCloudSync().then(function(){renderCol()})
+      fullCloudSync().then(function(){renderCol()}).catch(function(){})
       updateHeaderUI(); renderProfilePage(); updateScanCounter()
     }
-
-    // Layer 3: Refresh session (fixes normal tab restore)
     if(!currentUser){
       try{
-        var rr = await _sb.auth.refreshSession()
-        if(rr.data && rr.data.session && rr.data.session.user){
-          var u = rr.data.session.user
-          currentUser = {
-            id: u.id, email: u.email||'',
-            name: (u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]
-          }
+        var rr=await _sb.auth.refreshSession()
+        if(rr.data&&rr.data.session&&rr.data.session.user){
+          var u=rr.data.session.user
+          currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
           await loadProfile()
-          fullCloudSync().then(function(){renderCol()})
+          fullCloudSync().then(function(){renderCol()}).catch(function(){})
           updateHeaderUI(); renderProfilePage(); updateScanCounter()
         }
       }catch(e){}
     }
-  }catch(e){ console.warn('initAuth:', e) }
+  }catch(e){ console.warn('initAuth:',e) }
   updateHeaderUI()
 }
 
@@ -3597,88 +3567,57 @@ function sanitize(str){
 }
 
 async function loadProfile(){
-  if(!currentUser || !_sb) return
-  // Instant local dev override FIRST (before any DB call)
-  if(currentUser.email === DEV_EMAIL){
-    userProfile = Object.assign(userProfile||{}, {is_pro:true, is_developer:true, email:currentUser.email})
+  if(!currentUser||!_sb) return
+  // INSTANT: grant dev in memory before DB
+  if(currentUser.email===DEV_EMAIL){
+    userProfile=Object.assign(userProfile||{},{is_pro:true,is_developer:true,email:currentUser.email})
     localStorage.setItem('hs_pro','true')
-    updateHeaderUI()
-    renderProfilePage()
+    updateHeaderUI(); renderProfilePage()
   }
   try{
-    // Direct profile read — no RPC dependency
-    var q = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
-    if(q.data){
-      userProfile = q.data
-    } else {
-      // Create profile
-      await _sb.from('profiles').upsert({
-        id: currentUser.id,
-        email: currentUser.email,
-        display_name: currentUser.name || currentUser.email.split('@')[0],
-        is_pro: currentUser.email === DEV_EMAIL,
-        is_developer: currentUser.email === DEV_EMAIL
-      }, {onConflict:'id'})
-      var q2 = await _sb.from('profiles').select('*').eq('id', currentUser.id).single()
-      userProfile = q2.data || {id:currentUser.id, email:currentUser.email, is_pro:false, is_developer:false}
+    var q=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+    if(q.data){ userProfile=q.data }
+    else{
+      await _sb.from('profiles').upsert({id:currentUser.id,email:currentUser.email,
+        display_name:currentUser.name||currentUser.email.split('@')[0],
+        is_pro:currentUser.email===DEV_EMAIL,is_developer:currentUser.email===DEV_EMAIL
+      },{onConflict:'id'})
+      var q2=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
+      userProfile=q2.data||{id:currentUser.id,email:currentUser.email,is_pro:false,is_developer:false}
     }
-    // Always force dev status — every single login
-    if(currentUser.email === DEV_EMAIL){
-      await _sb.from('profiles').update({
-        is_pro: true, is_developer: true,
-        pro_since: new Date().toISOString()
-      }).eq('id', currentUser.id)
-      userProfile = Object.assign({}, userProfile, {is_pro:true, is_developer:true})
+    // Always force dev — unconditional
+    if(currentUser.email===DEV_EMAIL){
+      await _sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',currentUser.id)
+      userProfile=Object.assign({},userProfile,{is_pro:true,is_developer:true})
       localStorage.setItem('hs_pro','true')
-    } else if(userProfile && userProfile.is_pro){
+    } else if(userProfile&&userProfile.is_pro){
       localStorage.setItem('hs_pro','true')
     }
-    // Cache for instant restore on next load
-    try{
-      localStorage.setItem('hs_profile_cache', JSON.stringify({data:userProfile, ts:Date.now()}))
-    }catch(e){}
+    try{ localStorage.setItem('hs_profile_cache',JSON.stringify({data:userProfile,ts:Date.now()})) }catch(e){}
   }catch(e){
-    console.warn('loadProfile:', e)
-    // Cache fallback
+    console.warn('loadProfile:',e)
     try{
-      var c = JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
-      if(c && c.data && (Date.now()-c.ts) < 7200000) userProfile = c.data
+      var c=JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
+      if(c&&c.data&&(Date.now()-c.ts)<7200000) userProfile=c.data
     }catch(e2){}
   }
-  updateHeaderUI()
-  renderProfilePage()
+  updateHeaderUI(); renderProfilePage()
 }
 
 
 function updateHeaderUI(){
-  var btn = document.getElementById('user-hdr-btn')
+  var btn=document.getElementById('user-hdr-btn')
   if(!btn) return
-  btn.onclick = function(){ currentUser ? openAccountModal() : openAuth() }
-  if(!currentUser){
-    btn.innerHTML = '<div class="app-user-inner">Sign In</div>'
-    return
-  }
-  var prefs = {}
-  try{ prefs = JSON.parse(localStorage.getItem('hs_prefs')||'{}') }catch(e){}
-  var name = prefs.displayName || currentUser.name || currentUser.email.split('@')[0]
-  var initial = name[0].toUpperCase()
-  var isDev = !!(userProfile && userProfile.is_developer)
-  var isPro = !isDev && !!(userProfile && userProfile.is_pro)
-  // Dev always takes priority
-  if(currentUser.email === DEV_EMAIL) isDev = true
-  var bg = isDev ? 'linear-gradient(135deg,#7c3aed,#4f46e5)'
-    : isPro ? 'linear-gradient(135deg,#e63946,#ff6b35)'
-    : (prefs.avatarColor || 'linear-gradient(135deg,#334155,#475569)')
-  var badge = isDev
-    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap;letter-spacing:.02em">&#x1F451; Dev</span>'
-    : isPro
-    ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap;letter-spacing:.02em">&#x2B50; Pro</span>'
-    : ''
-  btn.innerHTML = '<div style="display:flex;align-items:center;gap:6px;cursor:pointer">'
-    + '<div style="width:30px;height:30px;border-radius:50%;background:' + bg
-    + ';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)">' + initial + '</div>'
-    + '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
-    + badge + '</div>'
+  btn.onclick=function(){ currentUser?openAccountModal():openAuth() }
+  if(!currentUser){ btn.innerHTML='<div class="app-user-inner">Sign In</div>'; return }
+  var prefs={}; try{ prefs=JSON.parse(localStorage.getItem('hs_prefs')||'{}') }catch(e){}
+  var name=prefs.displayName||currentUser.name||currentUser.email.split('@')[0]
+  var initial=name[0].toUpperCase()
+  var isDev=!!(userProfile&&userProfile.is_developer)||(currentUser.email===DEV_EMAIL)
+  var isPro=!isDev&&!!(userProfile&&userProfile.is_pro)
+  var bg=isDev?'linear-gradient(135deg,#7c3aed,#4f46e5)':isPro?'linear-gradient(135deg,#e63946,#ff6b35)':(prefs.avatarColor||'linear-gradient(135deg,#374151,#4b5563)')
+  var badge=isDev?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap">&#x1F451; Dev</span>':isPro?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span>':''
+  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+initial+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>'+badge+'</div>'
 }
 
 
@@ -4146,33 +4085,6 @@ function shareResultToGroup(){
   if(lastResult.india_insight) lines.push('','Insight: '+lastResult.india_insight)
   lines.push('','Try HotScan free: '+getRefLink())
   window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
-}
-
-
-function shareWAListing(){
-  if(!lastResult) return
-  var price = prompt('Your asking price (Rs)?','')
-  if(!price) return
-  var cond = prompt('Condition?','Mint on Card') || 'MOC'
-  var city = prompt('Your city?','') || ''
-  var lines = [
-    '🚗 *FOR SALE - Hot Wheels*',
-    '━━━━━━━━━━━━━━━━',
-    '*' + lastResult.name + '*',
-    '📦 ' + (lastResult.series||''),
-    '⭐ ' + (lastResult.rarity||'Common'),
-    '📍 ' + cond,
-    city ? '🏙️ ' + city : '',
-    '',
-    '💰 *Asking: ₹' + price + '*',
-    '📊 Market: ₹' + (lastResult.india_collector_inr||'?'),
-    '',
-    '💬 DM to buy',
-    '━━━━━━━━━━━━━━━━',
-    '🔍 HotScan India · hotscan.in',
-    '#HotWheelsIndia #HotWheelsSale'
-  ]
-  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank')
 }
 
 function whatsappSupport(){
