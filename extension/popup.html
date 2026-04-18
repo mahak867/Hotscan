@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=360">
+  <title>HotScan India</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <img src="icon-48.png" alt="" class="logo-img">
+        <div>
+          <div class="logo-title">HotScan India</div>
+          <div class="logo-sub">Hot Wheels Scanner 🇮🇳</div>
+        </div>
+      </div>
+      <a href="https://hotscan.in" target="_blank" class="open-app-btn" title="Open full app">↗</a>
+    </div>
+
+    <!-- API Key setup (shown when no key is saved) -->
+    <div id="key-section" style="display:none">
+      <div class="card">
+        <div class="card-title">🔑 Groq API Key Required</div>
+        <p class="hint">Get your free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — takes 2 minutes. Your key never leaves your browser.</p>
+        <input id="key-inp" type="password" placeholder="Paste your gsk_... key here" class="inp" autocomplete="off">
+        <button id="key-save-btn" class="btn-red" onclick="saveKey()">Save Key</button>
+      </div>
+    </div>
+
+    <!-- Main search (shown when key exists) -->
+    <div id="search-section" style="display:none">
+      <div class="search-row">
+        <input id="search-inp" type="text" placeholder="Car name or barcode number…" class="inp" autocomplete="off">
+        <button id="search-btn" class="btn-red search-btn" onclick="doSearch()">🔍</button>
+      </div>
+      <div id="status" class="status" style="display:none"></div>
+    </div>
+
+    <!-- Result card -->
+    <div id="result-card" class="card result-card" style="display:none">
+      <div class="result-name" id="r-name"></div>
+      <div class="result-meta" id="r-meta"></div>
+      <div class="badges" id="r-badges"></div>
+      <div class="prices" id="r-prices"></div>
+      <div class="invest-row" id="r-invest"></div>
+      <div class="insight" id="r-insight" style="display:none"></div>
+      <div class="result-actions">
+        <button class="btn-wa" id="r-wa-btn" style="display:none" onclick="shareOnWA()">💬 Share on WhatsApp</button>
+        <button class="btn-sell" onclick="openSell()">💸 List for Sale</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span class="key-change" id="key-change-btn" onclick="showKeyChange()" style="display:none">🔑 Change API key</span>
+      <a href="https://hotscan.in" target="_blank" class="footer-link">Open full HotScan app →</a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
