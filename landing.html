@@ -3,11 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HotScan">
 <meta name="description" content="India's first Hot Wheels scanner. Scan any car, get live Indian market prices instantly. Free.">
 <meta property="og:title" content="HotScan India — India's First Hot Wheels Scanner">
 <meta property="og:description" content="Scan any Hot Wheels car. Get India's real market price in seconds.">
 <meta name="theme-color" content="#E63946">
 <title>HotScan India — India's First Hot Wheels Scanner</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -220,9 +227,54 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
   .hero-divider{display:none}
   nav .nav-links{display:none}
 }
+/* ── PWA Install Banner ── */
+#pwa-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a1a1a;border-top:1px solid #333;padding:14px 20px;gap:14px;align-items:center;justify-content:space-between;box-shadow:0 -4px 24px rgba(0,0,0,.5)}
+#pwa-banner.show{display:flex}
+.pwa-banner-left{display:flex;align-items:center;gap:12px}
+.pwa-banner-icon{width:44px;height:44px;border-radius:10px;background:#e63946;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.pwa-banner-text strong{display:block;font-size:14px;font-weight:700;color:#fff}
+.pwa-banner-text span{font-size:12px;color:#aaa}
+.pwa-banner-actions{display:flex;gap:8px;flex-shrink:0}
+.pwa-btn-install{background:#e63946;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.pwa-btn-dismiss{background:transparent;color:#888;border:1px solid #333;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer}
+/* iOS instruction sheet */
+#ios-install{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1c1c1e;border-top:1px solid #333;border-radius:16px 16px 0 0;padding:20px;text-align:center;box-shadow:0 -4px 24px rgba(0,0,0,.6)}
+#ios-install.show{display:block}
+.ios-handle{width:36px;height:4px;border-radius:2px;background:#555;margin:0 auto 16px}
+.ios-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:8px}
+.ios-steps{font-size:13px;color:#aaa;line-height:2;margin-bottom:16px}
+.ios-steps strong{color:#fff}
+.ios-close{background:#2c2c2e;color:#aaa;border:none;border-radius:10px;padding:11px 24px;font-size:14px;cursor:pointer;width:100%}
 </style>
 </head>
 <body>
+
+<!-- Android/Chrome Install Banner -->
+<div id="pwa-banner">
+  <div class="pwa-banner-left">
+    <div class="pwa-banner-icon">🚗</div>
+    <div class="pwa-banner-text">
+      <strong>Install HotScan</strong>
+      <span>Add to Home Screen — free, no app store</span>
+    </div>
+  </div>
+  <div class="pwa-banner-actions">
+    <button class="pwa-btn-dismiss" onclick="dismissPwaBanner()">Not now</button>
+    <button class="pwa-btn-install" onclick="installPwa()">Install</button>
+  </div>
+</div>
+
+<!-- iOS Safari Install Sheet -->
+<div id="ios-install">
+  <div class="ios-handle"></div>
+  <div class="ios-title">Install HotScan on your iPhone</div>
+  <div class="ios-steps">
+    1. Tap the <strong>Share</strong> button (<strong>⎙</strong>) at the bottom of Safari<br>
+    2. Scroll down and tap <strong>"Add to Home Screen"</strong><br>
+    3. Tap <strong>"Add"</strong> — done! 🎉
+  </div>
+  <button class="ios-close" onclick="dismissIosInstall()">Got it</button>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -785,7 +837,7 @@ function submitInvestorForm(e) {
   var ticket  = f.querySelector('[name=ticket]').value
   var message = f.querySelector('[name=message]').value.trim()
 
-  var body = encodeURIComponent(
+  var body=encodeURIComponent(
     'Name: ' + name + '\n' +
     (company ? 'Company: ' + company + '\n' : '') +
     'Email: ' + email + '\n' +
@@ -801,6 +853,52 @@ function submitInvestorForm(e) {
     document.getElementById('inv-form-success').style.display = 'block'
   }, 800)
 }
+</script>
+<script>
+// ── PWA Install Logic ──
+var _pwaPrompt = null
+
+// Android/Chrome: capture the install prompt
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault()
+  _pwaPrompt = e
+  if (!sessionStorage.getItem('pwa-dismissed')) {
+    document.getElementById('pwa-banner').classList.add('show')
+  }
+})
+
+function installPwa() {
+  document.getElementById('pwa-banner').classList.remove('show')
+  if (_pwaPrompt) {
+    _pwaPrompt.prompt()
+    _pwaPrompt.userChoice.then(function() { _pwaPrompt = null })
+  }
+}
+
+function dismissPwaBanner() {
+  document.getElementById('pwa-banner').classList.remove('show')
+  sessionStorage.setItem('pwa-dismissed', '1')
+}
+
+// iOS Safari: show instructions sheet (iOS doesn't fire beforeinstallprompt)
+var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+var isInStandaloneMode = ('standalone' in navigator) && navigator.standalone
+if (isIos && !isInStandaloneMode && !sessionStorage.getItem('ios-dismissed')) {
+  setTimeout(function() {
+    document.getElementById('ios-install').classList.add('show')
+  }, 3000)
+}
+
+function dismissIosInstall() {
+  document.getElementById('ios-install').classList.remove('show')
+  sessionStorage.setItem('ios-dismissed', '1')
+}
+
+// Hide banners once app is installed
+window.addEventListener('appinstalled', function() {
+  document.getElementById('pwa-banner').classList.remove('show')
+  document.getElementById('ios-install').classList.remove('show')
+})
 </script>
 </body>
 </html>
