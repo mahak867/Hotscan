@@ -2207,6 +2207,12 @@ var _sb        = null
 var currentUser = null
 var userProfile = null
 
+// ── Helpers ──
+// Strip any accidental ₹ prefix that AI may include in price range strings (e.g. "₹8000-25000" → "8000-25000")
+function cleanINR(v) { return v ? String(v).replace(/^₹+/, '') : '' }
+// Parse the lower bound of a price range stored in india_collector_inr, safely ignoring ₹ prefix
+function parseINR(v, fallback) { var n = parseFloat(cleanINR(v||String(fallback||0)).split('-')[0]); return isNaN(n) ? (fallback||0) : n }
+
 // ── Hunt data ──
 var HUNT_DATA = {
   mainline:[
