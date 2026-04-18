@@ -1431,7 +1431,7 @@ body{
   <div id="mp-sell" style="display:none">
     <div class="card">
       <div class="card-title">📦 List a Car for Sale</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6">Scan the car first → tap Sell → we auto-fill the details</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6">Scan the car first → tap Sell → we auto-fill the details. Buyers will contact you via WhatsApp.</div>
       <input class="inp" id="sl-name" type="text" placeholder="Car name e.g. Bone Shaker STH 2023">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
         <input class="inp" id="sl-price" type="number" placeholder="Price ₹" style="margin:0">
@@ -1439,9 +1439,23 @@ body{
           <option>Mint on Card</option><option>Near Mint</option><option>Very Good</option><option>Loose</option>
         </select>
       </div>
+      <select class="inp" id="sl-rarity">
+        <option value="Common">Common</option>
+        <option value="Uncommon">Uncommon</option>
+        <option value="Rare">Rare</option>
+        <option value="Premium">Premium</option>
+        <option value="Treasure Hunt">Treasure Hunt</option>
+        <option value="Super Treasure Hunt">Super Treasure Hunt</option>
+        <option value="Vintage">Vintage</option>
+      </select>
       <input class="inp" id="sl-city" type="text" placeholder="Your city">
+      <input class="inp" id="sl-phone" type="tel" placeholder="WhatsApp number (10 digits, no +91)" maxlength="10" inputmode="numeric">
       <textarea class="inp" id="sl-notes" placeholder="Description, colour, any extras..." style="height:65px;resize:none"></textarea>
-      <button class="btn-red" style="width:100%;justify-content:center;padding:13px;border-radius:12px;margin-top:4px" onclick="submitListing()">📤 List Now</button>
+      <button class="btn-red" id="sl-submit-btn" style="width:100%;justify-content:center;padding:13px;border-radius:12px;margin-top:4px" onclick="submitListing()">📤 List Now</button>
+    </div>
+    <div class="card" id="my-listings-card" style="display:none">
+      <div class="card-title">📋 My Active Listings</div>
+      <div id="my-listings-wrap"></div>
     </div>
     <div class="card">
       <div class="card-title">Also List On</div>
@@ -2291,6 +2305,7 @@ function goPage(id){
     if(dock) dock.blur()
   }
   if(id === 'profile') renderProfilePage()
+  if(id === 'marketplace') loadAndRenderListings()
   window.scrollTo({top:0, behavior:'smooth'})
 }
 
@@ -3917,107 +3932,171 @@ function renderPriceHistory(name, rarity, currentPriceStr) {
 }
 
 // ════════════════════════════════════════════════════════
-// MARKETPLACE
+// MARKETPLACE — Supabase-backed peer-to-peer listings
 // ════════════════════════════════════════════════════════
 var _mpFilter = 'all'
 var _mpListings = null
-
-function getMpListings() {
-  if (_mpListings) return _mpListings
-  var stored = localStorage.getItem('hs_listings')
-  if (stored) { _mpListings = JSON.parse(stored); return _mpListings }
-  _mpListings = []
-  localStorage.setItem('hs_listings', JSON.stringify(_mpListings))
-  return _mpListings
-}
 
 function mpMode(tab) {
   ['buy','sell','olx'].forEach(function(t) {
     document.getElementById('mp-tab-'+t).classList.toggle('active', t===tab)
     document.getElementById('mp-'+t).style.display = t===tab ? 'block' : 'none'
   })
-  if (tab === 'buy') renderListings()
+  if (tab === 'buy') loadAndRenderListings()
+  if (tab === 'sell') renderMyListings()
 }
 
 function mpFilter(rarity, el) {
   _mpFilter = rarity
+  _mpListings = null
   document.querySelectorAll('#mp-filter-chips .filter-chip').forEach(function(c){c.classList.remove('active')})
   el.classList.add('active')
+  loadAndRenderListings()
+}
+
+async function loadAndRenderListings() {
+  var wrap = document.getElementById('mp-listings-wrap')
+  if (!wrap) return
+  wrap.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text3);font-size:13px">⏳ Loading listings…</div>'
+  var items = []
+  if (_sb) {
+    try {
+      var query = _sb.from('listings').select('*').eq('is_active', true).order('listed_at', {ascending: false}).limit(60)
+      if (_mpFilter !== 'all') query = query.ilike('rarity', '%'+_mpFilter+'%')
+      var res = await query
+      if (res.data) items = res.data
+    } catch(e) { console.warn('Listings fetch error:', e) }
+  }
+  _mpListings = items
   renderListings()
 }
 
 function renderListings() {
-  var items = getMpListings().slice()
-  if (_mpFilter !== 'all') items = items.filter(function(l){ return (l.rarity||'').toLowerCase().includes(_mpFilter.toLowerCase()) })
-  items.sort(function(a,b){ return new Date(b.listed)-new Date(a.listed) })
   var wrap = document.getElementById('mp-listings-wrap')
   if (!wrap) return
+  var items = (_mpListings || []).slice()
   if (!items.length) {
-    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">Marketplace coming soon</div><div class="empty-s">Peer-to-peer listings launching shortly — use the Sell tab to list yours first</div></div>'
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">No listings yet</div><div class="empty-s">Be the first — tap Sell above to list your Hot Wheels</div></div>'
     return
   }
   wrap.innerHTML = ''
   items.forEach(function(l) {
-    var diff = Math.floor((Date.now()-new Date(l.listed))/60000)
-    var ago = diff<60?diff+'m ago':diff<1440?Math.floor(diff/60)+'h ago':Math.floor(diff/1440)+'d ago'
-    var card = document.createElement('div'); card.className='listing-card'
-    var thumb = document.createElement('div'); thumb.className='listing-thumb'
-    if (l.image) { var img=document.createElement('img');img.src=l.image;img.alt='';thumb.appendChild(img) } else thumb.textContent='🚗'
-    var info = document.createElement('div'); info.style.cssText='flex:1;min-width:0'
-    var nm = document.createElement('div'); nm.className='listing-name'; nm.textContent=l.name
-    var meta = document.createElement('div'); meta.className='listing-meta'; meta.textContent=(l.rarity||'Common')+' · '+l.condition+' · '+l.city+' · '+ago
-    var priceRow = document.createElement('div'); priceRow.style.cssText='display:flex;align-items:center;gap:7px;margin:4px 0'
-    var price = document.createElement('span'); price.className='listing-price'; price.textContent='₹'+l.price.toLocaleString('en-IN')
-    var rar = document.createElement('span'); rar.className='rar '+rcls(l.rarity); rar.style.cssText='font-size:10px;padding:2px 6px'; rar.textContent=l.rarity||'Common'
+    var listed = l.listed_at || l.listed
+    var diff = Math.floor((Date.now() - new Date(listed)) / 60000)
+    var ago = diff < 60 ? diff + 'm ago' : diff < 1440 ? Math.floor(diff/60) + 'h ago' : Math.floor(diff/1440) + 'd ago'
+    var card = document.createElement('div'); card.className = 'listing-card'
+    var thumb = document.createElement('div'); thumb.className = 'listing-thumb'
+    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.textContent = '🚗'
+    var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
+    var nm = document.createElement('div'); nm.className = 'listing-name'; nm.textContent = l.name
+    var meta = document.createElement('div'); meta.className = 'listing-meta'; meta.textContent = (l.rarity||'Common') + ' · ' + (l.condition||'N/A') + ' · ' + l.city + ' · ' + ago
+    var priceRow = document.createElement('div'); priceRow.style.cssText = 'display:flex;align-items:center;gap:7px;margin:4px 0'
+    var price = document.createElement('span'); price.className = 'listing-price'; price.textContent = '₹' + Number(l.price).toLocaleString('en-IN')
+    var rar = document.createElement('span'); rar.className = 'rar ' + rcls(l.rarity); rar.style.cssText = 'font-size:10px;padding:2px 6px'; rar.textContent = l.rarity || 'Common'
     priceRow.appendChild(price); priceRow.appendChild(rar)
-    var seller = document.createElement('div'); seller.style.cssText='font-size:10px;color:var(--text3)'; seller.textContent='👤 '+l.seller
-    var acts = document.createElement('div'); acts.className='listing-acts'
-    var waBtn = document.createElement('button'); waBtn.className='l-btn l-btn-wa'; waBtn.textContent='💬 WhatsApp Seller'
-    waBtn.onclick = (function(listing){ return function(){
-      var msg = ['Hi! I saw your Hot Wheels listing on HotScan India.','Car: '+listing.name,'Price: Rs.'+listing.price,'Is it still available?'].join('\n')
-      ol('https://api.whatsapp.com/send?text='+encodeURIComponent(msg))
+    var seller = document.createElement('div'); seller.style.cssText = 'font-size:10px;color:var(--text3)'; seller.textContent = '👤 ' + (l.seller_name || 'Collector')
+    info.appendChild(nm); info.appendChild(meta); info.appendChild(priceRow); info.appendChild(seller)
+    if (l.notes) { var noteEl = document.createElement('div'); noteEl.style.cssText = 'font-size:11px;color:var(--text2);margin-top:3px;white-space:pre-wrap'; noteEl.textContent = l.notes; info.appendChild(noteEl) }
+    var acts = document.createElement('div'); acts.className = 'listing-acts'
+    var waBtn = document.createElement('button'); waBtn.className = 'l-btn l-btn-wa'; waBtn.textContent = '💬 Contact'
+    waBtn.onclick = (function(listing) { return function() {
+      if (!listing.seller_phone) { showToast('Seller has not shared a contact number', 'error'); return }
+      var msg = 'Hi! I saw your Hot Wheels listing on HotScan India.\nCar: ' + listing.name + '\nAsking price: ₹' + listing.price + '\nIs it still available?'
+      window.open('https://api.whatsapp.com/send?phone=91' + listing.seller_phone + '&text=' + encodeURIComponent(msg), '_blank')
     }})(l)
-    var shBtn = document.createElement('button'); shBtn.className='l-btn l-btn-share'; shBtn.textContent='📤 Share'
-    shBtn.onclick = (function(listing){ return function(){
-      var msg = ['For Sale: '+listing.name,'Price: Rs.'+listing.price,'City: '+listing.city,'','Listed on HotScan India - hotscan.in'].join('\n')
-      if(navigator.share){navigator.share({title:'Hot Wheels for Sale',text:msg})}
-      else if(navigator.clipboard){navigator.clipboard.writeText(msg).then(function(){showToast('Copied to clipboard!', 'success')})}
+    var shBtn = document.createElement('button'); shBtn.className = 'l-btn l-btn-share'; shBtn.textContent = '📤 Share'
+    shBtn.onclick = (function(listing) { return function() {
+      var msg = ['For Sale: ' + listing.name, 'Price: ₹' + listing.price, 'City: ' + listing.city, '', 'Listed on HotScan India — hotscan.in'].join('\n')
+      if (navigator.share) { navigator.share({title: 'Hot Wheels for Sale', text: msg}) }
+      else if (navigator.clipboard) { navigator.clipboard.writeText(msg).then(function(){ showToast('Copied!', 'success') }) }
     }})(l)
     acts.appendChild(waBtn); acts.appendChild(shBtn)
-    info.appendChild(nm); info.appendChild(meta); info.appendChild(priceRow); info.appendChild(seller); info.appendChild(acts)
+    info.appendChild(acts)
     card.appendChild(thumb); card.appendChild(info)
     wrap.appendChild(card)
   })
 }
 
-function submitListing() {
-  var name = document.getElementById('sl-name').value.trim()
+async function renderMyListings() {
+  var card = document.getElementById('my-listings-card')
+  var wrap = document.getElementById('my-listings-wrap')
+  if (!card || !wrap) return
+  if (!currentUser || !_sb) { card.style.display = 'none'; return }
+  try {
+    var res = await _sb.from('listings').select('*').eq('seller_id', currentUser.id).eq('is_active', true).order('listed_at', {ascending: false})
+    var items = res.data || []
+    if (!items.length) { card.style.display = 'none'; return }
+    card.style.display = 'block'
+    wrap.innerHTML = ''
+    items.forEach(function(l) {
+      var row = document.createElement('div')
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)'
+      var nm = document.createElement('div'); nm.style.cssText = 'flex:1;font-size:13px;font-weight:600'; nm.textContent = l.name
+      var px = document.createElement('div'); px.style.cssText = 'font-size:12px;color:var(--text2);flex-shrink:0'; px.textContent = '₹' + Number(l.price).toLocaleString('en-IN')
+      var del = document.createElement('button'); del.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;flex-shrink:0'; del.textContent = '🗑'; del.title = 'Remove listing'
+      del.onclick = (function(id) { return function() { deleteListing(id) } })(l.id)
+      row.appendChild(nm); row.appendChild(px); row.appendChild(del)
+      wrap.appendChild(row)
+    })
+  } catch(e) { card.style.display = 'none' }
+}
+
+async function deleteListing(id) {
+  if (!currentUser || !_sb) return
+  try {
+    await _sb.from('listings').update({is_active: false}).eq('id', id).eq('seller_id', currentUser.id)
+    showToast('Listing removed', 'success')
+    renderMyListings()
+    _mpListings = null
+  } catch(e) { showToast('Could not remove listing', 'error') }
+}
+
+async function submitListing() {
+  var name  = document.getElementById('sl-name').value.trim()
   var price = parseFloat(document.getElementById('sl-price').value)
-  var cond = document.getElementById('sl-cond').value
-  var city = document.getElementById('sl-city').value.trim()
-  if (!name || !price || !city) { showToast('Please fill in car name, price and city', 'error'); return }
-  var listing = {
-    id: Date.now(), name:name, price:price, condition:cond, city:city,
-    notes: document.getElementById('sl-notes').value.trim(),
-    rarity: lastResult ? lastResult.rarity : 'Common',
-    image: imgThumb||null,
-    seller: currentUser ? (currentUser.name||currentUser.email.split('@')[0]) : 'Anonymous',
-    listed: new Date().toISOString()
-  }
-  var all = getMpListings()
-  all.unshift(listing)
-  _mpListings = all
-  localStorage.setItem('hs_listings', JSON.stringify(all))
-  ;['sl-name','sl-price','sl-city','sl-notes'].forEach(function(id){document.getElementById(id).value=''})
-  showToast('Listed! Other collectors can now contact you.', 'success')
-  mpMode('buy')
+  var cond  = document.getElementById('sl-cond').value
+  var city  = document.getElementById('sl-city').value.trim()
+  var phone = document.getElementById('sl-phone').value.trim().replace(/\D/g, '')
+  var rarity = document.getElementById('sl-rarity').value
+  if (!name || !price || !city)      { showToast('Please fill in car name, price and city', 'error'); return }
+  if (!phone || phone.length !== 10) { showToast('Enter a valid 10-digit WhatsApp number', 'error'); return }
+  if (!currentUser)                  { showToast('Sign in to list a car for sale', 'error'); openAuth(); return }
+  if (!_sb)                          { showToast('Connection error — try again', 'error'); return }
+  var btn = document.getElementById('sl-submit-btn')
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Listing…' }
+  try {
+    await _sb.from('listings').insert({
+      seller_id:    currentUser.id,
+      seller_name:  (userProfile && userProfile.display_name) || currentUser.name || currentUser.email.split('@')[0],
+      seller_phone: phone,
+      name:         name,
+      rarity:       rarity,
+      price:        price,
+      condition:    cond,
+      city:         city,
+      notes:        document.getElementById('sl-notes').value.trim() || null,
+      image_thumb:  imgThumb ? imgThumb.substring(0, 4000) : null,
+      is_active:    true
+    })
+    ;['sl-name','sl-price','sl-city','sl-notes','sl-phone'].forEach(function(id){ document.getElementById(id).value = '' })
+    showToast('Listed! Buyers can now contact you on WhatsApp 🎉', 'success')
+    _mpListings = null
+    mpMode('buy')
+  } catch(e) { console.error(e); showToast('Could not save listing — try again', 'error') }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '📤 List Now' } }
 }
 
 function quickSell() {
   goPage('marketplace')
   mpMode('sell')
   if (lastResult && document.getElementById('sl-name')) {
-    document.getElementById('sl-name').value = lastResult.name||''
+    document.getElementById('sl-name').value = lastResult.name || ''
+    var rarEl = document.getElementById('sl-rarity')
+    if (rarEl && lastResult.rarity) {
+      for (var i = 0; i < rarEl.options.length; i++) {
+        if (rarEl.options[i].value === lastResult.rarity) { rarEl.selectedIndex = i; break }
+      }
+    }
   }
 }
 
