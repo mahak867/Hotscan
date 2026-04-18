@@ -2451,10 +2451,10 @@ function compressThumb(dataUrl) {
 }
 
 // ── File handling ──
-function openCam() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fc'); f.value=''; f.click() }
-function openGal() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fg'); f.value=''; f.click() }
-function openFakeCam() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fc-fake'); f.value=''; f.click() }
-function openFakeGal() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fg-fake'); f.value=''; f.click() }
+function openCam() { var f=document.getElementById('fc'); f.value=''; f.click() }
+function openGal() { var f=document.getElementById('fg'); f.value=''; f.click() }
+function openFakeCam() { var f=document.getElementById('fc-fake'); f.value=''; f.click() }
+function openFakeGal() { var f=document.getElementById('fg-fake'); f.value=''; f.click() }
 
 async function handleFile(file, mode) {
   if (!file) return
@@ -2582,12 +2582,17 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
   if (!res.ok) {
     var bodyText = await res.text().catch(function(){return'{}'})
     var errBody = {}; try { errBody = JSON.parse(bodyText) } catch(ex) {}
+    var serverMsg = (errBody.error && typeof errBody.error === 'string') ? errBody.error
+                  : (errBody.error && errBody.error.message) ? errBody.error.message : null
     if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
     if (res.status === 429) {
-      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
-      throw new Error('Rate limit — wait ' + wait + 's and try again')
+      // Use proxy's message if it already contains instructions, otherwise build a generic one
+      if (serverMsg && serverMsg.length > 60) throw new Error(serverMsg)
+      var wait = parseInt(res.headers.get('retry-after') || '30', 10)
+      throw new Error('Too many scans right now — wait ' + wait + 's, add your own free key at console.groq.com, or upgrade to Pro for unlimited access.')
     }
-    throw new Error((errBody.error && errBody.error.message) || 'Vision API error ' + res.status)
+    if (res.status === 503) throw new Error(serverMsg || 'AI service temporarily unavailable. Try again in a moment.')
+    throw new Error(serverMsg || 'Vision API error ' + res.status)
   }
   var data = await res.json()
   var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
@@ -2612,10 +2617,15 @@ async function groqText(prompt, model) {
     })
   })
   if (!res.ok) {
+    var rtBody = await res.text().catch(function(){return'{}'})
+    var rtErr = {}; try { rtErr = JSON.parse(rtBody) } catch(ex) {}
+    var rtMsg = (rtErr.error && typeof rtErr.error === 'string') ? rtErr.error
+              : (rtErr.error && rtErr.error.message) ? rtErr.error.message : null
     if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
     if (res.status === 429) {
-      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
-      throw new Error('Rate limit — wait ' + wait + 's and try again')
+      if (rtMsg && rtMsg.length > 60) throw new Error(rtMsg)
+      var wait = parseInt(res.headers.get('retry-after') || '30', 10)
+      throw new Error('Too many scans right now — wait ' + wait + 's, add your own free key at console.groq.com, or upgrade to Pro for unlimited access.')
     }
     // On model-unavailable errors try falling back: CODEX → HAIKU, HAIKU → error
     if (res.status >= 400 && chosenModel !== HAIKU_MODEL) {
@@ -2634,7 +2644,7 @@ async function groqText(prompt, model) {
       if (!fc) throw new Error('Empty fallback response from AI. Try again.')
       return parseJSON(fc)
     }
-    throw new Error('AI text API error ' + res.status)
+    throw new Error(rtMsg || 'AI text API error ' + res.status)
   }
   var data = await res.json()
   var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
@@ -2776,7 +2786,7 @@ async function searchPrices(carName, rarity, castingYear) {
 
 // ── Analyze photo ──
 async function analyzePhoto() {
-  if (!img64 || !KEY) return
+  if (!img64) return
   if (!checkLimit()) return
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Scanning...'
@@ -2840,8 +2850,14 @@ async function analyzePhoto() {
     }
   } catch(err) {
     stopTimer(); setStep(1, 'err')
-    document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message) + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
-    document.getElementById('err-box').style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
+    var isRateLimit = err.message && (err.message.includes('rate-limit') || err.message.includes('Rate limit') || err.message.includes('Too many') || err.message.includes('rate limit'))
+    if (isRateLimit) {
+      document.getElementById('err-box').innerHTML = '⚡ <strong>Shared scan limit reached.</strong><br><span style="font-size:12px;color:#cc9900">Add your own free key at <a href="https://console.groq.com" target="_blank" style="color:#ffd60a">console.groq.com</a> for unlimited personal access, or upgrade to Pro.</span><br><button onclick="startPayment()" style="margin-top:8px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;border:none;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer">⭐ Get Pro — ₹99/month</button>'
+      document.getElementById('err-box').style.cssText = 'display:block;background:#1a1000;border:1px solid rgba(255,214,10,.4);color:var(--gold);border-radius:12px;padding:14px;margin-bottom:11px;font-size:13px;line-height:1.7'
+    } else {
+      document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message) + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
+      document.getElementById('err-box').style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
+    }
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify & Get Live Prices'
     document.getElementById('pipeline').style.display = 'none'
@@ -2850,7 +2866,6 @@ async function analyzePhoto() {
 
 // ── Deal checker ──
 async function analyzeDeal() {
-  if (!KEY) return
   var asking = parseFloat(document.getElementById('deal-price').value)
   var carName = document.getElementById('deal-car-name').value.trim() || (lastResult && lastResult.name) || ''
   if (!asking) { alert("Enter the seller's asking price"); return }
@@ -2900,7 +2915,7 @@ async function analyzeDeal() {
 
 // ── Fake detector ──
 async function analyzeFake() {
-  if (!fakeImg64 || !KEY) return
+  if (!fakeImg64) return
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Checking...'
   document.getElementById('err-box').style.display = 'none'
@@ -2960,7 +2975,6 @@ async function analyzeFake() {
 async function scanBarcode() {
   var code = document.getElementById('barcode-input').value.trim()
   if (!code) { alert('Enter a barcode, collector number, or car name'); return }
-  if (!KEY) { showKeySetup(); return }
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('result').style.display = 'none'
   startTimer('Looking up...')
@@ -3358,7 +3372,6 @@ function submitEvent() {
 var multiImages = []  // array of {img64, thumb, file}
 
 function openMulti() {
-  if (!KEY) { showKeySetup(); return }
   var f = document.getElementById('fg-multi'); f.value = ''; f.click()
 }
 
@@ -3478,7 +3491,7 @@ async function identifyMultipleCars(imageData) {
 }
 
 async function analyzeMultiPhoto() {
-  if (!multiImages.length || !KEY) return
+  if (!multiImages.length) return
   if (!checkLimit()) return
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Identifying all cars...'
@@ -4292,7 +4305,6 @@ function quickSell() {
 async function checkOLX() {
   var inp = document.getElementById('olx-inp').value.trim()
   if (!inp) { alert('Paste a listing title'); return }
-  if (!KEY) { showKeySetup(); return }
   var prompt = [
     'Indian Hot Wheels market expert. Analyse this OLX listing: "'+inp+'".',
     'Return ONLY valid JSON:',
