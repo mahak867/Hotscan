@@ -2466,6 +2466,13 @@ function runAnalyze() {
 }
 
 // ── Groq API helper ──
+// HAIKU  = fast model  → quick lookups: deal check, OLX analysis
+// CODEX  = smart model → deep analysis: price search, barcode/name lookup
+// VISION = vision model → photo identification (all groqVision calls)
+var HAIKU_MODEL  = "llama-3.1-8b-instant"
+var CODEX_MODEL  = "moonshotai/kimi-k2-instruct"
+var VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+
 async function groqVision(imageData, systemPrompt, userPrompt) {
   var b64 = imageData.split(',')[1]
   var mime = imageData.split(';')[0].split(':')[1]
@@ -2473,7 +2480,7 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
     method: 'POST',
     headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: VISION_MODEL,
       messages: [
         {role:'system', content:systemPrompt},
         {role:'user', content:[
@@ -2481,45 +2488,96 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
           {type:'text', text:userPrompt}
         ]}
       ],
-      temperature: 0.05, max_tokens: 800
+      temperature: 0.05, max_tokens: 900
     })
   })
   if (!res.ok) {
-    var e = await res.json().catch(function(){return{}})
+    var bodyText = await res.text().catch(function(){return'{}'})
+    var errBody = {}; try { errBody = JSON.parse(bodyText) } catch(ex) {}
     if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
-    if (res.status === 429) throw new Error('Rate limit — wait 30 seconds')
-    throw new Error((e.error && e.error.message) || 'Vision API error ' + res.status)
+    if (res.status === 429) {
+      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
+      throw new Error('Rate limit — wait ' + wait + 's and try again')
+    }
+    throw new Error((errBody.error && errBody.error.message) || 'Vision API error ' + res.status)
   }
   var data = await res.json()
-  return parseJSON(data.choices[0].message.content)
+  var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+  if (!content) throw new Error('Empty response from AI vision model. Try again.')
+  return parseJSON(content)
 }
 
 async function groqText(prompt, model) {
+  var chosenModel = model || CODEX_MODEL
   var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: model || 'moonshotai/kimi-k2-instruct',
+      model: chosenModel,
       messages: [{role:'user', content:prompt}],
-      temperature: 0.1, max_tokens: 500
+      temperature: 0.1, max_tokens: 600
     })
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
+    if (res.status === 429) {
+      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
+      throw new Error('Rate limit — wait ' + wait + 's and try again')
+    }
+    // On model-unavailable errors try falling back: CODEX → HAIKU, HAIKU → error
+    if (res.status >= 400 && chosenModel !== HAIKU_MODEL) {
+      var fb = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model: HAIKU_MODEL,
+          messages: [{role:'user', content:prompt}],
+          temperature: 0.1, max_tokens: 600
+        })
+      })
+      if (!fb.ok) throw new Error('AI text API error ' + fb.status)
+      var fd = await fb.json()
+      var fc = fd.choices && fd.choices[0] && fd.choices[0].message && fd.choices[0].message.content
+      if (!fc) throw new Error('Empty fallback response from AI. Try again.')
+      return parseJSON(fc)
+    }
+    throw new Error('AI text API error ' + res.status)
+  }
   var data = await res.json()
-  return parseJSON(data.choices[0].message.content)
+  var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+  if (!content) throw new Error('Empty response from AI. Try again.')
+  return parseJSON(content)
 }
 
 function parseJSON(raw) {
+  if (!raw) throw new Error('No response from AI. Try again.')
   raw = raw.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-  var s = raw.indexOf('{'), e = raw.lastIndexOf('}') + 1
-  if (s === -1) throw new Error('Could not parse AI response. Try again.')
-  return JSON.parse(raw.substring(s, e))
+  var s = raw.indexOf('{')
+  var e = raw.lastIndexOf('}')
+  if (s === -1 || e === -1) throw new Error('AI returned unexpected format. Try again.')
+  if (e < s) throw new Error('AI returned unexpected format. Try again.')
+  try {
+    return JSON.parse(raw.substring(s, e + 1))
+  } catch(ex) {
+    throw new Error('Could not parse AI response. Try again.')
+  }
+}
+
+// ── Safe HTML escape for untrusted AI strings placed in innerHTML ──
+function escHtml(str) {
+  if (str === null || str === undefined) return ''
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;')
 }
 
 // ── Identify car ──
 async function identifyCar(imageData) {
   var sys = [
-    'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2025.',
+    'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2026.',
     '',
     'IDENTIFICATION RULES — follow precisely:',
     '1. CASTING: Identify the exact vehicle model (e.g. "69 Camaro" not just "Camaro"). Note year of car, make, model.',
@@ -2620,7 +2678,7 @@ async function searchPrices(carName, rarity, castingYear) {
     '"sell_platforms":["OLX","Instagram collector groups","Maido"],',
     '"buy_tip":"best way to find this car in India at good price"}'
   ].join('\n')
-  try { return await groqText(prompt) } catch(e) { return null }
+  try { return await groqText(prompt, CODEX_MODEL) } catch(e) { return null }
 }
 
 // ── Analyze photo ──
@@ -2689,7 +2747,7 @@ async function analyzePhoto() {
     }
   } catch(err) {
     stopTimer(); setStep(1, 'err')
-    document.getElementById('err-box').innerHTML = '⚠️ ' + err.message + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
+    document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message) + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
     document.getElementById('err-box').style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify & Get Live Prices'
@@ -2711,7 +2769,7 @@ async function analyzeDeal() {
   startTimer('Checking deal...')
   var prompt = 'India Hot Wheels deal expert. Is ₹' + asking + ' a good price for "' + carName + '"?\nReturn ONLY valid JSON:\n{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"specific why","suggestion":"exact counter-offer or action","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X"}'
   try {
-    var d = await groqText(prompt)
+    var d = await groqText(prompt, HAIKU_MODEL)
     stopTimer()
     var cfg = {
       'Steal':       {icon:'🤑', cls:'vd-steal'},
@@ -2821,7 +2879,7 @@ async function scanBarcode() {
     prompt = 'Hot Wheels database search: "' + code + '". Find the best matching car, prioritize the most valuable/collectible version. Return ONLY valid JSON:\n{"identified":true,"confidence":88,"name":"exact name","series":"series year","casting_year":"year","color":"most iconic color","tampo":"tampo","wheel_type":"best version wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"why collectors want this","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"specific investment case","fun_fact":"why notable","us_retail_usd":"1.49","us_collector_usd":"5-50","india_retail_inr":"150-500","india_collector_inr":"300-5000","price_trend":"Rising|Stable|Falling","price_trend_reason":"trend reason","india_insight":"Indian collector demand","also_look_for":"related valuable variants"}'
   }
   try {
-    var d = await groqText(prompt, 'moonshotai/kimi-k2-instruct')
+    var d = await groqText(prompt, CODEX_MODEL)
     stopTimer()
     if (!d || !d.identified) throw new Error('Not found. Try the full car name e.g. "Hot Wheels Bone Shaker"')
     lastResult = d
@@ -2858,8 +2916,9 @@ function showResult(d) {
   document.getElementById('p4').textContent = d.us_collector_usd ? '$' + d.us_collector_usd : '—'
   document.getElementById('live-upd').textContent = 'Updated just now'
   var trend = d.price_trend || 'Stable'
+  if (trend !== 'Rising' && trend !== 'Falling' && trend !== 'Stable') trend = 'Stable'
   document.getElementById('trend-ic').textContent = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
-  document.getElementById('trend-txt').innerHTML = '<span class="' + (trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst') + '">' + trend + '</span>' + (d.price_trend_reason ? ' — ' + d.price_trend_reason : '')
+  document.getElementById('trend-txt').innerHTML = '<span class="' + (trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst') + '">' + escHtml(trend) + '</span>' + (d.price_trend_reason ? ' — ' + escHtml(d.price_trend_reason) : '')
   // Investment
   var ib = document.getElementById('r-inv')
   ib.textContent = (d.investment || 'Medium') + ' Potential'; ib.className = 'inv-badge'
@@ -3292,7 +3351,7 @@ async function identifyMultipleCars(imageData) {
     method: 'POST',
     headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: VISION_MODEL,
       messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
       temperature: 0.05, max_tokens: 2000
     })
@@ -3348,7 +3407,7 @@ async function analyzeMultiPhoto() {
     showMultiResults(allCars)
   } catch(err) {
     stopTimer(); setStep(1, 'err')
-    document.getElementById('err-box').innerHTML = '⚠️ ' + err.message
+    document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message)
     document.getElementById('err-box').style.display = 'block'
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify All Cars (' + multiImages.length + ' photos)'
@@ -3977,7 +4036,7 @@ async function checkOLX() {
     '{"car_name":"name","rarity":"rarity","fair_price_inr":"300-600","listing_price_inr":400,"verdict":"Steal|Fair|Overpriced","verdict_reason":"specific why","buyer_advice":"what to do","red_flags":"concerns or empty string"}'
   ].join(' ')
   try {
-    var d = await groqText(prompt, 'moonshotai/kimi-k2-instruct')
+    var d = await groqText(prompt, HAIKU_MODEL)
     if (!d) throw new Error('Could not analyse')
     document.getElementById('olx-fair-px').textContent = 'Fair: Rs.'+d.fair_price_inr
     document.getElementById('olx-verdict-txt').textContent = (d.verdict||'') + ' — ' + (d.verdict_reason||'')
