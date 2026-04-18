@@ -3613,18 +3613,6 @@ async function initAuth(){
       fullCloudSync().then(function(){renderCol()}).catch(function(){})
       updateHeaderUI(); renderProfilePage(); updateScanCounter()
     }
-    if(!currentUser){
-      try{
-        var rr=await _sb.auth.refreshSession()
-        if(rr.data&&rr.data.session&&rr.data.session.user){
-          var u=rr.data.session.user
-          currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
-          await loadProfile()
-          fullCloudSync().then(function(){renderCol()}).catch(function(){})
-          updateHeaderUI(); renderProfilePage(); updateScanCounter()
-        }
-      }catch(e){}
-    }
   }catch(e){ console.warn('initAuth:',e) }
   updateHeaderUI()
 }
@@ -3725,6 +3713,7 @@ async function signOutUser(){
   userProfile = null
   localStorage.removeItem('hs_pro')
   localStorage.removeItem('hs_profile_cache')
+  try { localStorage.removeItem('hs_auth_v2') } catch(e) {}
   closeAccountModal()
   closeProModal()
   try{ if(_sb) await _sb.auth.signOut() }catch(e){}
