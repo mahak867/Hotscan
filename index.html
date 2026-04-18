@@ -1565,7 +1565,7 @@ body{
       <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">Save your collection to the cloud, sync across devices, and unlock Pro features</div>
       <button class="btn-red" style="width:100%;justify-content:center;padding:14px;border-radius:12px;font-size:15px;margin-bottom:10px" onclick="openAuth()">Sign In / Create Account</button>
     </div>
-    <div class="card"><div class="card-title">Why create an account?</div><div style="font-size:13px;color:var(--text2);line-height:2.2">☁️ Cloud sync — access collection on any device<br>🔒 Secure — powered by Clerk auth<br>⭐ Pro — unlimited scans for ₹99/month<br>👑 Developer — lifetime Pro if you're Mahak</div></div>
+    <div class="card"><div class="card-title">Why create an account?</div><div style="font-size:13px;color:var(--text2);line-height:2.2">☁️ Cloud sync — access collection on any device<br>🔒 Secure — backed by Supabase<br>⭐ Pro — unlimited scans for ₹99/month<br>🤝 Community — connect with collectors across India</div></div>
   </div>
   <!-- Logged in state -->
   <div id="profile-user" style="display:none">
@@ -2089,8 +2089,8 @@ var SUPA_URL  = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
 var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
 var RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
 var DEV_EMAIL = 'mahakfahad07@gmail.com'
-var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'  // update with real link
-var WA_SUPPORT   = 'https://api.whatsapp.com/send?phone=919999999999&text=Hi%20HotScan%20Support'  // update with real number
+var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'
+var WA_SUPPORT   = null  // set to 'https://api.whatsapp.com/send?phone=91XXXXXXXXXX...' when ready
 var FREE_SCANS = 5
 
 // ── OAuth callback handler — MUST be first ──
@@ -3024,14 +3024,24 @@ function addToCol() {
   var item = {
     id: Date.now(),
     name: lastResult.name, series: lastResult.series,
+    casting_year: lastResult.casting_year,
     rarity: lastResult.rarity, color: lastResult.color,
+    tampo: lastResult.tampo, wheel_type: lastResult.wheel_type,
+    india_retail_inr: lastResult.india_retail_inr,
     india_collector_inr: lastResult.india_collector_inr,
+    us_retail_usd: lastResult.us_retail_usd,
+    us_collector_usd: lastResult.us_collector_usd,
     investment: lastResult.investment,
+    investment_reason: lastResult.investment_reason,
+    fun_fact: lastResult.fun_fact,
+    india_insight: lastResult.india_insight,
     image: imgThumb, added: new Date().toISOString()
   }
   collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(collection))
-  if (_sb && currentUser) saveToCloud(item)
+  if (_sb && currentUser) saveToCloud(item).then(function(cloudId) {
+    if (cloudId) { item.id = cloudId; localStorage.setItem('hs_col', JSON.stringify(collection)) }
+  })
   renderCol(); goPage('collection')
 }
 function delFromCol(id) {
@@ -3553,7 +3563,9 @@ function addCarToCollection(car, thumb) {
   }
   collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(collection))
-  if (_sb && currentUser) saveToCloud(item)
+  if (_sb && currentUser) saveToCloud(item).then(function(cloudId) {
+    if (cloudId) { item.id = cloudId; localStorage.setItem('hs_col', JSON.stringify(collection)) }
+  })
   renderCol()
   return item
 }
@@ -3832,9 +3844,9 @@ async function syncCollectionFromCloud() {
   } catch(e) { console.warn('Sync error:', e) }
 }
 async function saveToCloud(item) {
-  if (!currentUser || !_sb) return
+  if (!currentUser || !_sb) return null
   try {
-    await _sb.from('collection').insert({
+    var res = await _sb.from('collection').insert({
       user_id: currentUser.id,
       name: item.name,
       series: item.series,
@@ -3853,8 +3865,10 @@ async function saveToCloud(item) {
       india_insight: item.india_insight,
       image_thumb: item.image ? item.image.substring(0, 4000) : null,
       added_at: item.added
-    })
+    }).select('id').single()
+    if (res.data && res.data.id) return res.data.id
   } catch(e) { console.warn('Cloud save error:', e) }
+  return null
 }
 async function deleteFromCloud(id) {
   if (!currentUser || !_sb) return
@@ -3912,14 +3926,7 @@ function getMpListings() {
   if (_mpListings) return _mpListings
   var stored = localStorage.getItem('hs_listings')
   if (stored) { _mpListings = JSON.parse(stored); return _mpListings }
-  _mpListings = [
-    {id:1,name:"Camaro Z28 Super Treasure Hunt",rarity:"Super Treasure Hunt",price:9500,condition:"Mint on Card",city:"Mumbai",seller:"RajCollects",image:null,listed:new Date(Date.now()-86400000).toISOString()},
-    {id:2,name:"Bone Shaker Treasure Hunt 2023",rarity:"Treasure Hunt",price:2400,condition:"Near Mint",city:"Delhi",seller:"HWDelhi",image:null,listed:new Date(Date.now()-172800000).toISOString()},
-    {id:3,name:"Porsche 934.5 STH Real Riders",rarity:"Super Treasure Hunt",price:12000,condition:"Mint on Card",city:"Bangalore",seller:"PorscheCollector",image:null,listed:new Date().toISOString()},
-    {id:4,name:"Nissan Skyline R34 GT-R Blue",rarity:"Rare",price:850,condition:"Near Mint",city:"Chennai",seller:"JDMLover",image:null,listed:new Date(Date.now()-43200000).toISOString()},
-    {id:5,name:"Redline 69 Camaro Original 1969",rarity:"Vintage",price:16000,condition:"Very Good",city:"Hyderabad",seller:"VintageHunter",image:null,listed:new Date(Date.now()-259200000).toISOString()},
-    {id:6,name:"Toyota Supra MK4 Car Culture",rarity:"Premium",price:700,condition:"Mint on Card",city:"Pune",seller:"JDMFan_Pune",image:null,listed:new Date().toISOString()},
-  ]
+  _mpListings = []
   localStorage.setItem('hs_listings', JSON.stringify(_mpListings))
   return _mpListings
 }
@@ -3946,7 +3953,7 @@ function renderListings() {
   var wrap = document.getElementById('mp-listings-wrap')
   if (!wrap) return
   if (!items.length) {
-    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">No listings</div><div class="empty-s">Be first to sell here</div></div>'
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">Marketplace coming soon</div><div class="empty-s">Peer-to-peer listings launching shortly — use the Sell tab to list yours first</div></div>'
     return
   }
   wrap.innerHTML = ''
@@ -4151,8 +4158,9 @@ function shareResultToGroup(){
 }
 
 function whatsappSupport(){
+  if (!WA_SUPPORT) { showToast('Support chat coming soon — email hotscan@gmail.com for help', 'info'); return }
   var msg = 'Hi! I need help with HotScan India app.'
-  window.open('https://api.whatsapp.com/send?phone=919999999999&text='+encodeURIComponent(msg),'_blank')
+  window.open(WA_SUPPORT+'&text='+encodeURIComponent(msg),'_blank')
 }
 </script>
 </body>
