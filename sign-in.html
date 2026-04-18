@@ -300,8 +300,8 @@ html,body{height:100%;font-family:var(--sans);background:var(--paper);color:var(
         <div class="divider"><span>or</span></div>
 
         <div class="form-field">
-          <label class="form-label">Email address</label>
-          <input class="form-input" type="email" id="si-email" placeholder="you@example.com" autocomplete="email">
+          <label class="form-label">Email or Username</label>
+          <input class="form-input" type="text" id="si-email" placeholder="you@example.com or HWCollector_Mumbai" autocomplete="username">
         </div>
         <div class="form-field">
           <div class="form-row-label">
@@ -451,39 +451,45 @@ function setLoading(prefix, loading) {
 
 // ── SIGN IN ──
 async function doSignIn() {
-  const email = document.getElementById('si-email').value.trim()
+  const rawInput = document.getElementById('si-email').value.trim()
   const pw = document.getElementById('si-pass').value
-  if (!email || !pw) { showMsg('Please enter your email and password'); return }
-  
+  if (!rawInput || !pw) { showMsg('Please enter your email (or username) and password'); return }
+
   setLoading('si', true)
   clearMsg()
-  
+
   try {
-    // Try Clerk first
-    if (window.Clerk && window.Clerk.client) {
-      const res = await window.Clerk.client.signIn.create({ identifier: email, password: pw })
-      if (res.status === 'complete') {
-        await window.Clerk.setActive({ session: res.createdSessionId })
-        window.location.href = AFTER_LOGIN
+    // Resolve username → email if no '@' present
+    let email = rawInput
+    if (!rawInput.includes('@') && sb) {
+      const { data: profile, error: lookupErr } = await sb
+        .from('profiles')
+        .select('email')
+        .eq('username', rawInput)
+        .single()
+      if (lookupErr || !profile || !profile.email) {
+        setLoading('si', false)
+        showMsg('No account found for that username. Try your email instead.')
         return
       }
+      email = profile.email
     }
-    
-    // Fallback: Supabase
+
+    // Supabase sign-in
     if (sb) {
       const { data, error } = await sb.auth.signInWithPassword({ email, password: pw })
       if (error) throw new Error(error.message)
       window.location.href = AFTER_LOGIN
       return
     }
-    
+
     showMsg('Auth not available. Try Google sign in.')
     setLoading('si', false)
   } catch(err) {
     setLoading('si', false)
-    const m = (err.errors && err.errors[0] && err.errors[0].longMessage) || err.message || ''
-    if (m.toLowerCase().includes('password') || m.toLowerCase().includes('identifier') || m.toLowerCase().includes('invalid'))
-      showMsg('Wrong email or password. Try again.')
+    const m = err.message || ''
+    if (m.toLowerCase().includes('password') || m.toLowerCase().includes('identifier') || m.toLowerCase().includes('invalid') || m.toLowerCase().includes('credentials'))
+      showMsg('Wrong email/username or password. Try again.')
     else if (m.toLowerCase().includes('verif') || m.toLowerCase().includes('confirm'))
       showMsg('Please verify your email first — check your inbox.')
     else
@@ -493,42 +499,56 @@ async function doSignIn() {
 
 // ── SIGN UP ──
 async function doSignUp() {
+  const username = document.getElementById('su-username').value.trim()
   const email = document.getElementById('su-email').value.trim()
   const pw = document.getElementById('su-pass').value
   if (!email) { showMsg('Please enter your email address'); return }
   if (pw.length < 8) { showMsg('Password must be at least 8 characters'); return }
-  
+  if (username && !/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+    showMsg('Username must be 3–30 characters: letters, numbers, underscores only')
+    return
+  }
+
   setLoading('su', true)
   clearMsg()
-  
+
   try {
-    // Try Clerk first
-    if (window.Clerk && window.Clerk.client) {
-      const res = await window.Clerk.client.signUp.create({ emailAddress: email, password: pw })
-      if (res.status === 'complete') {
-        await window.Clerk.setActive({ session: res.createdSessionId })
-        window.location.href = AFTER_LOGIN
-        return
-      } else {
-        // Email verification needed
-        await res.prepareEmailAddressVerification({ strategy: 'email_code' })
-        showMsg('Account created! Check your email for a verification link, then sign in.', true)
+    // Check username uniqueness before creating account
+    if (username && sb) {
+      const { data: existing } = await sb
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .single()
+      if (existing) {
         setLoading('su', false)
-        setTimeout(function() { switchTab('signin') }, 3000)
+        showMsg('That username is already taken. Please choose another.')
         return
       }
     }
-    
-    // Fallback: Supabase
+
+    // Supabase sign-up
     if (sb) {
+      const displayName = username || email.split('@')[0]
       const { data, error } = await sb.auth.signUp({
         email, password: pw,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: username || email.split('@')[0], username: username || null }
+          data: { full_name: displayName, username: username || null }
         }
       })
       if (error) throw new Error(error.message)
+
+      // Save username and display_name to profiles table immediately
+      if (data && data.user && username) {
+        await sb.from('profiles').upsert({
+          id: data.user.id,
+          email: email,
+          display_name: displayName,
+          username: username
+        }, { onConflict: 'id' })
+      }
+
       if (!data.session) {
         showMsg('Account created! Check your email to verify, then sign in.', true)
         setLoading('su', false)
@@ -538,12 +558,12 @@ async function doSignUp() {
       }
       return
     }
-    
+
     showMsg('Auth not available. Try Google sign in.')
     setLoading('su', false)
   } catch(err) {
     setLoading('su', false)
-    const m = (err.errors && err.errors[0] && err.errors[0].longMessage) || err.message || ''
+    const m = err.message || ''
     if (m.toLowerCase().includes('taken') || m.toLowerCase().includes('exist') || m.toLowerCase().includes('already'))
       showMsg('An account with this email already exists. Sign in instead.')
     else
