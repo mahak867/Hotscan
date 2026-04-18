@@ -1914,6 +1914,8 @@ async function authContinue(){
     setTimeout(function(){ var p=document.getElementById('auth-pass-inp'); if(p) p.focus() },80)
     return
   }
+  // Use captured email from step 1 as fallback (handles case where user clears the input)
+  if(!email) email = _authEmail
   var pass=document.getElementById('auth-pass-inp').value
   if(!pass){ showAuthErr('Enter your password'); return }
   if(_authMode==='signup'&&pass.length<6){ showAuthErr('Password must be at least 6 characters'); return }
@@ -1987,7 +1989,7 @@ function signInWithApple(){
   _sb.auth.signInWithOAuth({
     provider: 'apple',
     options:{ redirectTo: 'https://hotscan.in' }
-  })
+  }).catch(function(e){ showAuthErr('Apple sign-in failed. Try email instead.') })
 }
 
 
@@ -3686,12 +3688,13 @@ function updateHeaderUI(){
   if(!currentUser){ btn.innerHTML='<div class="app-user-inner">Sign In</div>'; return }
   var prefs={}; try{ prefs=JSON.parse(localStorage.getItem('hs_prefs')||'{}') }catch(e){}
   var name=prefs.displayName||currentUser.name||currentUser.email.split('@')[0]
-  var initial=name[0].toUpperCase()
+  var initial=escHtml(name[0].toUpperCase())
+  var safeName=escHtml(name)
   var isDev=!!(userProfile&&userProfile.is_developer)||(currentUser.email===DEV_EMAIL)
   var isPro=!isDev&&!!(userProfile&&userProfile.is_pro)
   var bg=isDev?'linear-gradient(135deg,#7c3aed,#4f46e5)':isPro?'linear-gradient(135deg,#e63946,#ff6b35)':(prefs.avatarColor||'linear-gradient(135deg,#374151,#4b5563)')
   var badge=isDev?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap">&#x1F451; Dev</span>':isPro?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span>':''
-  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+initial+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>'+badge+'</div>'
+  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+initial+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>'+badge+'</div>'
 }
 
 
@@ -3725,6 +3728,7 @@ async function signOutUser(){
   currentUser = null
   userProfile = null
   localStorage.removeItem('hs_pro')
+  localStorage.removeItem('hs_profile_cache')
   closeAccountModal()
   closeProModal()
   try{ if(_sb) await _sb.auth.signOut() }catch(e){}
@@ -3753,17 +3757,17 @@ async function startPayment() {
     notes: {user_id: currentUser.id},
     theme: {color: '#e63946'},
     handler: async function(response) {
-      if (_sb) {
-        await _sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_subscription_id:response.razorpay_payment_id}).eq('id', currentUser.id)
-        await loadProfile()
-      }
       localStorage.setItem('hs_pro', 'true')
+      try {
+        if (_sb) {
+          await _sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_subscription_id:response.razorpay_payment_id}).eq('id', currentUser.id)
+          await loadProfile()
+        }
+      } catch(e) { console.warn('Pro DB update error:', e) }
       closeAccountModal(); closeProModal(); updateHeaderUI(); renderProfilePage()
       setTimeout(function() { alert('🎉 Welcome to HotScan Pro!\nUnlimited scans activated!') }, 500)
     }
   }
-  await loadRazorpay()
-  if(!window.Razorpay){ alert('Payment service unavailable. Please try again.'); return }
   var rzp = new Razorpay(options)
   rzp.on('payment.failed', function(r) { alert('Payment failed: ' + r.error.description) })
   closeAccountModal(); closeProModal(); rzp.open()
