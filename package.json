@@ -1,0 +1,7 @@
+{
+  "name": "hotscan-india",
+  "version": "8.0.0",
+  "description": "India's first AI-powered Hot Wheels scanner",
+  "type": "module",
+  "private": true
+}
