@@ -3172,13 +3172,13 @@ function renderCol() {
   var items = collection.slice()
   if (filterBy !== 'all') items = items.filter(function(c) { return (c.rarity||'').toLowerCase().includes(filterBy.toLowerCase()) })
   var order = ['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
-  if (sortBy === 'value') items.sort(function(a,b) { return parseFloat((b.india_collector_inr||'0').split('-')[0]) - parseFloat((a.india_collector_inr||'0').split('-')[0]) })
+  if (sortBy === 'value') items.sort(function(a,b) { return parseINR(b.india_collector_inr) - parseINR(a.india_collector_inr) })
   else if (sortBy === 'name') items.sort(function(a,b) { return (a.name||'').localeCompare(b.name||'') })
   else if (sortBy === 'rarity') items.sort(function(a,b) { return order.indexOf(a.rarity) - order.indexOf(b.rarity) })
   var total = collection.length
   var rare = collection.filter(function(c) { var r=(c.rarity||'').toLowerCase(); return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage') }).length
   var sth = collection.filter(function(c) { return (c.rarity||'').toLowerCase().includes('treasure') }).length
-  var val = 0; collection.forEach(function(c) { var p=parseFloat((c.india_collector_inr||'0').split('-')[0]); if(!isNaN(p)) val+=p })
+  var val = 0; collection.forEach(function(c) { val += parseINR(c.india_collector_inr) })
   document.getElementById('val-total').textContent = val > 0 ? '₹' + val.toLocaleString('en-IN') : '₹0'
   document.getElementById('v-cars').textContent = total
   document.getElementById('v-rare').textContent = rare
@@ -3199,7 +3199,7 @@ function renderCol() {
     var meta = document.createElement('div'); meta.className = 'col-meta'; meta.textContent = c.series||''
     var bottom = document.createElement('div'); bottom.style.cssText = 'display:flex;gap:5px;align-items:center'
     var rar = document.createElement('span'); rar.className = 'rar ' + rcls(c.rarity); rar.style.cssText = 'font-size:10px;padding:2px 7px'; rar.textContent = c.rarity||'Common'
-    var price = document.createElement('span'); price.className = 'col-price'; price.textContent = c.india_collector_inr ? '₹'+c.india_collector_inr : ''
+    var price = document.createElement('span'); price.className = 'col-price'; price.textContent = c.india_collector_inr ? '₹'+cleanINR(c.india_collector_inr) : ''
     bottom.appendChild(rar); bottom.appendChild(price)
     info.appendChild(name); info.appendChild(meta); info.appendChild(bottom)
     var del = document.createElement('button'); del.className = 'col-del'; del.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;margin-left:auto;flex-shrink:0'; del.textContent = '🗑'
