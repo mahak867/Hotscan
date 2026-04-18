@@ -34,17 +34,19 @@ self.addEventListener('activate', function (e) {
 
 self.addEventListener('fetch', function (e) {
   var url = e.request.url
-  // Never cache API calls, Supabase, Groq, analytics, or POST requests
-  if (
-    e.request.method !== 'GET' ||
-    url.includes('/api/') ||
-    url.includes('supabase.co') ||
-    url.includes('groq.com') ||
-    url.includes('razorpay') ||
-    url.includes('plausible.io')
-  ) {
-    return
-  }
+  // Never cache API calls, Supabase, Groq, analytics, or POST requests.
+  // Use proper hostname checks (not bare substring) to prevent bypass via crafted URLs.
+  if (e.request.method !== 'GET') return
+  try {
+    var host = new URL(url).hostname
+    if (
+      url.includes('/api/') ||
+      host === 'supabase.co' || host.endsWith('.supabase.co') ||
+      host === 'api.groq.com' || host.endsWith('.groq.com') ||
+      host === 'checkout.razorpay.com' || host.endsWith('.razorpay.com') ||
+      host === 'plausible.io' || host.endsWith('.plausible.io')
+    ) return
+  } catch (ex) { return }
 
   e.respondWith(
     caches.match(e.request).then(function (cached) {
