@@ -17,10 +17,14 @@
 <meta name="twitter:card" content="summary_large_image">
 <title>HotScan India — Hot Wheels Scanner</title>
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232a4fd4'/><text y='70' font-size='55' font-weight='900' font-style='italic' font-family='Arial Black' fill='white' text-anchor='middle' x='50'>HS</text></svg>">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Razorpay loaded on demand -->
 <!-- Clerk removed — using Supabase auth only -->
+<!-- Privacy-friendly analytics — no cookies, no personal data -->
+<script defer data-domain="hotscan.in" src="https://plausible.io/js/script.js"></script>
+<!-- Service worker registration -->
+<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
@@ -1183,11 +1187,11 @@ body{
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <div style="width:36px;height:36px;background:var(--surface3);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔑</div>
       <div>
-        <div class="key-label">Free Groq API Key Required</div>
-        <div style="font-size:11px;color:var(--text3)">Powers the AI identification engine</div>
+        <div class="key-label">Your Own API Key <span style="font-size:10px;color:var(--green);font-weight:600;background:rgba(45,198,83,.12);padding:2px 7px;border-radius:20px;margin-left:4px">Optional</span></div>
+        <div style="font-size:11px;color:var(--text3)">HotScan works without a key — enter yours for dedicated higher limits</div>
       </div>
     </div>
-    <div class="key-sub">Get your free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> in 2 minutes. Your key is stored only on this device — never sent to our servers.</div>
+    <div class="key-sub">Enter your free key from <a href="https://console.groq.com" target="_blank">console.groq.com</a> for dedicated unlimited use. Your key stays on this device only.</div>
     <div style="display:flex;gap:8px">
       <input class="inp" type="password" id="gkey" placeholder="Paste your gsk_... key here" autocomplete="off" style="margin:0;flex:1">
       <button class="btn-red" style="flex-shrink:0;padding:0 18px;border-radius:10px;font-size:14px;font-weight:700;height:44px" onclick="saveKey()">Save →</button>
@@ -1364,6 +1368,7 @@ body{
     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
     <div style="font-size:10px;color:var(--text3)">Estimated Indian collector market value</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:2px;opacity:.7">⚠️ AI estimates only — not a guarantee of resale value</div>
     <div class="val-breakdown">
       <div class="val-tile"><div class="val-tile-n" id="v-cars">0</div><div class="val-tile-l">Total Cars</div></div>
       <div class="val-tile"><div class="val-tile-n" id="v-rare">0</div><div class="val-tile-l">Rare+</div></div>
@@ -1639,6 +1644,22 @@ body{
     <div class="card"><div class="card-title">Account</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="background:var(--surface2);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">👤 Username</div>
+          <div style="display:flex;gap:8px">
+            <input id="prof-username" type="text" maxlength="30" placeholder="e.g. HWCollector_Mumbai" style="flex:1;background:var(--surface3);border:1px solid var(--border2);color:#fff;padding:9px 11px;border-radius:8px;font-size:13px;outline:none">
+            <button onclick="saveProfileUsername()" style="background:var(--red);border:none;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Save</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:5px">Letters, numbers, underscores only · 3–30 characters · Lets you sign in without email</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">🔗 Linked OLX Account</div>
+          <div style="display:flex;gap:8px">
+            <input id="prof-olx-username" type="text" maxlength="60" placeholder="Your OLX username or profile URL" style="flex:1;background:var(--surface3);border:1px solid var(--border2);color:#fff;padding:9px 11px;border-radius:8px;font-size:13px;outline:none">
+            <button onclick="saveOLXAccount()" style="background:var(--red);border:none;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Link</button>
+          </div>
+          <div id="prof-olx-status" style="font-size:10px;color:var(--text3);margin-top:5px">Link your OLX account to speed up selling — shows your profile in deal alerts</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px">
           <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">💬 WhatsApp Number (for Marketplace)</div>
           <div style="display:flex;gap:8px">
             <input id="prof-wa-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;background:var(--surface3);border:1px solid var(--border2);color:#fff;padding:9px 11px;border-radius:8px;font-size:13px;outline:none">
@@ -1676,9 +1697,12 @@ body{
     </div>
   </div>
   <div class="more-sec"><div class="more-sec-t">About</div>
-    <div class="more-item" onclick="whatsappSupport()"><div class="more-ic">💬</div><div><div class="more-t">WhatsApp Support</div><div class="more-s">Message us directly for help</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="whatsappSupport()"><div class="more-ic">💬</div><div><div class="more-t">Contact Support</div><div class="more-s">Email us directly for help</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('https://github.com/mahak867/Hotscan')"><div class="more-ic">⭐</div><div><div class="more-t">Star on GitHub</div><div class="more-s">Open source · Free forever</div></div><div class="more-arr">›</div></div>
-    <div class="more-item"><div class="more-ic">ℹ️</div><div><div class="more-t">HotScan India v4.0</div><div class="more-s">India's first Hot Wheels scanner 🇮🇳 · hotscan.in</div></div></div>
+    <div class="more-item" onclick="ol('/privacy.html')"><div class="more-ic">🔒</div><div><div class="more-t">Privacy Policy</div><div class="more-s">How we handle your data</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="ol('/terms.html')"><div class="more-ic">📄</div><div><div class="more-t">Terms of Service</div><div class="more-s">Usage rules and disclaimers</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="showKeySetup()"><div class="more-ic">🔑</div><div><div class="more-t">Personal API Key</div><div class="more-s">Use your own Groq key for dedicated limits</div></div><div class="more-arr">›</div></div>
+    <div class="more-item"><div class="more-ic">ℹ️</div><div><div class="more-t">HotScan India v5.0</div><div class="more-s">India's first Hot Wheels scanner 🇮🇳 · hotscan.in</div></div></div>
   </div>
 </div>
 
@@ -1742,8 +1766,8 @@ body{
     <!-- Email form -->
     <div class="auth-email-form" id="auth-email-form">
       <div class="auth-field">
-        <label class="auth-label">Email address</label>
-        <input class="auth-input" type="email" id="auth-email-inp" placeholder="you@example.com" autocomplete="email">
+        <label class="auth-label">Email or Username</label>
+        <input class="auth-input" type="text" id="auth-email-inp" placeholder="you@example.com or HWCollector" autocomplete="username">
       </div>
       <div class="auth-field" id="auth-username-field" style="display:none">
         <label class="auth-label">Username <span style="color:var(--text3);font-size:10px;font-weight:400">(optional)</span></label>
@@ -1773,7 +1797,7 @@ body{
       <button class="auth-continue-btn" style="margin-top:20px" onclick="closeAuth()">Got it</button>
     </div>
 
-    <div class="auth-legal">By continuing you agree to our Terms of Service</div>
+    <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" style="color:var(--text2);text-decoration:underline">Terms of Service</a> and <a href="/privacy.html" target="_blank" style="color:var(--text2);text-decoration:underline">Privacy Policy</a></div>
   </div>
 </div>
 
@@ -1923,11 +1947,13 @@ function showAuthErr(msg){
 }
 
 async function authContinue(){
-  var email=document.getElementById('auth-email-inp').value.trim()
-  if(!email){ showAuthErr('Enter your email address'); return }
-  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showAuthErr('Enter a valid email'); return }
+  var rawInput=document.getElementById('auth-email-inp').value.trim()
+  if(!rawInput){ showAuthErr('Enter your email or username'); return }
+  // For step 1 (email step), only validate format when it looks like an email
+  var looksLikeEmail = rawInput.includes('@')
+  if(looksLikeEmail && !/^[^@]+@[^@]+\.[^@]+$/.test(rawInput)){ showAuthErr('Enter a valid email'); return }
   if(_authStep==='email'){
-    _authEmail=email; _authStep='password'
+    _authEmail=rawInput; _authStep='password'
     document.getElementById('auth-pass-field').style.display='block'
     var uf=document.getElementById('auth-username-field')
     if(uf&&_authMode==='signup') uf.style.display='block'
@@ -1937,8 +1963,8 @@ async function authContinue(){
     setTimeout(function(){ var p=document.getElementById('auth-pass-inp'); if(p) p.focus() },80)
     return
   }
-  // Use captured email from step 1 as fallback (handles case where user clears the input)
-  if(!email) email = _authEmail
+  // Use captured input from step 1 as fallback
+  if(!rawInput) rawInput = _authEmail
   var pass=document.getElementById('auth-pass-inp').value
   if(!pass){ showAuthErr('Enter your password'); return }
   if(_authMode==='signup'&&pass.length<6){ showAuthErr('Password must be at least 6 characters'); return }
@@ -1948,11 +1974,22 @@ async function authContinue(){
   var _to=setTimeout(function(){ setAuthLoading(false); showAuthErr('Request timed out — try again') },15000)
   try{
     if(_authMode==='signin'){
-      var r=await _sb.auth.signInWithPassword({email:email,password:pass})
+      // Resolve username to email if needed
+      var signInEmail = rawInput
+      if(!rawInput.includes('@')){
+        var lu = await _sb.from('profiles').select('email').eq('username', rawInput).single()
+        if(lu.error || !lu.data || !lu.data.email){
+          clearTimeout(_to); setAuthLoading(false)
+          showAuthErr('No account found for that username. Try your email instead.')
+          return
+        }
+        signInEmail = lu.data.email
+      }
+      var r=await _sb.auth.signInWithPassword({email:signInEmail,password:pass})
       clearTimeout(_to)
       if(r.error){
         var m=r.error.message||''
-        if(m.toLowerCase().includes('invalid')||m.toLowerCase().includes('wrong')||m.toLowerCase().includes('credentials')) m='Wrong email or password'
+        if(m.toLowerCase().includes('invalid')||m.toLowerCase().includes('wrong')||m.toLowerCase().includes('credentials')) m='Wrong email/username or password'
         else if(m.toLowerCase().includes('confirm')||m.toLowerCase().includes('verif')) m='Verify your email first — check inbox'
         else if(m.toLowerCase().includes('not found')||m.toLowerCase().includes('no user')) m='No account found — sign up first'
         showAuthErr(m); setAuthLoading(false)
@@ -1961,13 +1998,37 @@ async function authContinue(){
         setTimeout(showSuccessCelebration,300)
       }
     } else {
-      var sr=await _sb.auth.signUp({email:email,password:pass,options:{emailRedirectTo:window.location.origin,data:{full_name:email.split('@')[0]}}})
+      // Sign-up: validate username format if entered
+      var usernameVal = (document.getElementById('auth-username-inp')||{}).value
+      usernameVal = usernameVal ? usernameVal.trim() : ''
+      if(usernameVal && !/^[a-zA-Z0-9_]{3,30}$/.test(usernameVal)){
+        clearTimeout(_to); setAuthLoading(false)
+        showAuthErr('Username must be 3–30 characters: letters, numbers, underscores only')
+        return
+      }
+      // Check username uniqueness
+      if(usernameVal){
+        var ucheck = await _sb.from('profiles').select('id').eq('username', usernameVal).single()
+        if(ucheck.data){
+          clearTimeout(_to); setAuthLoading(false)
+          showAuthErr('That username is already taken. Please choose another.')
+          return
+        }
+      }
+      var signUpEmail = rawInput.includes('@') ? rawInput : ''
+      if(!signUpEmail){ clearTimeout(_to); setAuthLoading(false); showAuthErr('Enter a valid email address to create an account'); return }
+      var displayName = usernameVal || signUpEmail.split('@')[0]
+      var sr=await _sb.auth.signUp({email:signUpEmail,password:pass,options:{emailRedirectTo:window.location.origin,data:{full_name:displayName,username:usernameVal||null}}})
       clearTimeout(_to)
       if(sr.error){
         var sm=sr.error.message||''
         if(sm.toLowerCase().includes('already')||sm.toLowerCase().includes('registered')) sm='Account already exists — sign in instead'
         showAuthErr(sm)
       } else {
+        // Save username to profiles table
+        if(sr.data&&sr.data.user&&usernameVal){
+          _sb.from('profiles').upsert({id:sr.data.user.id,email:signUpEmail,display_name:displayName,username:usernameVal},{onConflict:'id'}).catch(function(){})
+        }
         if(!sr.data||!sr.data.session){
           var ef=document.getElementById('auth-email-form')
           var vs=document.getElementById('auth-verify-step')
@@ -2103,7 +2164,7 @@ function showSuccessCelebration(){
 // ── Override openAccountModal to show cleaner modal ──
 
 // ════════════════════════════════════════════════════════
-// HOTSCAN INDIA v4.0 — Clean single script
+// HOTSCAN INDIA v5.0 — Clean single script
 // ════════════════════════════════════════════════════════
 
 // ── Config ──
@@ -2112,7 +2173,10 @@ var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 var RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
 var DEV_EMAIL = 'mahakfahad07@gmail.com'
 var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'
-var WA_SUPPORT   = null  // set to 'https://api.whatsapp.com/send?phone=91XXXXXXXXXX...' when ready
+var WA_SUPPORT   = null  // TODO: set to your WhatsApp number e.g. 'https://api.whatsapp.com/send?phone=91XXXXXXXXXX' before launch
+// Groq proxy — the app uses /api/groq (server-side key) so users don't need their own Groq key.
+// Set the GROQ_API_KEY environment variable in the Vercel dashboard.
+// Users can still add their own key below for dedicated higher rate limits.
 var FREE_SCANS = 5
 
 // ── OAuth callback handler — MUST be first ──
@@ -2279,7 +2343,9 @@ window.addEventListener('load', function() {
   } catch(e) { console.warn('Supabase init error:', e) }
 
   // App init
-  if (KEY) document.getElementById('key-card').style.display = 'none'
+  // Hide key card — proxy handles scanning without a personal key
+  // Users can still configure their own key via More → Personal API Key
+  document.getElementById('key-card').style.display = 'none'
   var ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
   var sa = window.matchMedia('(display-mode:standalone)').matches
   var _ib=document.getElementById('ib'); if(_ib&&(!ios||sa)) _ib.style.display='none'
@@ -2385,10 +2451,10 @@ function compressThumb(dataUrl) {
 }
 
 // ── File handling ──
-function openCam() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fc'); f.value=''; f.click() }
-function openGal() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fg'); f.value=''; f.click() }
-function openFakeCam() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fc-fake'); f.value=''; f.click() }
-function openFakeGal() { if (!KEY) { showKeySetup(); return } var f=document.getElementById('fg-fake'); f.value=''; f.click() }
+function openCam() { var f=document.getElementById('fc'); f.value=''; f.click() }
+function openGal() { var f=document.getElementById('fg'); f.value=''; f.click() }
+function openFakeCam() { var f=document.getElementById('fc-fake'); f.value=''; f.click() }
+function openFakeGal() { var f=document.getElementById('fg-fake'); f.value=''; f.click() }
 
 async function handleFile(file, mode) {
   if (!file) return
@@ -2497,30 +2563,36 @@ var VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 async function groqVision(imageData, systemPrompt, userPrompt) {
   var b64 = imageData.split(',')[1]
   var mime = imageData.split(';')[0].split(':')[1]
-  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
-    body: JSON.stringify({
-      model: VISION_MODEL,
-      messages: [
-        {role:'system', content:systemPrompt},
-        {role:'user', content:[
-          {type:'image_url', image_url:{url:'data:'+mime+';base64,'+b64}},
-          {type:'text', text:userPrompt}
-        ]}
-      ],
-      temperature: 0.05, max_tokens: 900
-    })
-  })
+  var body = {
+    model: VISION_MODEL,
+    messages: [
+      {role:'system', content:systemPrompt},
+      {role:'user', content:[
+        {type:'image_url', image_url:{url:'data:'+mime+';base64,'+b64}},
+        {type:'text', text:userPrompt}
+      ]}
+    ],
+    temperature: 0.05, max_tokens: 900
+  }
+  var url = KEY ? 'https://api.groq.com/openai/v1/chat/completions' : '/api/groq'
+  var headers = KEY
+    ? {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'}
+    : {'Content-Type':'application/json'}
+  var res = await fetch(url, {method:'POST', headers:headers, body:JSON.stringify(body)})
   if (!res.ok) {
     var bodyText = await res.text().catch(function(){return'{}'})
     var errBody = {}; try { errBody = JSON.parse(bodyText) } catch(ex) {}
+    var serverMsg = (errBody.error && typeof errBody.error === 'string') ? errBody.error
+                  : (errBody.error && errBody.error.message) ? errBody.error.message : null
     if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
     if (res.status === 429) {
-      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
-      throw new Error('Rate limit — wait ' + wait + 's and try again')
+      // Use proxy's message if it already contains instructions, otherwise build a generic one
+      if (serverMsg && serverMsg.length > 60) throw new Error(serverMsg)
+      var wait = parseInt(res.headers.get('retry-after') || '30', 10)
+      throw new Error('Too many scans right now — wait ' + wait + 's, add your own free key at console.groq.com, or upgrade to Pro for unlimited access.')
     }
-    throw new Error((errBody.error && errBody.error.message) || 'Vision API error ' + res.status)
+    if (res.status === 503) throw new Error(serverMsg || 'AI service temporarily unavailable. Try again in a moment.')
+    throw new Error(serverMsg || 'Vision API error ' + res.status)
   }
   var data = await res.json()
   var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
@@ -2530,9 +2602,14 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
 
 async function groqText(prompt, model) {
   var chosenModel = model || CODEX_MODEL
-  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  var useProxy = !KEY
+  var url = useProxy ? '/api/groq' : 'https://api.groq.com/openai/v1/chat/completions'
+  var headers = useProxy
+    ? {'Content-Type':'application/json'}
+    : {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'}
+  var res = await fetch(url, {
     method: 'POST',
-    headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+    headers: headers,
     body: JSON.stringify({
       model: chosenModel,
       messages: [{role:'user', content:prompt}],
@@ -2540,16 +2617,21 @@ async function groqText(prompt, model) {
     })
   })
   if (!res.ok) {
+    var rtBody = await res.text().catch(function(){return'{}'})
+    var rtErr = {}; try { rtErr = JSON.parse(rtBody) } catch(ex) {}
+    var rtMsg = (rtErr.error && typeof rtErr.error === 'string') ? rtErr.error
+              : (rtErr.error && rtErr.error.message) ? rtErr.error.message : null
     if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
     if (res.status === 429) {
-      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
-      throw new Error('Rate limit — wait ' + wait + 's and try again')
+      if (rtMsg && rtMsg.length > 60) throw new Error(rtMsg)
+      var wait = parseInt(res.headers.get('retry-after') || '30', 10)
+      throw new Error('Too many scans right now — wait ' + wait + 's, add your own free key at console.groq.com, or upgrade to Pro for unlimited access.')
     }
     // On model-unavailable errors try falling back: CODEX → HAIKU, HAIKU → error
     if (res.status >= 400 && chosenModel !== HAIKU_MODEL) {
-      var fb = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      var fb = await fetch(url, {
         method: 'POST',
-        headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+        headers: headers,
         body: JSON.stringify({
           model: HAIKU_MODEL,
           messages: [{role:'user', content:prompt}],
@@ -2562,7 +2644,7 @@ async function groqText(prompt, model) {
       if (!fc) throw new Error('Empty fallback response from AI. Try again.')
       return parseJSON(fc)
     }
-    throw new Error('AI text API error ' + res.status)
+    throw new Error(rtMsg || 'AI text API error ' + res.status)
   }
   var data = await res.json()
   var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
@@ -2704,7 +2786,7 @@ async function searchPrices(carName, rarity, castingYear) {
 
 // ── Analyze photo ──
 async function analyzePhoto() {
-  if (!img64 || !KEY) return
+  if (!img64) return
   if (!checkLimit()) return
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Scanning...'
@@ -2768,8 +2850,14 @@ async function analyzePhoto() {
     }
   } catch(err) {
     stopTimer(); setStep(1, 'err')
-    document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message) + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
-    document.getElementById('err-box').style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
+    var isRateLimit = err.message && (err.message.includes('rate-limit') || err.message.includes('Rate limit') || err.message.includes('Too many') || err.message.includes('rate limit'))
+    if (isRateLimit) {
+      document.getElementById('err-box').innerHTML = '⚡ <strong>Shared scan limit reached.</strong><br><span style="font-size:12px;color:#cc9900">Add your own free key at <a href="https://console.groq.com" target="_blank" style="color:#ffd60a">console.groq.com</a> for unlimited personal access, or upgrade to Pro.</span><br><button onclick="startPayment()" style="margin-top:8px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;border:none;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer">⭐ Get Pro — ₹99/month</button>'
+      document.getElementById('err-box').style.cssText = 'display:block;background:#1a1000;border:1px solid rgba(255,214,10,.4);color:var(--gold);border-radius:12px;padding:14px;margin-bottom:11px;font-size:13px;line-height:1.7'
+    } else {
+      document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message) + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
+      document.getElementById('err-box').style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
+    }
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify & Get Live Prices'
     document.getElementById('pipeline').style.display = 'none'
@@ -2778,7 +2866,6 @@ async function analyzePhoto() {
 
 // ── Deal checker ──
 async function analyzeDeal() {
-  if (!KEY) return
   var asking = parseFloat(document.getElementById('deal-price').value)
   var carName = document.getElementById('deal-car-name').value.trim() || (lastResult && lastResult.name) || ''
   if (!asking) { alert("Enter the seller's asking price"); return }
@@ -2828,7 +2915,7 @@ async function analyzeDeal() {
 
 // ── Fake detector ──
 async function analyzeFake() {
-  if (!fakeImg64 || !KEY) return
+  if (!fakeImg64) return
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Checking...'
   document.getElementById('err-box').style.display = 'none'
@@ -2888,7 +2975,6 @@ async function analyzeFake() {
 async function scanBarcode() {
   var code = document.getElementById('barcode-input').value.trim()
   if (!code) { alert('Enter a barcode, collector number, or car name'); return }
-  if (!KEY) { showKeySetup(); return }
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('result').style.display = 'none'
   startTimer('Looking up...')
@@ -3197,6 +3283,10 @@ function addAlert() {
   if (alerts.find(function(a) { return a.name === lastResult.name })) { alert('Alert already set for: ' + lastResult.name); return }
   alerts.unshift({id:Date.now(), name:lastResult.name, rarity:lastResult.rarity, india_collector_inr:lastResult.india_collector_inr, added:new Date().toISOString()})
   localStorage.setItem('hs_alerts', JSON.stringify(alerts))
+  // Request notification permission on first alert
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
   renderAlerts(); goPage('alerts')
 }
 function delAlert(id) { alerts = alerts.filter(function(a){return a.id!==id}); localStorage.setItem('hs_alerts',JSON.stringify(alerts)); renderAlerts() }
@@ -3282,7 +3372,6 @@ function submitEvent() {
 var multiImages = []  // array of {img64, thumb, file}
 
 function openMulti() {
-  if (!KEY) { showKeySetup(); return }
   var f = document.getElementById('fg-multi'); f.value = ''; f.click()
 }
 
@@ -3378,9 +3467,13 @@ async function identifyMultipleCars(imageData) {
     '}]}'
   ].join('')
 
-  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  var url2 = KEY ? 'https://api.groq.com/openai/v1/chat/completions' : '/api/groq'
+  var hdrs2 = KEY
+    ? {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'}
+    : {'Content-Type':'application/json'}
+  var res = await fetch(url2, {
     method: 'POST',
-    headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+    headers: hdrs2,
     body: JSON.stringify({
       model: VISION_MODEL,
       messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
@@ -3398,7 +3491,7 @@ async function identifyMultipleCars(imageData) {
 }
 
 async function analyzeMultiPhoto() {
-  if (!multiImages.length || !KEY) return
+  if (!multiImages.length) return
   if (!checkLimit()) return
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Identifying all cars...'
@@ -3673,8 +3766,16 @@ async function loadProfile(){
     var q=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
     if(q.data){ userProfile=q.data }
     else{
+      // Get username from user metadata (set during sign-up)
+      var metaUsername = null
+      try {
+        var sess = await _sb.auth.getSession()
+        var meta = sess && sess.data && sess.data.session && sess.data.session.user && sess.data.session.user.user_metadata
+        if(meta && meta.username) metaUsername = meta.username
+      }catch(e2){}
       await _sb.from('profiles').upsert({id:currentUser.id,email:currentUser.email,
-        display_name:currentUser.name||currentUser.email.split('@')[0],
+        display_name:metaUsername||currentUser.name||currentUser.email.split('@')[0],
+        username:metaUsername||null,
         is_pro:currentUser.email===DEV_EMAIL,is_developer:currentUser.email===DEV_EMAIL
       },{onConflict:'id'})
       var q2=await _sb.from('profiles').select('*').eq('id',currentUser.id).single()
@@ -3706,7 +3807,7 @@ function updateHeaderUI(){
   btn.onclick=function(){ currentUser?openAccountModal():openAuth() }
   if(!currentUser){ btn.innerHTML='<div class="app-user-inner">Sign In</div>'; return }
   var prefs={}; try{ prefs=JSON.parse(localStorage.getItem('hs_prefs')||'{}') }catch(e){}
-  var name=prefs.displayName||currentUser.name||currentUser.email.split('@')[0]||'?'
+  var name=prefs.displayName||(userProfile&&userProfile.username)||currentUser.name||currentUser.email.split('@')[0]||'?'
   var initial=escHtml((name.length > 0 ? name[0] : '?').toUpperCase())
   var safeName=escHtml(name)
   var isDev=!!(userProfile&&userProfile.is_developer)||(currentUser.email===DEV_EMAIL)
@@ -3722,10 +3823,11 @@ function openAccountModal() {
   document.getElementById('account-modal').classList.add('open')
   document.body.style.overflow = 'hidden'
   if (!currentUser) return
-  var initials = (currentUser.name || currentUser.email || '?')[0].toUpperCase()
+  var displayName = (userProfile && userProfile.username) || currentUser.name || currentUser.email.split('@')[0]
+  var initials = displayName[0].toUpperCase()
   document.getElementById('acc-avatar').textContent = initials
-  document.getElementById('acc-name').textContent = currentUser.name || currentUser.email.split('@')[0]
-  document.getElementById('acc-email').textContent = currentUser.email
+  document.getElementById('acc-name').textContent = displayName
+  document.getElementById('acc-email').textContent = (userProfile && userProfile.username) ? '@' + userProfile.username + ' · ' + currentUser.email : currentUser.email
   var planEl = document.getElementById('acc-plan')
   var upSec = document.getElementById('acc-upgrade')
   var sinceEl = document.getElementById('acc-since')
@@ -3799,10 +3901,11 @@ function renderProfilePage() {
   var user = document.getElementById('profile-user')
   if (!currentUser) { if(guest) guest.style.display='block'; if(user) user.style.display='none'; return }
   if(guest) guest.style.display='none'; if(user) user.style.display='block'
-  var initials = (currentUser.name || currentUser.email || '?')[0].toUpperCase()
+  var displayName = (userProfile && userProfile.username) || (userProfile && userProfile.display_name) || currentUser.name || currentUser.email.split('@')[0]
+  var initials = displayName[0].toUpperCase()
   document.getElementById('prof-avatar').textContent = initials
-  document.getElementById('prof-name').textContent = currentUser.name || currentUser.email.split('@')[0]
-  document.getElementById('prof-email').textContent = currentUser.email
+  document.getElementById('prof-name').textContent = displayName
+  document.getElementById('prof-email').textContent = (userProfile && userProfile.username) ? '@' + userProfile.username + ' · ' + currentUser.email : currentUser.email
   var planEl = document.getElementById('prof-plan')
   var upEl = document.getElementById('prof-upgrade')
   var sinceEl = document.getElementById('prof-since')
@@ -3855,6 +3958,20 @@ function renderProfilePage() {
   // Pre-fill saved WhatsApp number
   var phoneEl = document.getElementById('prof-wa-phone')
   if (phoneEl && userProfile && userProfile.whatsapp_phone) phoneEl.value = userProfile.whatsapp_phone
+  // Pre-fill username
+  var unEl = document.getElementById('prof-username')
+  if (unEl) unEl.value = (userProfile && userProfile.username) ? userProfile.username : ''
+  // Pre-fill OLX username
+  var olxEl = document.getElementById('prof-olx-username')
+  var olxStatus = document.getElementById('prof-olx-status')
+  if (olxEl) olxEl.value = (userProfile && userProfile.olx_username) ? userProfile.olx_username : ''
+  if (olxStatus) {
+    if (userProfile && userProfile.olx_username) {
+      olxStatus.innerHTML = '✅ Linked · <a href="' + escHtml(buildOLXProfileUrl(userProfile.olx_username)) + '" target="_blank" style="color:var(--blue-brand);text-decoration:none">View OLX profile →</a>'
+    } else {
+      olxStatus.textContent = 'Link your OLX account to speed up selling — shows your profile in deal alerts'
+    }
+  }
 }
 
 async function saveProfilePhone() {
@@ -3870,6 +3987,56 @@ async function saveProfilePhone() {
     try { localStorage.setItem('hs_profile_cache', JSON.stringify({data: userProfile, ts: Date.now()})) } catch(e) {}
     showToast('WhatsApp number saved ✅', 'success')
   } catch(e) { showToast('Could not save — try again', 'error') }
+}
+
+async function saveProfileUsername() {
+  var unEl = document.getElementById('prof-username')
+  if (!unEl) return
+  var username = unEl.value.trim()
+  if (!username) { showToast('Enter a username', 'error'); return }
+  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+    showToast('Username: 3–30 characters, letters/numbers/underscores only', 'error'); return
+  }
+  if (!currentUser || !_sb) { showToast('Sign in first', 'error'); return }
+  try {
+    // Check uniqueness (exclude current user)
+    var check = await _sb.from('profiles').select('id').eq('username', username).neq('id', currentUser.id).single()
+    if (check.data) { showToast('That username is already taken', 'error'); return }
+    await _sb.from('profiles').update({username: username, display_name: username}).eq('id', currentUser.id)
+    if (!userProfile) userProfile = {}
+    userProfile.username = username
+    userProfile.display_name = username
+    currentUser.name = username
+    try { localStorage.setItem('hs_profile_cache', JSON.stringify({data: userProfile, ts: Date.now()})) } catch(e) {}
+    updateHeaderUI()
+    renderProfilePage()
+    showToast('Username saved ✅', 'success')
+  } catch(e) { showToast('Could not save username — try again', 'error') }
+}
+
+function buildOLXProfileUrl(olxUsername) {
+  if (!olxUsername) return 'https://www.olx.in'
+  // If already a URL, return as-is
+  if (olxUsername.startsWith('http')) return olxUsername
+  // OLX India profile format
+  return 'https://www.olx.in/profile/' + encodeURIComponent(olxUsername)
+}
+
+async function saveOLXAccount() {
+  var olxEl = document.getElementById('prof-olx-username')
+  if (!olxEl) return
+  var olxUsername = olxEl.value.trim()
+  if (!olxUsername) { showToast('Enter your OLX username or profile URL', 'error'); return }
+  if (!currentUser || !_sb) { showToast('Sign in first', 'error'); return }
+  try {
+    await _sb.from('profiles').update({olx_username: olxUsername}).eq('id', currentUser.id)
+    if (!userProfile) userProfile = {}
+    userProfile.olx_username = olxUsername
+    try { localStorage.setItem('hs_profile_cache', JSON.stringify({data: userProfile, ts: Date.now()})) } catch(e) {}
+    var olxStatus = document.getElementById('prof-olx-status')
+    if (olxStatus) olxStatus.innerHTML = '✅ Linked · <a href="' + escHtml(buildOLXProfileUrl(olxUsername)) + '" target="_blank" style="color:var(--blue-brand);text-decoration:none">View OLX profile →</a>'
+    showToast('OLX account linked ✅', 'success')
+  } catch(e) { showToast('Could not link OLX account — try again', 'error') }
 }
 
 // ── Cloud sync ──
@@ -4138,7 +4305,6 @@ function quickSell() {
 async function checkOLX() {
   var inp = document.getElementById('olx-inp').value.trim()
   if (!inp) { alert('Paste a listing title'); return }
-  if (!KEY) { showKeySetup(); return }
   var prompt = [
     'Indian Hot Wheels market expert. Analyse this OLX listing: "'+inp+'".',
     'Return ONLY valid JSON:',
@@ -4222,6 +4388,7 @@ function runAlertCheck() {
     var found = Math.round(target * (0.55+Math.random()*0.3))
     var save = target - found
     if (save > 50) {
+      // Show in-app banner
       var box = document.getElementById('err-box')
       if (box) {
         box.textContent = ''
@@ -4232,6 +4399,16 @@ function runAlertCheck() {
         btn.onclick = (function(n){ return function(){ ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n)) }})(a.name)
         box.appendChild(msg); box.appendChild(btn)
         box.style.cssText='display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold);border-radius:12px;padding:12px;margin-bottom:11px;font-size:13px;line-height:1.6'
+      }
+      // Browser notification (only if permission granted)
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try {
+          new Notification('🔥 HotScan Deal Alert', {
+            body: a.name + ' spotted for ₹' + found.toLocaleString('en-IN') + ' — save ₹' + save.toLocaleString('en-IN'),
+            icon: '/icon-192.png',
+            tag: 'hs-deal-' + a.id,
+          })
+        } catch(e) { /* Notifications blocked or not supported */ }
       }
     }
   }
@@ -4271,7 +4448,11 @@ function shareResultToGroup(){
 }
 
 function whatsappSupport(){
-  if (!WA_SUPPORT) { showToast('Support chat coming soon — email hotscan@gmail.com for help', 'info'); return }
+  if (!WA_SUPPORT) {
+    // Open email as fallback
+    window.open('mailto:mahakfahad07@gmail.com?subject=HotScan+India+Support&body=Hi!+I+need+help+with+the+HotScan+India+app.', '_blank')
+    return
+  }
   var msg = 'Hi! I need help with HotScan India app.'
   window.open('https://wa.me/' + WA_SUPPORT + '?text=' + encodeURIComponent(msg), '_blank')
 }
