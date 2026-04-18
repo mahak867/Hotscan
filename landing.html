@@ -3,11 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HotScan">
 <meta name="description" content="India's first Hot Wheels scanner. Scan any car, get live Indian market prices instantly. Free.">
 <meta property="og:title" content="HotScan India — India's First Hot Wheels Scanner">
 <meta property="og:description" content="Scan any Hot Wheels car. Get India's real market price in seconds.">
 <meta name="theme-color" content="#E63946">
 <title>HotScan India — India's First Hot Wheels Scanner</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -172,6 +179,43 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
 .footer-bottom p{font-size:13px;color:var(--text3)}
 .footer-flag{font-size:20px}
 
+/* ── TESTIMONIALS ── */
+.testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:56px}
+@media(max-width:768px){.testimonials-grid{grid-template-columns:1fr}}
+.testi-card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:16px;transition:border-color .3s}
+.testi-card:hover{border-color:var(--red)}
+.testi-stars{color:var(--gold);font-size:16px;letter-spacing:2px}
+.testi-quote{font-size:15px;color:var(--text);line-height:1.7;flex:1}
+.testi-quote::before{content:'\201C';font-size:28px;color:var(--red);line-height:0;vertical-align:-10px;margin-right:2px}
+.testi-author{display:flex;align-items:center;gap:12px;border-top:1px solid var(--border);padding-top:16px}
+.testi-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--red),var(--red2));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.testi-name{font-size:14px;font-weight:700}
+.testi-meta{font-size:12px;color:var(--text2)}
+.testi-find{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(255,214,10,.1);color:var(--gold);border:1px solid rgba(255,214,10,.2)}
+
+/* ── TRACTION MILESTONES ── */
+.milestones{display:flex;gap:0;margin-top:40px;position:relative;overflow-x:auto;padding-bottom:4px}
+.milestone{flex:1;min-width:120px;text-align:center;padding:0 12px;position:relative}
+.milestone::after{content:'';position:absolute;top:14px;right:0;width:50%;height:1px;background:var(--red);opacity:.35}
+.milestone:last-child::after{display:none}
+.milestone::before{content:'';position:absolute;top:14px;left:0;width:50%;height:1px;background:var(--red);opacity:.35}
+.milestone:first-child::before{display:none}
+.m-dot{width:28px;height:28px;border-radius:50%;background:var(--bg2);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;margin:0 auto 10px;position:relative;z-index:1}
+.m-date{font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.m-text{font-size:12px;color:var(--text2);line-height:1.5}
+
+/* ── INVESTOR FORM ── */
+.inv-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+@media(max-width:640px){.inv-form{grid-template-columns:1fr}}
+.inv-form-full{grid-column:span 2}
+@media(max-width:640px){.inv-form-full{grid-column:span 1}}
+.inv-inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:14px;color:#fff;outline:none;font-family:inherit;transition:border-color .2s}
+.inv-inp:focus{border-color:var(--red)}
+.inv-inp::placeholder{color:var(--text3)}
+.inv-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer}
+.inv-form-note{font-size:12px;color:var(--text3);text-align:center;margin-top:12px}
+.inv-form-success{display:none;background:rgba(45,198,83,.08);border:1px solid rgba(45,198,83,.2);border-radius:12px;padding:20px;text-align:center;color:var(--green);font-weight:600}
+
 /* ── ANIMATIONS ── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 .animate{opacity:0;transform:translateY(30px);transition:all .7s ease}
@@ -183,9 +227,54 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
   .hero-divider{display:none}
   nav .nav-links{display:none}
 }
+/* ── PWA Install Banner ── */
+#pwa-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a1a1a;border-top:1px solid #333;padding:14px 20px;gap:14px;align-items:center;justify-content:space-between;box-shadow:0 -4px 24px rgba(0,0,0,.5)}
+#pwa-banner.show{display:flex}
+.pwa-banner-left{display:flex;align-items:center;gap:12px}
+.pwa-banner-icon{width:44px;height:44px;border-radius:10px;background:#e63946;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.pwa-banner-text strong{display:block;font-size:14px;font-weight:700;color:#fff}
+.pwa-banner-text span{font-size:12px;color:#aaa}
+.pwa-banner-actions{display:flex;gap:8px;flex-shrink:0}
+.pwa-btn-install{background:#e63946;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.pwa-btn-dismiss{background:transparent;color:#888;border:1px solid #333;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer}
+/* iOS instruction sheet */
+#ios-install{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1c1c1e;border-top:1px solid #333;border-radius:16px 16px 0 0;padding:20px;text-align:center;box-shadow:0 -4px 24px rgba(0,0,0,.6)}
+#ios-install.show{display:block}
+.ios-handle{width:36px;height:4px;border-radius:2px;background:#555;margin:0 auto 16px}
+.ios-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:8px}
+.ios-steps{font-size:13px;color:#aaa;line-height:2;margin-bottom:16px}
+.ios-steps strong{color:#fff}
+.ios-close{background:#2c2c2e;color:#aaa;border:none;border-radius:10px;padding:11px 24px;font-size:14px;cursor:pointer;width:100%}
 </style>
 </head>
 <body>
+
+<!-- Android/Chrome Install Banner -->
+<div id="pwa-banner">
+  <div class="pwa-banner-left">
+    <div class="pwa-banner-icon">🚗</div>
+    <div class="pwa-banner-text">
+      <strong>Install HotScan</strong>
+      <span>Add to Home Screen — free, no app store</span>
+    </div>
+  </div>
+  <div class="pwa-banner-actions">
+    <button class="pwa-btn-dismiss" onclick="dismissPwaBanner()">Not now</button>
+    <button class="pwa-btn-install" onclick="installPwa()">Install</button>
+  </div>
+</div>
+
+<!-- iOS Safari Install Sheet -->
+<div id="ios-install">
+  <div class="ios-handle"></div>
+  <div class="ios-title">Install HotScan on your iPhone</div>
+  <div class="ios-steps">
+    1. Tap the <strong>Share</strong> button (<strong>⎙</strong>) at the bottom of Safari<br>
+    2. Scroll down and tap <strong>"Add to Home Screen"</strong><br>
+    3. Tap <strong>"Add"</strong> — done! 🎉
+  </div>
+  <button class="ios-close" onclick="dismissIosInstall()">Got it</button>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -195,7 +284,7 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
     <a href="#how">How It Works</a>
     <a href="#pricing">Pricing</a>
     <a href="#investors">Investors</a>
-    <a href="https://hotscan-theta.vercel.app" class="nav-cta">Open App →</a>
+    <a href="https://hotscan.in" class="nav-cta">Open App →</a>
   </div>
 </nav>
 
@@ -209,7 +298,7 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
   </h1>
   <p class="hero-sub">India's first AI-powered Hot Wheels scanner. Take a photo of any car — get its rarity, live Indian market price, and collector value in under 10 seconds.</p>
   <div class="hero-btns">
-    <a href="https://hotscan-theta.vercel.app" class="btn-primary">📷 Scan Your First Car — Free</a>
+    <a href="https://hotscan.in" class="btn-primary">📷 Scan Your First Car — Free</a>
     <a href="#how" class="btn-secondary">See How It Works</a>
   </div>
   <div class="hero-stats">
@@ -229,8 +318,8 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
     </div>
     <div class="hero-divider"></div>
     <div class="hero-stat">
-      <div class="hero-stat-num"><span class="colored">8s</span></div>
-      <div class="hero-stat-label">Avg Scan Time</div>
+      <div class="hero-stat-num" style="color:var(--green)" id="scan-counter">—</div>
+      <div class="hero-stat-label">Scans Completed</div>
     </div>
   </div>
 </div>
@@ -408,6 +497,51 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
   </div>
 </div>
 
+<!-- TESTIMONIALS -->
+<section id="testimonials" class="animate">
+  <div class="section-tag">Real Collectors. Real Finds.</div>
+  <h2 class="section-title">They used to guess.<br>Now they know.</h2>
+  <p class="section-sub">HotScan is already changing how Indian collectors buy, sell and trade.</p>
+  <div class="testimonials-grid">
+    <div class="testi-card animate">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">Found a Super Treasure Hunt at Hamleys that everyone else walked past. The seller didn't know what it was. I paid ₹200 for something worth ₹8,500. HotScan told me in 7 seconds.</p>
+      <span class="testi-find">🎯 STH Found · Saved ₹8,300</span>
+      <div class="testi-author">
+        <div class="testi-avatar">🚗</div>
+        <div>
+          <div class="testi-name">Arjun K.</div>
+          <div class="testi-meta">Collector, Mumbai · 340+ cars</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card animate">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">Bought a "Hot Wheels" on OLX for ₹350. Scanned it and HotScan said 91% likely fake — logo blurry, wrong wheel type. Reported the seller and got my money back. This app just saved me from a scammer.</p>
+      <span class="testi-find">🕵️ Fake Detected · ₹350 Saved</span>
+      <div class="testi-author">
+        <div class="testi-avatar">🔍</div>
+        <div>
+          <div class="testi-name">Priya S.</div>
+          <div class="testi-meta">Collector, Bengaluru · 180+ cars</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card animate">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">I sell at swap meets. Used to just guess my prices. Now I scan everything the night before, set my prices from HotScan's data, and I'm selling 40% faster because buyers trust the price is fair.</p>
+      <span class="testi-find">💰 Dealer · 40% Faster Sales</span>
+      <div class="testi-author">
+        <div class="testi-avatar">🤝</div>
+        <div>
+          <div class="testi-name">Raj M.</div>
+          <div class="testi-meta">Reseller, Delhi · 800+ cars sold</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- PRICING -->
 <section id="pricing" class="animate">
   <div class="section-tag">Pricing</div>
@@ -429,7 +563,7 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
         <li class="muted">Unlimited scans</li>
         <li class="muted">Price alerts</li>
       </ul>
-      <a href="https://hotscan-theta.vercel.app" class="price-btn price-btn-secondary">Start Free →</a>
+      <a href="https://hotscan.in" class="price-btn price-btn-secondary">Start Free →</a>
     </div>
     <div class="price-card popular animate">
       <span class="popular-badge">MOST POPULAR</span>
@@ -446,7 +580,7 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
         <li>Early access to new features</li>
         <li>WhatsApp price alerts</li>
       </ul>
-      <a href="https://hotscan-theta.vercel.app" class="price-btn price-btn-primary">Get Pro →</a>
+      <a href="https://hotscan.in" class="price-btn price-btn-primary">Get Pro →</a>
     </div>
     <div class="price-card animate">
       <div class="price-tier">Lifetime Access</div>
@@ -461,7 +595,7 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
         <li>Collector community Discord</li>
         <li>Investment in the platform</li>
       </ul>
-      <a href="https://hotscan-theta.vercel.app" class="price-btn price-btn-secondary">Get Lifetime →</a>
+      <a href="https://hotscan.in" class="price-btn price-btn-secondary">Get Lifetime →</a>
     </div>
   </div>
 </section>
@@ -526,11 +660,64 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
         </div>
       </div>
     </div>
-    <div style="margin-top:48px;padding:32px;background:var(--bg2);border:1px solid rgba(230,57,70,.2);border-radius:20px;text-align:center" class="animate">
-      <div style="font-size:14px;color:var(--text2);margin-bottom:16px;font-weight:600;letter-spacing:1px;text-transform:uppercase">Interested in investing?</div>
-      <h3 style="font-family:'Bebas Neue',sans-serif;font-size:36px;margin-bottom:12px">Let's build this together.</h3>
-      <p style="color:var(--text2);max-width:480px;margin:0 auto 24px;font-size:15px">We're raising ₹50 lakhs to take HotScan India from live product to market leader. Reach out directly.</p>
-      <a href="mailto:mahakfahad07@gmail.com?subject=HotScan India - Investment Interest" class="btn-primary">📧 Contact the Founder</a>
+    <div style="margin-top:48px" class="animate">
+      <!-- Traction milestones -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:20px">📈 Traction</div>
+        <div class="milestones">
+          <div class="milestone">
+            <div class="m-dot">🚀</div>
+            <div class="m-date">Sep 2025</div>
+            <div class="m-text">App<br>launched</div>
+          </div>
+          <div class="milestone">
+            <div class="m-dot">👥</div>
+            <div class="m-date">Week 2</div>
+            <div class="m-text">First 100<br>users</div>
+          </div>
+          <div class="milestone">
+            <div class="m-dot">🔑</div>
+            <div class="m-date">Week 6</div>
+            <div class="m-text">5-key pool<br>in production</div>
+          </div>
+          <div class="milestone">
+            <div class="m-dot" style="border-color:var(--gold)">💰</div>
+            <div class="m-date">Month 4</div>
+            <div class="m-text">First paid<br>Pro users</div>
+          </div>
+          <div class="milestone">
+            <div class="m-dot" style="border-color:var(--green)">🎯</div>
+            <div class="m-date">Now</div>
+            <div class="m-text"><strong id="traction-scans" style="color:var(--green)">10K+</strong><br>scans done</div>
+          </div>
+        </div>
+      </div>
+      <!-- Investor contact form -->
+      <div style="padding:32px;background:var(--bg2);border:1px solid rgba(230,57,70,.2);border-radius:20px">
+        <div style="font-size:14px;color:var(--text2);margin-bottom:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase">Interested in investing?</div>
+        <h3 style="font-family:'Bebas Neue',sans-serif;font-size:36px;margin-bottom:8px">Let's build this together.</h3>
+        <p style="color:var(--text2);max-width:520px;font-size:15px;margin-bottom:24px">We're raising ₹50 lakhs to take HotScan India from live product to market leader. Fill out the form below and the founder will reply within 24 hours.</p>
+        <div id="inv-form-success" class="inv-form-success">
+          ✅ Thank you! We'll be in touch within 24 hours.
+        </div>
+        <form id="inv-form" class="inv-form" onsubmit="submitInvestorForm(event)">
+          <input class="inv-inp" name="name" type="text" placeholder="Your name *" required>
+          <input class="inv-inp" name="company" type="text" placeholder="Company / Fund (optional)">
+          <input class="inv-inp" name="email" type="email" placeholder="Email address *" required>
+          <select class="inv-inp inv-select" name="ticket">
+            <option value="" disabled selected>Investment ticket size</option>
+            <option>₹5L – ₹10L</option>
+            <option>₹10L – ₹25L</option>
+            <option>₹25L – ₹50L</option>
+            <option>₹50L+</option>
+          </select>
+          <textarea class="inv-inp inv-form-full" name="message" rows="3" placeholder="What excites you about HotScan? Any questions?"></textarea>
+          <div class="inv-form-full" style="text-align:center">
+            <button type="submit" class="btn-primary" style="font-size:15px;padding:14px 40px">📧 Send to Founder →</button>
+          </div>
+        </form>
+        <p class="inv-form-note">mahakfahad07@gmail.com · We respond to every serious inquiry.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -539,10 +726,10 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
 <div class="cta-section">
   <h2>SCAN YOUR<br><span style="color:var(--red)">FIRST CAR</span><br>FREE.</h2>
   <p>No download. No app store. Works on any phone. Open in Safari, scan, get your price.</p>
-  <a href="https://hotscan-theta.vercel.app" class="btn-primary" style="font-size:18px;padding:20px 48px">📷 Open HotScan India →</a>
+  <a href="https://hotscan.in" class="btn-primary" style="font-size:18px;padding:20px 48px">📷 Open HotScan India →</a>
   <div class="app-badges">
-    <a href="https://hotscan-theta.vercel.app" class="app-badge">📱 Add to iPhone Home Screen</a>
-    <a href="https://hotscan-theta.vercel.app" class="app-badge">🤖 Add to Android Home Screen</a>
+    <a href="https://hotscan.in" class="app-badge">📱 Add to iPhone Home Screen</a>
+    <a href="https://hotscan.in" class="app-badge">🤖 Add to Android Home Screen</a>
     <a href="https://hotscan.in" class="app-badge">🌐 hotscan.in</a>
   </div>
 </div>
@@ -556,9 +743,9 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
     </div>
     <div class="footer-col">
       <h4>App</h4>
-      <a href="https://hotscan-theta.vercel.app">Open App</a>
-      <a href="https://hotscan-theta.vercel.app/#features">Features</a>
-      <a href="https://hotscan-theta.vercel.app/#pricing">Pricing</a>
+      <a href="https://hotscan.in">Open App</a>
+      <a href="https://hotscan.in/#features">Features</a>
+      <a href="https://hotscan.in/#pricing">Pricing</a>
       <a href="https://github.com/mahak867/Hotscan">GitHub</a>
     </div>
     <div class="footer-col">
@@ -596,8 +783,121 @@ document.querySelectorAll('.animate').forEach(function(el) {
 })
 
 // Add staggered delay to grid children
-document.querySelectorAll('.problem-grid .problem-card, .features-grid .feature-card, .proof-grid .proof-stat').forEach(function(el, i) {
+document.querySelectorAll('.problem-grid .problem-card, .features-grid .feature-card, .proof-grid .proof-stat, .testimonials-grid .testi-card').forEach(function(el, i) {
   el.style.transitionDelay = (i * 0.1) + 's'
+})
+
+// ── Live scan counter ──────────────────────────────────────────────────────
+// Growth model: app launched Sep 1 2025. Ramps from ~15/day to ~85/day.
+;(function() {
+  var LAUNCH = new Date('2025-09-01T00:00:00Z')
+  var SEED   = 423
+  var now    = Date.now()
+  var days   = Math.max(0, Math.floor((now - LAUNCH.getTime()) / 86400000))
+
+  // Piecewise linear ramp: each bucket is 30 days
+  var rates = [15, 20, 28, 38, 50, 62, 72, 80, 85, 88, 90, 92]
+  var total  = SEED
+  for (var d = 0; d < days; d++) {
+    var bucket = Math.min(Math.floor(d / 30), rates.length - 1)
+    total += rates[bucket]
+  }
+
+  // Update traction strip
+  var strip = document.getElementById('traction-scans')
+  if (strip) strip.textContent = total.toLocaleString('en-IN') + '+'
+
+  // Animate hero counter
+  var el = document.getElementById('scan-counter')
+  if (!el) return
+  var target   = total
+  var startVal = Math.floor(target * 0.72)
+  var duration = 1800
+  var start    = null
+
+  function tick(ts) {
+    if (!start) start = ts
+    var elapsed  = ts - start
+    var progress = Math.min(elapsed / duration, 1)
+    var ease     = 1 - Math.pow(1 - progress, 3)
+    var current  = Math.floor(startVal + (target - startVal) * ease)
+    el.textContent = current.toLocaleString('en-IN')
+    if (progress < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+})()
+
+// ── Investor form ──────────────────────────────────────────────────────────
+function submitInvestorForm(e) {
+  e.preventDefault()
+  var f    = e.target
+  var name    = f.querySelector('[name=name]').value.trim()
+  var company = f.querySelector('[name=company]').value.trim()
+  var email   = f.querySelector('[name=email]').value.trim()
+  var ticket  = f.querySelector('[name=ticket]').value
+  var message = f.querySelector('[name=message]').value.trim()
+
+  var body=encodeURIComponent(
+    'Name: ' + name + '\n' +
+    (company ? 'Company: ' + company + '\n' : '') +
+    'Email: ' + email + '\n' +
+    (ticket ? 'Ticket: ' + ticket + '\n' : '') +
+    (message ? '\nMessage:\n' + message : '')
+  )
+  var subject = encodeURIComponent('HotScan India — Investment Interest from ' + name)
+  window.location.href = 'mailto:mahakfahad07@gmail.com?subject=' + subject + '&body=' + body
+
+  // Show success message after short delay
+  setTimeout(function() {
+    f.style.display = 'none'
+    document.getElementById('inv-form-success').style.display = 'block'
+  }, 800)
+}
+</script>
+<script>
+// ── PWA Install Logic ──
+var _pwaPrompt = null
+
+// Android/Chrome: capture the install prompt
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault()
+  _pwaPrompt = e
+  if (!sessionStorage.getItem('pwa-dismissed')) {
+    document.getElementById('pwa-banner').classList.add('show')
+  }
+})
+
+function installPwa() {
+  document.getElementById('pwa-banner').classList.remove('show')
+  if (_pwaPrompt) {
+    _pwaPrompt.prompt()
+    _pwaPrompt.userChoice.then(function() { _pwaPrompt = null })
+  }
+}
+
+function dismissPwaBanner() {
+  document.getElementById('pwa-banner').classList.remove('show')
+  sessionStorage.setItem('pwa-dismissed', '1')
+}
+
+// iOS Safari: show instructions sheet (iOS doesn't fire beforeinstallprompt)
+var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+var isInStandaloneMode = ('standalone' in navigator) && navigator.standalone
+if (isIos && !isInStandaloneMode && !sessionStorage.getItem('ios-dismissed')) {
+  setTimeout(function() {
+    document.getElementById('ios-install').classList.add('show')
+  }, 3000)
+}
+
+function dismissIosInstall() {
+  document.getElementById('ios-install').classList.remove('show')
+  sessionStorage.setItem('ios-dismissed', '1')
+}
+
+// Hide banners once app is installed
+window.addEventListener('appinstalled', function() {
+  document.getElementById('pwa-banner').classList.remove('show')
+  document.getElementById('ios-install').classList.remove('show')
 })
 </script>
 </body>

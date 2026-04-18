@@ -15,7 +15,7 @@
 **Point your camera at any Hot Wheels → Get live Indian prices instantly. Free.**
 
 [![Live App](https://img.shields.io/badge/🌐_Live_App-hotscan.in-e63946?style=for-the-badge)](https://www.hotscan.in)
-[![Version](https://img.shields.io/badge/Version-8.0-ffd60a?style=for-the-badge)](https://github.com/mahak867/Hotscan)
+[![Version](https://img.shields.io/badge/Version-8.1-ffd60a?style=for-the-badge)](https://github.com/mahak867/Hotscan)
 [![Made in India](https://img.shields.io/badge/Made_in-India_🇮🇳-ff9933?style=for-the-badge)](https://www.hotscan.in)
 [![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge)](https://www.hotscan.in)
 [![License](https://img.shields.io/badge/License-MIT-2dc653?style=for-the-badge)](LICENSE)
@@ -32,7 +32,7 @@
 
 ## 🚀 What Is HotScan?
 
-A **free Progressive Web App** — no download needed, works on any phone — that uses AI to instantly identify any Hot Wheels car and fetch **live Indian market prices** from OLX, Instagram, Hamleys, Flipkart and collector swap meets.
+A **free Progressive Web App** — install it directly on your phone like a native app, no app store needed — that uses AI to instantly identify any Hot Wheels car and fetch **live Indian market prices** from OLX, Instagram, Hamleys, Flipkart and collector swap meets.
 
 ---
 
@@ -98,13 +98,32 @@ All models on **Groq** — fastest AI inference. Free tier is plenty for persona
 
 ---
 
-## 📱 Install as App
+## 📱 Install as App (No App Store Needed)
 
-**iPhone:** Safari → Share → Add to Home Screen  
-**Android:** Chrome → ⋮ → Add to Home Screen  
-**Desktop:** Just open [hotscan.in](https://www.hotscan.in)
+HotScan is a fully installable **Progressive Web App (PWA)**. It sits on your home screen, opens full-screen with no browser bar, and works offline for cached pages — just like a native app.
 
-Get a free API key at [console.groq.com](https://console.groq.com) — takes 2 minutes.
+### Android (Chrome / Samsung Internet)
+1. Open [hotscan.in](https://www.hotscan.in)
+2. An **"Install HotScan"** banner automatically appears at the bottom of the screen
+3. Tap **Install** → the app is added to your home screen instantly
+
+> Chrome also shows an install icon (⊕) in the address bar.
+
+### iPhone / iPad (Safari)
+1. Open [hotscan.in](https://www.hotscan.in) in **Safari**
+2. An instruction sheet slides up after a few seconds — or follow these steps manually:
+   - Tap the **Share button** (⎙) at the bottom of Safari
+   - Scroll down and tap **"Add to Home Screen"**
+   - Tap **"Add"** — done! 🎉
+
+> iOS requires Safari specifically. Chrome/Firefox on iOS won't show the install option.
+
+### What you get after installing
+- 🏠 Home screen icon with the HotScan logo
+- 📱 Full-screen experience (no browser chrome)
+- ⚡ Faster load times (assets cached by service worker)
+- 🔔 Deal alert push notifications (coming soon)
+- 📲 Long-press shortcuts: **Scan a Car** · **My Collection**
 
 ---
 
@@ -113,6 +132,7 @@ Get a free API key at [console.groq.com](https://console.groq.com) — takes 2 m
 | Layer | Technology |
 |---|---|
 | Frontend | Vanilla HTML/CSS/JS — single file PWA, zero build step |
+| PWA | Web App Manifest · Service Worker (cache-first, offline support) |
 | AI Vision | `meta-llama/llama-4-scout-17b-16e-instruct` via Groq |
 | AI Prices | `moonshotai/kimi-k2-instruct` via Groq |
 | Auth | Supabase Auth — Google OAuth + email/password |
@@ -152,7 +172,7 @@ Get a free API key at [console.groq.com](https://console.groq.com) — takes 2 m
 - [ ] Barcode camera scan mode
 - [ ] Collection sharing between users
 - [ ] OLX listing auto-draft
-- [ ] Native iOS / Android app
+- [x] Installable PWA on iPhone & Android (v8.1)
 
 ---
 
@@ -175,6 +195,6 @@ git clone https://github.com/mahak867/Hotscan
 
 [⭐ Star this repo](https://github.com/mahak867/Hotscan) · [🐛 Report a bug](https://github.com/mahak867/Hotscan/issues) · [💬 WhatsApp Support](https://api.whatsapp.com/send?phone=919999999999)
 
-*HotScan India v8.0 · hotscan.in*
+*HotScan India v8.1 · hotscan.in*
 
 </div>
