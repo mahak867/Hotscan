@@ -1431,7 +1431,7 @@ body{
   <div id="mp-sell" style="display:none">
     <div class="card">
       <div class="card-title">📦 List a Car for Sale</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6">Scan the car first → tap Sell → we auto-fill the details</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6">Scan the car first → tap Sell → we auto-fill the details. Buyers will contact you via WhatsApp.</div>
       <input class="inp" id="sl-name" type="text" placeholder="Car name e.g. Bone Shaker STH 2023">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
         <input class="inp" id="sl-price" type="number" placeholder="Price ₹" style="margin:0">
@@ -1439,9 +1439,23 @@ body{
           <option>Mint on Card</option><option>Near Mint</option><option>Very Good</option><option>Loose</option>
         </select>
       </div>
+      <select class="inp" id="sl-rarity">
+        <option value="Common">Common</option>
+        <option value="Uncommon">Uncommon</option>
+        <option value="Rare">Rare</option>
+        <option value="Premium">Premium</option>
+        <option value="Treasure Hunt">Treasure Hunt</option>
+        <option value="Super Treasure Hunt">Super Treasure Hunt</option>
+        <option value="Vintage">Vintage</option>
+      </select>
       <input class="inp" id="sl-city" type="text" placeholder="Your city">
+      <input class="inp" id="sl-phone" type="tel" placeholder="WhatsApp number (10 digits, no +91)" maxlength="10" inputmode="numeric">
       <textarea class="inp" id="sl-notes" placeholder="Description, colour, any extras..." style="height:65px;resize:none"></textarea>
-      <button class="btn-red" style="width:100%;justify-content:center;padding:13px;border-radius:12px;margin-top:4px" onclick="submitListing()">📤 List Now</button>
+      <button class="btn-red" id="sl-submit-btn" style="width:100%;justify-content:center;padding:13px;border-radius:12px;margin-top:4px" onclick="submitListing()">📤 List Now</button>
+    </div>
+    <div class="card" id="my-listings-card" style="display:none">
+      <div class="card-title">📋 My Active Listings</div>
+      <div id="my-listings-wrap"></div>
     </div>
     <div class="card">
       <div class="card-title">Also List On</div>
@@ -1565,7 +1579,7 @@ body{
       <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">Save your collection to the cloud, sync across devices, and unlock Pro features</div>
       <button class="btn-red" style="width:100%;justify-content:center;padding:14px;border-radius:12px;font-size:15px;margin-bottom:10px" onclick="openAuth()">Sign In / Create Account</button>
     </div>
-    <div class="card"><div class="card-title">Why create an account?</div><div style="font-size:13px;color:var(--text2);line-height:2.2">☁️ Cloud sync — access collection on any device<br>🔒 Secure — powered by Clerk auth<br>⭐ Pro — unlimited scans for ₹99/month<br>👑 Developer — lifetime Pro if you're Mahak</div></div>
+    <div class="card"><div class="card-title">Why create an account?</div><div style="font-size:13px;color:var(--text2);line-height:2.2">☁️ Cloud sync — access collection on any device<br>🔒 Secure — backed by Supabase<br>⭐ Pro — unlimited scans for ₹99/month<br>🤝 Community — connect with collectors across India</div></div>
   </div>
   <!-- Logged in state -->
   <div id="profile-user" style="display:none">
@@ -1624,6 +1638,14 @@ body{
     <!-- Actions -->
     <div class="card"><div class="card-title">Account</div>
       <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:var(--surface2);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">💬 WhatsApp Number (for Marketplace)</div>
+          <div style="display:flex;gap:8px">
+            <input id="prof-wa-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;background:var(--surface3);border:1px solid var(--border2);color:#fff;padding:9px 11px;border-radius:8px;font-size:13px;outline:none">
+            <button onclick="saveProfilePhone()" style="background:var(--red);border:none;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Save</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:5px">Saved once — auto-fills when you list a car for sale</div>
+        </div>
         <button onclick="exportVal()" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">📄 Export Valuation Certificate</button>
         <button onclick="syncCollectionFromCloud().then(renderProfilePage)" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">☁️ Sync Collection from Cloud</button>
         <button onclick="signOutUser()" style="background:#1a0808;border:1px solid #4a1a1a;color:#ff8080;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">🚪 Sign Out</button>
@@ -1703,14 +1725,15 @@ body{
     <p class="auth-subline">Save your collection. Sync across devices.</p>
 
     <!-- Social buttons -->
+    <!-- NOTE (naming): Google shows "to continue to qptxrvvpbrnklzpxjtfr.supabase.co" because
+         Supabase's domain is the OAuth callback URL registered with Google.
+         To display "HotScan India" instead, go to:
+         Google Cloud Console → APIs & Services → OAuth consent screen → set App name = "HotScan India"
+         To show "hotscan.in" as the domain, enable a custom domain in Supabase dashboard (Authentication → Custom Domains). -->
     <div class="auth-socials">
       <button class="auth-social-btn" onclick="signInWithGoogle()">
         <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         Continue with Google
-      </button>
-      <button class="auth-social-btn" onclick="signInWithApple()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-        Continue with Apple
       </button>
     </div>
 
@@ -1914,6 +1937,8 @@ async function authContinue(){
     setTimeout(function(){ var p=document.getElementById('auth-pass-inp'); if(p) p.focus() },80)
     return
   }
+  // Use captured email from step 1 as fallback (handles case where user clears the input)
+  if(!email) email = _authEmail
   var pass=document.getElementById('auth-pass-inp').value
   if(!pass){ showAuthErr('Enter your password'); return }
   if(_authMode==='signup'&&pass.length<6){ showAuthErr('Password must be at least 6 characters'); return }
@@ -1976,19 +2001,14 @@ function signInWithGoogle(){
     provider: 'google',
     options: {
       redirectTo: redirectTo + '/index.html',
-      queryParams: { access_type: 'offline', prompt: 'consent' }
+      // 'select_account' shows the account picker without forcing re-consent on every login
+      queryParams: { access_type: 'offline', prompt: 'select_account' }
     }
   }).catch(function(e){ showAuthErr('Google sign-in failed. Try email instead.') })
 }
 
 
-function signInWithApple(){
-  if(!_sb){ showAuthErr('Service unavailable'); return }
-  _sb.auth.signInWithOAuth({
-    provider: 'apple',
-    options:{ redirectTo: 'https://hotscan.in' }
-  })
-}
+// Apple OAuth is not yet configured in Supabase — button is hidden until enabled
 
 
 async function sendPasswordReset(){
@@ -2091,8 +2111,8 @@ var SUPA_URL  = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
 var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
 var RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
 var DEV_EMAIL = 'mahakfahad07@gmail.com'
-var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'  // update with real link
-var WA_SUPPORT   = 'https://api.whatsapp.com/send?phone=919999999999&text=Hi%20HotScan%20Support'  // update with real number
+var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'
+var WA_SUPPORT   = null  // set to 'https://api.whatsapp.com/send?phone=91XXXXXXXXXX...' when ready
 var FREE_SCANS = 5
 
 // ── OAuth callback handler — MUST be first ──
@@ -2293,6 +2313,7 @@ function goPage(id){
     if(dock) dock.blur()
   }
   if(id === 'profile') renderProfilePage()
+  if(id === 'marketplace') loadAndRenderListings()
   window.scrollTo({top:0, behavior:'smooth'})
 }
 
@@ -2466,6 +2487,13 @@ function runAnalyze() {
 }
 
 // ── Groq API helper ──
+// HAIKU  = fast model  → quick lookups: deal check, OLX analysis
+// CODEX  = smart model → deep analysis: price search, barcode/name lookup
+// VISION = vision model → photo identification (all groqVision calls)
+var HAIKU_MODEL  = "llama-3.1-8b-instant"
+var CODEX_MODEL  = "moonshotai/kimi-k2-instruct"
+var VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+
 async function groqVision(imageData, systemPrompt, userPrompt) {
   var b64 = imageData.split(',')[1]
   var mime = imageData.split(';')[0].split(':')[1]
@@ -2473,7 +2501,7 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
     method: 'POST',
     headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: VISION_MODEL,
       messages: [
         {role:'system', content:systemPrompt},
         {role:'user', content:[
@@ -2481,45 +2509,96 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
           {type:'text', text:userPrompt}
         ]}
       ],
-      temperature: 0.05, max_tokens: 800
+      temperature: 0.05, max_tokens: 900
     })
   })
   if (!res.ok) {
-    var e = await res.json().catch(function(){return{}})
+    var bodyText = await res.text().catch(function(){return'{}'})
+    var errBody = {}; try { errBody = JSON.parse(bodyText) } catch(ex) {}
     if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
-    if (res.status === 429) throw new Error('Rate limit — wait 30 seconds')
-    throw new Error((e.error && e.error.message) || 'Vision API error ' + res.status)
+    if (res.status === 429) {
+      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
+      throw new Error('Rate limit — wait ' + wait + 's and try again')
+    }
+    throw new Error((errBody.error && errBody.error.message) || 'Vision API error ' + res.status)
   }
   var data = await res.json()
-  return parseJSON(data.choices[0].message.content)
+  var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+  if (!content) throw new Error('Empty response from AI vision model. Try again.')
+  return parseJSON(content)
 }
 
 async function groqText(prompt, model) {
+  var chosenModel = model || CODEX_MODEL
   var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: model || 'moonshotai/kimi-k2-instruct',
+      model: chosenModel,
       messages: [{role:'user', content:prompt}],
-      temperature: 0.1, max_tokens: 500
+      temperature: 0.1, max_tokens: 600
     })
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
+    if (res.status === 429) {
+      var wait = parseInt(res.headers.get('retry-after') || '20', 10)
+      throw new Error('Rate limit — wait ' + wait + 's and try again')
+    }
+    // On model-unavailable errors try falling back: CODEX → HAIKU, HAIKU → error
+    if (res.status >= 400 && chosenModel !== HAIKU_MODEL) {
+      var fb = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model: HAIKU_MODEL,
+          messages: [{role:'user', content:prompt}],
+          temperature: 0.1, max_tokens: 600
+        })
+      })
+      if (!fb.ok) throw new Error('AI text API error ' + fb.status)
+      var fd = await fb.json()
+      var fc = fd.choices && fd.choices[0] && fd.choices[0].message && fd.choices[0].message.content
+      if (!fc) throw new Error('Empty fallback response from AI. Try again.')
+      return parseJSON(fc)
+    }
+    throw new Error('AI text API error ' + res.status)
+  }
   var data = await res.json()
-  return parseJSON(data.choices[0].message.content)
+  var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+  if (!content) throw new Error('Empty response from AI. Try again.')
+  return parseJSON(content)
 }
 
 function parseJSON(raw) {
+  if (!raw) throw new Error('No response from AI. Try again.')
   raw = raw.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
-  var s = raw.indexOf('{'), e = raw.lastIndexOf('}') + 1
-  if (s === -1) throw new Error('Could not parse AI response. Try again.')
-  return JSON.parse(raw.substring(s, e))
+  var s = raw.indexOf('{')
+  var e = raw.lastIndexOf('}')
+  if (s === -1 || e === -1) throw new Error('AI returned unexpected format. Try again.')
+  if (e < s) throw new Error('AI returned unexpected format. Try again.')
+  try {
+    return JSON.parse(raw.substring(s, e + 1))
+  } catch(ex) {
+    throw new Error('Could not parse AI response. Try again.')
+  }
+}
+
+// ── Safe HTML escape for untrusted AI strings placed in innerHTML ──
+function escHtml(str) {
+  if (str === null || str === undefined) return ''
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;')
 }
 
 // ── Identify car ──
 async function identifyCar(imageData) {
   var sys = [
-    'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2025.',
+    'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2026.',
     '',
     'IDENTIFICATION RULES — follow precisely:',
     '1. CASTING: Identify the exact vehicle model (e.g. "69 Camaro" not just "Camaro"). Note year of car, make, model.',
@@ -2620,7 +2699,7 @@ async function searchPrices(carName, rarity, castingYear) {
     '"sell_platforms":["OLX","Instagram collector groups","Maido"],',
     '"buy_tip":"best way to find this car in India at good price"}'
   ].join('\n')
-  try { return await groqText(prompt) } catch(e) { return null }
+  try { return await groqText(prompt, CODEX_MODEL) } catch(e) { return null }
 }
 
 // ── Analyze photo ──
@@ -2689,7 +2768,7 @@ async function analyzePhoto() {
     }
   } catch(err) {
     stopTimer(); setStep(1, 'err')
-    document.getElementById('err-box').innerHTML = '⚠️ ' + err.message + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
+    document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message) + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
     document.getElementById('err-box').style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify & Get Live Prices'
@@ -2711,7 +2790,7 @@ async function analyzeDeal() {
   startTimer('Checking deal...')
   var prompt = 'India Hot Wheels deal expert. Is ₹' + asking + ' a good price for "' + carName + '"?\nReturn ONLY valid JSON:\n{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"specific why","suggestion":"exact counter-offer or action","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X"}'
   try {
-    var d = await groqText(prompt)
+    var d = await groqText(prompt, HAIKU_MODEL)
     stopTimer()
     var cfg = {
       'Steal':       {icon:'🤑', cls:'vd-steal'},
@@ -2821,7 +2900,7 @@ async function scanBarcode() {
     prompt = 'Hot Wheels database search: "' + code + '". Find the best matching car, prioritize the most valuable/collectible version. Return ONLY valid JSON:\n{"identified":true,"confidence":88,"name":"exact name","series":"series year","casting_year":"year","color":"most iconic color","tampo":"tampo","wheel_type":"best version wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"why collectors want this","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"specific investment case","fun_fact":"why notable","us_retail_usd":"1.49","us_collector_usd":"5-50","india_retail_inr":"150-500","india_collector_inr":"300-5000","price_trend":"Rising|Stable|Falling","price_trend_reason":"trend reason","india_insight":"Indian collector demand","also_look_for":"related valuable variants"}'
   }
   try {
-    var d = await groqText(prompt, 'moonshotai/kimi-k2-instruct')
+    var d = await groqText(prompt, CODEX_MODEL)
     stopTimer()
     if (!d || !d.identified) throw new Error('Not found. Try the full car name e.g. "Hot Wheels Bone Shaker"')
     lastResult = d
@@ -2858,8 +2937,9 @@ function showResult(d) {
   document.getElementById('p4').textContent = d.us_collector_usd ? '$' + d.us_collector_usd : '—'
   document.getElementById('live-upd').textContent = 'Updated just now'
   var trend = d.price_trend || 'Stable'
+  if (trend !== 'Rising' && trend !== 'Falling' && trend !== 'Stable') trend = 'Stable'
   document.getElementById('trend-ic').textContent = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
-  document.getElementById('trend-txt').innerHTML = '<span class="' + (trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst') + '">' + trend + '</span>' + (d.price_trend_reason ? ' — ' + d.price_trend_reason : '')
+  document.getElementById('trend-txt').innerHTML = '<span class="' + (trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst') + '">' + escHtml(trend) + '</span>' + (d.price_trend_reason ? ' — ' + escHtml(d.price_trend_reason) : '')
   // Investment
   var ib = document.getElementById('r-inv')
   ib.textContent = (d.investment || 'Medium') + ' Potential'; ib.className = 'inv-badge'
@@ -2967,14 +3047,24 @@ function addToCol() {
   var item = {
     id: Date.now(),
     name: lastResult.name, series: lastResult.series,
+    casting_year: lastResult.casting_year,
     rarity: lastResult.rarity, color: lastResult.color,
+    tampo: lastResult.tampo, wheel_type: lastResult.wheel_type,
+    india_retail_inr: lastResult.india_retail_inr,
     india_collector_inr: lastResult.india_collector_inr,
+    us_retail_usd: lastResult.us_retail_usd,
+    us_collector_usd: lastResult.us_collector_usd,
     investment: lastResult.investment,
+    investment_reason: lastResult.investment_reason,
+    fun_fact: lastResult.fun_fact,
+    india_insight: lastResult.india_insight,
     image: imgThumb, added: new Date().toISOString()
   }
   collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(collection))
-  if (_sb && currentUser) saveToCloud(item)
+  if (_sb && currentUser) saveToCloud(item).then(function(cloudId) {
+    if (cloudId) { item.id = cloudId; localStorage.setItem('hs_col', JSON.stringify(collection)) }
+  })
   renderCol(); goPage('collection')
 }
 function delFromCol(id) {
@@ -3163,7 +3253,7 @@ function closeShare() { document.getElementById('share-modal').classList.remove(
 function shareWA() {
   if (!lastResult) return
   var txt = '🚗 *' + lastResult.name + '*\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + lastResult.india_collector_inr + '\n🇺🇸 US: $' + lastResult.us_collector_usd + '\n📈 ' + lastResult.investment + ' Investment\n\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner_\n_hotscan.in_'
-  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
 }
 async function shareNative() {
   if (!lastResult) return
@@ -3173,7 +3263,7 @@ async function shareNative() {
 }
 function shareApp() {
   var txt = '🚗 India\'s first Hot Wheels scanner is here!\n\nScan any Hot Wheels car and instantly get:\n✅ Rarity rating\n✅ Indian market prices in ₹\n✅ Investment potential\n✅ Where to buy & sell in India\n\nFree! No app download needed 🇮🇳\n\n👉 hotscan.in'
-  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank')
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
 }
 
 // ── Events ──
@@ -3292,7 +3382,7 @@ async function identifyMultipleCars(imageData) {
     method: 'POST',
     headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: VISION_MODEL,
       messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
       temperature: 0.05, max_tokens: 2000
     })
@@ -3348,7 +3438,7 @@ async function analyzeMultiPhoto() {
     showMultiResults(allCars)
   } catch(err) {
     stopTimer(); setStep(1, 'err')
-    document.getElementById('err-box').innerHTML = '⚠️ ' + err.message
+    document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message)
     document.getElementById('err-box').style.display = 'block'
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify All Cars (' + multiImages.length + ' photos)'
@@ -3496,7 +3586,9 @@ function addCarToCollection(car, thumb) {
   }
   collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(collection))
-  if (_sb && currentUser) saveToCloud(item)
+  if (_sb && currentUser) saveToCloud(item).then(function(cloudId) {
+    if (cloudId) { item.id = cloudId; localStorage.setItem('hs_col', JSON.stringify(collection)) }
+  })
   renderCol()
   return item
 }
@@ -3556,18 +3648,6 @@ async function initAuth(){
       fullCloudSync().then(function(){renderCol()}).catch(function(){})
       updateHeaderUI(); renderProfilePage(); updateScanCounter()
     }
-    if(!currentUser){
-      try{
-        var rr=await _sb.auth.refreshSession()
-        if(rr.data&&rr.data.session&&rr.data.session.user){
-          var u=rr.data.session.user
-          currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
-          await loadProfile()
-          fullCloudSync().then(function(){renderCol()}).catch(function(){})
-          updateHeaderUI(); renderProfilePage(); updateScanCounter()
-        }
-      }catch(e){}
-    }
   }catch(e){ console.warn('initAuth:',e) }
   updateHeaderUI()
 }
@@ -3626,13 +3706,14 @@ function updateHeaderUI(){
   btn.onclick=function(){ currentUser?openAccountModal():openAuth() }
   if(!currentUser){ btn.innerHTML='<div class="app-user-inner">Sign In</div>'; return }
   var prefs={}; try{ prefs=JSON.parse(localStorage.getItem('hs_prefs')||'{}') }catch(e){}
-  var name=prefs.displayName||currentUser.name||currentUser.email.split('@')[0]
-  var initial=name[0].toUpperCase()
+  var name=prefs.displayName||currentUser.name||currentUser.email.split('@')[0]||'?'
+  var initial=escHtml((name.length > 0 ? name[0] : '?').toUpperCase())
+  var safeName=escHtml(name)
   var isDev=!!(userProfile&&userProfile.is_developer)||(currentUser.email===DEV_EMAIL)
   var isPro=!isDev&&!!(userProfile&&userProfile.is_pro)
   var bg=isDev?'linear-gradient(135deg,#7c3aed,#4f46e5)':isPro?'linear-gradient(135deg,#e63946,#ff6b35)':(prefs.avatarColor||'linear-gradient(135deg,#374151,#4b5563)')
   var badge=isDev?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap">&#x1F451; Dev</span>':isPro?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span>':''
-  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+initial+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>'+badge+'</div>'
+  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+initial+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>'+badge+'</div>'
 }
 
 
@@ -3666,6 +3747,8 @@ async function signOutUser(){
   currentUser = null
   userProfile = null
   localStorage.removeItem('hs_pro')
+  localStorage.removeItem('hs_profile_cache')
+  try { localStorage.removeItem('hs_auth_v2') } catch(e) {}
   closeAccountModal()
   closeProModal()
   try{ if(_sb) await _sb.auth.signOut() }catch(e){}
@@ -3694,17 +3777,17 @@ async function startPayment() {
     notes: {user_id: currentUser.id},
     theme: {color: '#e63946'},
     handler: async function(response) {
-      if (_sb) {
-        await _sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_subscription_id:response.razorpay_payment_id}).eq('id', currentUser.id)
-        await loadProfile()
-      }
       localStorage.setItem('hs_pro', 'true')
+      try {
+        if (_sb) {
+          await _sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_subscription_id:response.razorpay_payment_id}).eq('id', currentUser.id)
+          await loadProfile()
+        }
+      } catch(e) { console.warn('Pro DB update error:', e) }
       closeAccountModal(); closeProModal(); updateHeaderUI(); renderProfilePage()
       setTimeout(function() { alert('🎉 Welcome to HotScan Pro!\nUnlimited scans activated!') }, 500)
     }
   }
-  await loadRazorpay()
-  if(!window.Razorpay){ alert('Payment service unavailable. Please try again.'); return }
   var rzp = new Razorpay(options)
   rzp.on('payment.failed', function(r) { alert('Payment failed: ' + r.error.description) })
   closeAccountModal(); closeProModal(); rzp.open()
@@ -3769,6 +3852,24 @@ function renderProfilePage() {
       })
     }
   }
+  // Pre-fill saved WhatsApp number
+  var phoneEl = document.getElementById('prof-wa-phone')
+  if (phoneEl && userProfile && userProfile.whatsapp_phone) phoneEl.value = userProfile.whatsapp_phone
+}
+
+async function saveProfilePhone() {
+  var phoneEl = document.getElementById('prof-wa-phone')
+  if (!phoneEl) return
+  var phone = phoneEl.value.trim().replace(/\D/g, '')
+  if (!phone || phone.length !== 10) { showToast('Enter a valid 10-digit WhatsApp number', 'error'); return }
+  if (!currentUser || !_sb) { showToast('Sign in first', 'error'); return }
+  try {
+    await _sb.from('profiles').update({whatsapp_phone: phone}).eq('id', currentUser.id)
+    if (!userProfile) userProfile = {}
+    userProfile.whatsapp_phone = phone
+    try { localStorage.setItem('hs_profile_cache', JSON.stringify({data: userProfile, ts: Date.now()})) } catch(e) {}
+    showToast('WhatsApp number saved ✅', 'success')
+  } catch(e) { showToast('Could not save — try again', 'error') }
 }
 
 // ── Cloud sync ──
@@ -3784,9 +3885,9 @@ async function syncCollectionFromCloud() {
   } catch(e) { console.warn('Sync error:', e) }
 }
 async function saveToCloud(item) {
-  if (!currentUser || !_sb) return
+  if (!currentUser || !_sb) return null
   try {
-    await _sb.from('collection').insert({
+    var res = await _sb.from('collection').insert({
       user_id: currentUser.id,
       name: item.name,
       series: item.series,
@@ -3805,8 +3906,10 @@ async function saveToCloud(item) {
       india_insight: item.india_insight,
       image_thumb: item.image ? item.image.substring(0, 4000) : null,
       added_at: item.added
-    })
+    }).select('id').single()
+    if (res.data && res.data.id) return res.data.id
   } catch(e) { console.warn('Cloud save error:', e) }
+  return null
 }
 async function deleteFromCloud(id) {
   if (!currentUser || !_sb) return
@@ -3855,114 +3958,179 @@ function renderPriceHistory(name, rarity, currentPriceStr) {
 }
 
 // ════════════════════════════════════════════════════════
-// MARKETPLACE
+// MARKETPLACE — Supabase-backed peer-to-peer listings
 // ════════════════════════════════════════════════════════
 var _mpFilter = 'all'
 var _mpListings = null
-
-function getMpListings() {
-  if (_mpListings) return _mpListings
-  var stored = localStorage.getItem('hs_listings')
-  if (stored) { _mpListings = JSON.parse(stored); return _mpListings }
-  _mpListings = [
-    {id:1,name:"Camaro Z28 Super Treasure Hunt",rarity:"Super Treasure Hunt",price:9500,condition:"Mint on Card",city:"Mumbai",seller:"RajCollects",image:null,listed:new Date(Date.now()-86400000).toISOString()},
-    {id:2,name:"Bone Shaker Treasure Hunt 2023",rarity:"Treasure Hunt",price:2400,condition:"Near Mint",city:"Delhi",seller:"HWDelhi",image:null,listed:new Date(Date.now()-172800000).toISOString()},
-    {id:3,name:"Porsche 934.5 STH Real Riders",rarity:"Super Treasure Hunt",price:12000,condition:"Mint on Card",city:"Bangalore",seller:"PorscheCollector",image:null,listed:new Date().toISOString()},
-    {id:4,name:"Nissan Skyline R34 GT-R Blue",rarity:"Rare",price:850,condition:"Near Mint",city:"Chennai",seller:"JDMLover",image:null,listed:new Date(Date.now()-43200000).toISOString()},
-    {id:5,name:"Redline 69 Camaro Original 1969",rarity:"Vintage",price:16000,condition:"Very Good",city:"Hyderabad",seller:"VintageHunter",image:null,listed:new Date(Date.now()-259200000).toISOString()},
-    {id:6,name:"Toyota Supra MK4 Car Culture",rarity:"Premium",price:700,condition:"Mint on Card",city:"Pune",seller:"JDMFan_Pune",image:null,listed:new Date().toISOString()},
-  ]
-  localStorage.setItem('hs_listings', JSON.stringify(_mpListings))
-  return _mpListings
-}
 
 function mpMode(tab) {
   ['buy','sell','olx'].forEach(function(t) {
     document.getElementById('mp-tab-'+t).classList.toggle('active', t===tab)
     document.getElementById('mp-'+t).style.display = t===tab ? 'block' : 'none'
   })
-  if (tab === 'buy') renderListings()
+  if (tab === 'buy') loadAndRenderListings()
+  if (tab === 'sell') {
+    renderMyListings()
+    // Pre-fill phone from saved profile
+    var phoneEl = document.getElementById('sl-phone')
+    if (phoneEl && !phoneEl.value && userProfile && userProfile.whatsapp_phone) {
+      phoneEl.value = userProfile.whatsapp_phone
+    }
+  }
 }
 
 function mpFilter(rarity, el) {
   _mpFilter = rarity
+  _mpListings = null
   document.querySelectorAll('#mp-filter-chips .filter-chip').forEach(function(c){c.classList.remove('active')})
   el.classList.add('active')
+  loadAndRenderListings()
+}
+
+async function loadAndRenderListings() {
+  var wrap = document.getElementById('mp-listings-wrap')
+  if (!wrap) return
+  wrap.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text3);font-size:13px">⏳ Loading listings…</div>'
+  var items = []
+  if (_sb) {
+    try {
+      var query = _sb.from('listings').select('*').eq('is_active', true).order('listed_at', {ascending: false}).limit(60)
+      if (_mpFilter !== 'all') query = query.ilike('rarity', '%'+_mpFilter+'%')
+      var res = await query
+      if (res.data) items = res.data
+    } catch(e) { console.warn('Listings fetch error:', e) }
+  }
+  _mpListings = items
   renderListings()
 }
 
 function renderListings() {
-  var items = getMpListings().slice()
-  if (_mpFilter !== 'all') items = items.filter(function(l){ return (l.rarity||'').toLowerCase().includes(_mpFilter.toLowerCase()) })
-  items.sort(function(a,b){ return new Date(b.listed)-new Date(a.listed) })
   var wrap = document.getElementById('mp-listings-wrap')
   if (!wrap) return
+  var items = (_mpListings || []).slice()
   if (!items.length) {
-    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">No listings</div><div class="empty-s">Be first to sell here</div></div>'
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">No listings yet</div><div class="empty-s">Be the first — tap Sell above to list your Hot Wheels</div></div>'
     return
   }
   wrap.innerHTML = ''
   items.forEach(function(l) {
-    var diff = Math.floor((Date.now()-new Date(l.listed))/60000)
-    var ago = diff<60?diff+'m ago':diff<1440?Math.floor(diff/60)+'h ago':Math.floor(diff/1440)+'d ago'
-    var card = document.createElement('div'); card.className='listing-card'
-    var thumb = document.createElement('div'); thumb.className='listing-thumb'
-    if (l.image) { var img=document.createElement('img');img.src=l.image;img.alt='';thumb.appendChild(img) } else thumb.textContent='🚗'
-    var info = document.createElement('div'); info.style.cssText='flex:1;min-width:0'
-    var nm = document.createElement('div'); nm.className='listing-name'; nm.textContent=l.name
-    var meta = document.createElement('div'); meta.className='listing-meta'; meta.textContent=(l.rarity||'Common')+' · '+l.condition+' · '+l.city+' · '+ago
-    var priceRow = document.createElement('div'); priceRow.style.cssText='display:flex;align-items:center;gap:7px;margin:4px 0'
-    var price = document.createElement('span'); price.className='listing-price'; price.textContent='₹'+l.price.toLocaleString('en-IN')
-    var rar = document.createElement('span'); rar.className='rar '+rcls(l.rarity); rar.style.cssText='font-size:10px;padding:2px 6px'; rar.textContent=l.rarity||'Common'
+    var listed = l.listed_at || l.listed
+    var diff = Math.floor((Date.now() - new Date(listed)) / 60000)
+    var ago = diff < 60 ? diff + 'm ago' : diff < 1440 ? Math.floor(diff/60) + 'h ago' : Math.floor(diff/1440) + 'd ago'
+    var card = document.createElement('div'); card.className = 'listing-card'
+    var thumb = document.createElement('div'); thumb.className = 'listing-thumb'
+    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.textContent = '🚗'
+    var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
+    var nm = document.createElement('div'); nm.className = 'listing-name'; nm.textContent = l.name
+    var meta = document.createElement('div'); meta.className = 'listing-meta'; meta.textContent = (l.rarity||'Common') + ' · ' + (l.condition||'N/A') + ' · ' + l.city + ' · ' + ago
+    var priceRow = document.createElement('div'); priceRow.style.cssText = 'display:flex;align-items:center;gap:7px;margin:4px 0'
+    var price = document.createElement('span'); price.className = 'listing-price'; price.textContent = '₹' + Number(l.price).toLocaleString('en-IN')
+    var rar = document.createElement('span'); rar.className = 'rar ' + rcls(l.rarity); rar.style.cssText = 'font-size:10px;padding:2px 6px'; rar.textContent = l.rarity || 'Common'
     priceRow.appendChild(price); priceRow.appendChild(rar)
-    var seller = document.createElement('div'); seller.style.cssText='font-size:10px;color:var(--text3)'; seller.textContent='👤 '+l.seller
-    var acts = document.createElement('div'); acts.className='listing-acts'
-    var waBtn = document.createElement('button'); waBtn.className='l-btn l-btn-wa'; waBtn.textContent='💬 WhatsApp Seller'
-    waBtn.onclick = (function(listing){ return function(){
-      var msg = ['Hi! I saw your Hot Wheels listing on HotScan India.','Car: '+listing.name,'Price: Rs.'+listing.price,'Is it still available?'].join('\n')
-      ol('https://api.whatsapp.com/send?text='+encodeURIComponent(msg))
+    var seller = document.createElement('div'); seller.style.cssText = 'font-size:10px;color:var(--text3)'; seller.textContent = '👤 ' + (l.seller_name || 'Collector')
+    info.appendChild(nm); info.appendChild(meta); info.appendChild(priceRow); info.appendChild(seller)
+    if (l.notes) { var noteEl = document.createElement('div'); noteEl.style.cssText = 'font-size:11px;color:var(--text2);margin-top:3px;white-space:pre-wrap'; noteEl.textContent = l.notes; info.appendChild(noteEl) }
+    var acts = document.createElement('div'); acts.className = 'listing-acts'
+    var waBtn = document.createElement('button'); waBtn.className = 'l-btn l-btn-wa'; waBtn.textContent = '💬 Contact'
+    waBtn.onclick = (function(listing) { return function() {
+      if (!listing.seller_phone) { showToast('Seller has not shared a contact number', 'error'); return }
+      var msg = 'Hi! I saw your Hot Wheels listing on HotScan India.\nCar: ' + listing.name + '\nAsking price: ₹' + listing.price + '\nIs it still available?'
+      window.open('https://wa.me/91' + listing.seller_phone + '?text=' + encodeURIComponent(msg), '_blank')
     }})(l)
-    var shBtn = document.createElement('button'); shBtn.className='l-btn l-btn-share'; shBtn.textContent='📤 Share'
-    shBtn.onclick = (function(listing){ return function(){
-      var msg = ['For Sale: '+listing.name,'Price: Rs.'+listing.price,'City: '+listing.city,'','Listed on HotScan India - hotscan.in'].join('\n')
-      if(navigator.share){navigator.share({title:'Hot Wheels for Sale',text:msg})}
-      else if(navigator.clipboard){navigator.clipboard.writeText(msg).then(function(){showToast('Copied to clipboard!', 'success')})}
+    var shBtn = document.createElement('button'); shBtn.className = 'l-btn l-btn-share'; shBtn.textContent = '📤 Share'
+    shBtn.onclick = (function(listing) { return function() {
+      var msg = ['For Sale: ' + listing.name, 'Price: ₹' + listing.price, 'City: ' + listing.city, '', 'Listed on HotScan India — hotscan.in'].join('\n')
+      if (navigator.share) { navigator.share({title: 'Hot Wheels for Sale', text: msg}) }
+      else if (navigator.clipboard) { navigator.clipboard.writeText(msg).then(function(){ showToast('Copied!', 'success') }) }
     }})(l)
     acts.appendChild(waBtn); acts.appendChild(shBtn)
-    info.appendChild(nm); info.appendChild(meta); info.appendChild(priceRow); info.appendChild(seller); info.appendChild(acts)
+    info.appendChild(acts)
     card.appendChild(thumb); card.appendChild(info)
     wrap.appendChild(card)
   })
 }
 
-function submitListing() {
-  var name = document.getElementById('sl-name').value.trim()
+async function renderMyListings() {
+  var card = document.getElementById('my-listings-card')
+  var wrap = document.getElementById('my-listings-wrap')
+  if (!card || !wrap) return
+  if (!currentUser || !_sb) { card.style.display = 'none'; return }
+  try {
+    var res = await _sb.from('listings').select('*').eq('seller_id', currentUser.id).eq('is_active', true).order('listed_at', {ascending: false})
+    var items = res.data || []
+    if (!items.length) { card.style.display = 'none'; return }
+    card.style.display = 'block'
+    wrap.innerHTML = ''
+    items.forEach(function(l) {
+      var row = document.createElement('div')
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)'
+      var nm = document.createElement('div'); nm.style.cssText = 'flex:1;font-size:13px;font-weight:600'; nm.textContent = l.name
+      var px = document.createElement('div'); px.style.cssText = 'font-size:12px;color:var(--text2);flex-shrink:0'; px.textContent = '₹' + Number(l.price).toLocaleString('en-IN')
+      var del = document.createElement('button'); del.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;flex-shrink:0'; del.textContent = '🗑'; del.title = 'Remove listing'
+      del.onclick = (function(id) { return function() { deleteListing(id) } })(l.id)
+      row.appendChild(nm); row.appendChild(px); row.appendChild(del)
+      wrap.appendChild(row)
+    })
+  } catch(e) { card.style.display = 'none' }
+}
+
+async function deleteListing(id) {
+  if (!currentUser || !_sb) return
+  try {
+    await _sb.from('listings').update({is_active: false}).eq('id', id).eq('seller_id', currentUser.id)
+    showToast('Listing removed', 'success')
+    renderMyListings()
+    _mpListings = null
+  } catch(e) { showToast('Could not remove listing', 'error') }
+}
+
+async function submitListing() {
+  var name  = document.getElementById('sl-name').value.trim()
   var price = parseFloat(document.getElementById('sl-price').value)
-  var cond = document.getElementById('sl-cond').value
-  var city = document.getElementById('sl-city').value.trim()
-  if (!name || !price || !city) { showToast('Please fill in car name, price and city', 'error'); return }
-  var listing = {
-    id: Date.now(), name:name, price:price, condition:cond, city:city,
-    notes: document.getElementById('sl-notes').value.trim(),
-    rarity: lastResult ? lastResult.rarity : 'Common',
-    image: imgThumb||null,
-    seller: currentUser ? (currentUser.name||currentUser.email.split('@')[0]) : 'Anonymous',
-    listed: new Date().toISOString()
-  }
-  var all = getMpListings()
-  all.unshift(listing)
-  _mpListings = all
-  localStorage.setItem('hs_listings', JSON.stringify(all))
-  ;['sl-name','sl-price','sl-city','sl-notes'].forEach(function(id){document.getElementById(id).value=''})
-  showToast('Listed! Other collectors can now contact you.', 'success')
-  mpMode('buy')
+  var cond  = document.getElementById('sl-cond').value
+  var city  = document.getElementById('sl-city').value.trim()
+  var phone = document.getElementById('sl-phone').value.trim().replace(/\D/g, '')
+  if (!phone && userProfile && userProfile.whatsapp_phone) phone = userProfile.whatsapp_phone
+  var rarity = document.getElementById('sl-rarity').value
+  if (!name || !price || !city)      { showToast('Please fill in car name, price and city', 'error'); return }
+  if (!phone || phone.length !== 10) { showToast('Enter a valid 10-digit WhatsApp number', 'error'); return }
+  if (!currentUser)                  { showToast('Sign in to list a car for sale', 'error'); openAuth(); return }
+  if (!_sb)                          { showToast('Connection error — try again', 'error'); return }
+  var btn = document.getElementById('sl-submit-btn')
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Listing…' }
+  try {
+    await _sb.from('listings').insert({
+      seller_id:    currentUser.id,
+      seller_name:  (userProfile && userProfile.display_name) || currentUser.name || currentUser.email.split('@')[0],
+      seller_phone: phone,
+      name:         name,
+      rarity:       rarity,
+      price:        price,
+      condition:    cond,
+      city:         city,
+      notes:        document.getElementById('sl-notes').value.trim() || null,
+      image_thumb:  imgThumb ? imgThumb.substring(0, 4000) : null,
+      is_active:    true
+    })
+    ;['sl-name','sl-price','sl-city','sl-notes','sl-phone'].forEach(function(id){ document.getElementById(id).value = '' })
+    showToast('Listed! Buyers can now contact you on WhatsApp 🎉', 'success')
+    _mpListings = null
+    mpMode('buy')
+  } catch(e) { console.error(e); showToast('Could not save listing — try again', 'error') }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '📤 List Now' } }
 }
 
 function quickSell() {
   goPage('marketplace')
   mpMode('sell')
   if (lastResult && document.getElementById('sl-name')) {
-    document.getElementById('sl-name').value = lastResult.name||''
+    document.getElementById('sl-name').value = lastResult.name || ''
+    var rarEl = document.getElementById('sl-rarity')
+    if (rarEl && lastResult.rarity) {
+      for (var i = 0; i < rarEl.options.length; i++) {
+        if (rarEl.options[i].value === lastResult.rarity) { rarEl.selectedIndex = i; break }
+      }
+    }
   }
 }
 
@@ -3977,7 +4145,7 @@ async function checkOLX() {
     '{"car_name":"name","rarity":"rarity","fair_price_inr":"300-600","listing_price_inr":400,"verdict":"Steal|Fair|Overpriced","verdict_reason":"specific why","buyer_advice":"what to do","red_flags":"concerns or empty string"}'
   ].join(' ')
   try {
-    var d = await groqText(prompt, 'moonshotai/kimi-k2-instruct')
+    var d = await groqText(prompt, HAIKU_MODEL)
     if (!d) throw new Error('Could not analyse')
     document.getElementById('olx-fair-px').textContent = 'Fair: Rs.'+d.fair_price_inr
     document.getElementById('olx-verdict-txt').textContent = (d.verdict||'') + ' — ' + (d.verdict_reason||'')
@@ -4035,12 +4203,12 @@ function copyRefLink() {
 
 function shareViaWA() {
   var lines = [
-    'Found India first Hot Wheels scanner!',
+    'Found India\'s first Hot Wheels scanner!',
     'Scan any car and get the Indian market price instantly.',
     'Free to use at: '+getRefLink(),
     'Sign up with my link and we both get 10 free bonus scans!'
   ]
-  ol('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')))
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')), '_blank')
 }
 
 // ════════════════════════════════════════════════════════
@@ -4099,12 +4267,13 @@ function shareResultToGroup(){
   ]
   if(lastResult.india_insight) lines.push('','Insight: '+lastResult.india_insight)
   lines.push('','Try HotScan free: '+getRefLink())
-  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(lines.join('\n')),'_blank')
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank')
 }
 
 function whatsappSupport(){
+  if (!WA_SUPPORT) { showToast('Support chat coming soon — email hotscan@gmail.com for help', 'info'); return }
   var msg = 'Hi! I need help with HotScan India app.'
-  window.open('https://api.whatsapp.com/send?phone=919999999999&text='+encodeURIComponent(msg),'_blank')
+  window.open('https://wa.me/' + WA_SUPPORT + '?text=' + encodeURIComponent(msg), '_blank')
 }
 </script>
 </body>
