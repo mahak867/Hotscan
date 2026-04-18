@@ -998,7 +998,6 @@ body{
 
 /* ═══════════════════════════════════════════
    HOTSCAN COLLAPSING DOCK NAV
-   Click → collapses to single icon. Hover → re-expands.
    ═══════════════════════════════════════════ */
 .nav{
   position:fixed;bottom:0;left:0;right:0;z-index:200;
@@ -1007,25 +1006,22 @@ body{
   pointer-events:none;background:none !important;border:none !important;
 }
 .nav-dock{
-  display:flex;align-items:center;
+  display:flex;align-items:center;gap:0;
   background:rgba(12,12,16,.93);
   backdrop-filter:blur(32px) saturate(1.9);
   -webkit-backdrop-filter:blur(32px) saturate(1.9);
   border:1px solid rgba(255,255,255,.1);
-  border-radius:30px;
-  padding:8px 8px;
-  pointer-events:all;
+  border-radius:30px;padding:8px 8px;
+  pointer-events:all;overflow:hidden;
   box-shadow:0 10px 50px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.08) inset;
-  gap:0;
-  overflow:hidden;
-  transition:gap .35s cubic-bezier(.4,0,.2,1),padding .35s cubic-bezier(.4,0,.2,1);
+  transition:gap .38s cubic-bezier(.4,0,.2,1),padding .38s cubic-bezier(.4,0,.2,1);
   animation:dockUp .45s cubic-bezier(.34,1.56,.64,1) both;
 }
 @keyframes dockUp{from{transform:translateY(90px);opacity:0}to{transform:translateY(0);opacity:1}}
-.nav-dock:hover{
-  gap:3px;
-  padding:8px 12px;
-}
+/* Hover expands all items */
+.nav-dock:hover{ gap:3px; padding:8px 12px; }
+
+/* ALL nav items — collapsed by default */
 .nav-item{
   position:relative;
   display:flex;align-items:center;justify-content:center;
@@ -1033,21 +1029,22 @@ body{
   cursor:pointer;outline:none;border:none;
   color:rgba(255,255,255,0) !important;
   background:transparent !important;
-  overflow:hidden;flex-shrink:0;
-  opacity:0;
-  transition:width .35s cubic-bezier(.4,0,.2,1),color .25s,opacity .25s,transform .22s cubic-bezier(.34,1.56,.64,1),background .2s;
+  overflow:hidden;flex-shrink:0;opacity:0;
+  transition:
+    width .35s cubic-bezier(.4,0,.2,1),
+    opacity .3s,color .25s,
+    background .2s,
+    transform .22s cubic-bezier(.34,1.56,.64,1);
   -webkit-tap-highlight-color:transparent;
 }
 .nav-item svg{
-  flex-shrink:0;min-width:19px;
-  opacity:0;
+  flex-shrink:0;min-width:19px;opacity:0;
   transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .2s;
 }
-/* Expanded — hover over dock shows all */
+
+/* Hover: expand all */
 .nav-dock:hover .nav-item{
-  width:50px;
-  color:rgba(255,255,255,.32) !important;
-  opacity:1;
+  width:50px;color:rgba(255,255,255,.32) !important;opacity:1;
 }
 .nav-dock:hover .nav-item svg{ opacity:1; }
 .nav-dock:hover .nav-item:hover{
@@ -1056,7 +1053,9 @@ body{
   transform:translateY(-4px);
 }
 .nav-dock:hover .nav-item:hover svg{ transform:scale(1.15); }
-/* Active — always visible, even when collapsed */
+.nav-dock:hover .nav-item:active{ transform:translateY(-1px) scale(.95) !important; }
+
+/* ACTIVE item — always visible when collapsed */
 .nav-item.active{
   width:52px !important;height:52px;
   color:rgba(255,255,255,.95) !important;
@@ -1077,30 +1076,43 @@ body{
   0%,100%{box-shadow:0 0 8px rgba(200,16,46,.9),0 0 18px rgba(200,16,46,.5)}
   50%{box-shadow:0 0 14px rgba(200,16,46,1),0 0 28px rgba(200,16,46,.7)}
 }
-/* Scan button */
+
+/* SCAN button — red styling ONLY, width controlled by active/hover states above */
 .nav-scan-btn{
   background:var(--red) !important;
   color:#fff !important;
-  width:54px !important;height:54px !important;
   border-radius:20px;
   box-shadow:0 4px 20px rgba(200,16,46,.55);
-  opacity:1 !important;
+  /* NO opacity:1 here — let active/hover states control visibility */
 }
-.nav-dock:hover .nav-scan-btn{ color:#fff !important; }
-.nav-scan-btn:hover,.nav-dock:hover .nav-scan-btn:hover{
+/* When scan is active (collapsed state) */
+.nav-scan-btn.active{
+  width:54px !important;height:54px !important;
+  background:var(--red) !important;
+  color:#fff !important;
+  box-shadow:0 4px 20px rgba(200,16,46,.55);
+}
+.nav-scan-btn.active::after{ display:none !important; }
+/* When scan is visible (expanded hover state) */
+.nav-dock:hover .nav-scan-btn{
+  background:var(--red) !important;
+  color:#fff !important;
+  width:54px !important;height:54px !important;
+}
+.nav-dock:hover .nav-scan-btn:hover{
   background:#c8102e !important;
   transform:translateY(-5px) !important;
   box-shadow:0 8px 30px rgba(200,16,46,.75) !important;
 }
-.nav-scan-btn.active::after{ display:none !important; }
-/* Divider */
+
+/* Divider — hidden when collapsed */
 .nav-divider{
   width:0;height:28px;flex-shrink:0;margin:0;
-  background:rgba(255,255,255,.12);border-radius:1px;
-  opacity:0;
+  background:rgba(255,255,255,.12);border-radius:1px;opacity:0;
   transition:width .35s cubic-bezier(.4,0,.2,1),opacity .3s,margin .35s;
 }
 .nav-dock:hover .nav-divider{ width:1px;opacity:1;margin:0 4px; }
+
 /* Tooltip */
 .nav-item::before{
   content:attr(data-tip);
@@ -1110,9 +1122,12 @@ body{
   font-size:11px;font-weight:600;padding:5px 10px;
   border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;
   border:1px solid rgba(255,255,255,.1);
-  transition:opacity .15s .1s,transform .15s .1s;
+  transition:opacity .15s .08s,transform .15s .08s;
 }
-.nav-dock:hover .nav-item:hover::before{ opacity:1;transform:translateX(-50%) translateY(0); }
+.nav-dock:hover .nav-item:hover::before{
+  opacity:1;transform:translateX(-50%) translateY(0);
+}
+
 .nav-icon,.nav-icon-new{ display:none !important; }
 .page{ padding-bottom:110px !important; }
 .page.active{ animation:pgIn .2s ease both; }
