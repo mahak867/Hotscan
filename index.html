@@ -3024,7 +3024,7 @@ function showResult(d) {
     ab.textContent = d.is_authentic ? '✓ Authentic' : '⚠️ Possibly Fake'
   } else ab.style.display = 'none'
   document.getElementById('p1').textContent = d.india_retail_inr ? '₹' + d.india_retail_inr : '—'
-  document.getElementById('p2').textContent = d.india_collector_inr ? '₹' + d.india_collector_inr : '—'
+  document.getElementById('p2').textContent = d.india_collector_inr ? '₹' + cleanINR(d.india_collector_inr) : '—'
   document.getElementById('p3').textContent = d.us_retail_usd ? '$' + d.us_retail_usd : '—'
   document.getElementById('p4').textContent = d.us_collector_usd ? '$' + d.us_collector_usd : '—'
   document.getElementById('live-upd').textContent = 'Updated just now'
@@ -3211,7 +3211,7 @@ function renderCol() {
 
 function exportVal() {
   if (!collection.length) { alert('Add some cars first!'); return }
-  var val = 0; collection.forEach(function(c) { var p=parseFloat((c.india_collector_inr||'0').split('-')[0]); if(!isNaN(p)) val+=p })
+  var val = 0; collection.forEach(function(c) { val += parseINR(c.india_collector_inr) })
   var date = new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})
   var txt = [
     'HOTSCAN INDIA - COLLECTION VALUATION CERTIFICATE',
@@ -3229,7 +3229,7 @@ function exportVal() {
     '',
     'CAR LIST',
     collection.map(function(c,i){
-      return (i+1)+'. '+(c.name||'Unknown')+' | '+(c.rarity||'Common')+' | Rs.'+(c.india_collector_inr||'N/A')+(c.color?' | '+c.color:'')
+      return (i+1)+'. '+(c.name||'Unknown')+' | '+(c.rarity||'Common')+' | Rs.'+(cleanINR(c.india_collector_inr)||'N/A')+(c.color?' | '+c.color:'')
     }).join('\n'),
     '',
     '='.repeat(50),
@@ -3306,7 +3306,7 @@ function renderAlerts() {
   alerts.forEach(function(a) {
     var div = document.createElement('div'); div.className = 'alert-item'
     var nm = document.createElement('div'); nm.className = 'alert-name'; nm.textContent = a.name
-    var meta = document.createElement('div'); meta.style.cssText = 'font-size:11px;color:var(--text3);margin-bottom:5px'; meta.textContent = (a.rarity||'Common') + ' · Target: ₹' + (a.india_collector_inr||'?')
+    var meta = document.createElement('div'); meta.style.cssText = 'font-size:11px;color:var(--text3);margin-bottom:5px'; meta.textContent = (a.rarity||'Common') + ' · Target: ₹' + (cleanINR(a.india_collector_inr)||'?')
     var links = document.createElement('div'); links.style.cssText = 'display:flex;gap:8px'
     var olxBtn = document.createElement('button'); olxBtn.className = 'alert-link'; olxBtn.textContent = 'OLX →'
     olxBtn.onclick = (function(n){return function(){ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n||''))}})(a.name)
@@ -3338,7 +3338,7 @@ function showShare() {
   document.getElementById('sc-series').textContent = lastResult.series || '—'
   var scr = document.getElementById('sc-rar'); scr.textContent = lastResult.rarity || 'Common'; scr.className = 'rar ' + rcls(lastResult.rarity)
   document.getElementById('sc-inv').textContent = (lastResult.investment||'') + ' Investment'
-  document.getElementById('sc-inr').textContent = lastResult.india_collector_inr ? '₹'+lastResult.india_collector_inr : '—'
+  document.getElementById('sc-inr').textContent = lastResult.india_collector_inr ? '₹'+cleanINR(lastResult.india_collector_inr) : '—'
   document.getElementById('sc-usd').textContent = lastResult.us_collector_usd ? '$'+lastResult.us_collector_usd : '—'
   var sci = document.getElementById('sc-img')
   sci.innerHTML = imgThumb ? '<img src="'+imgThumb+'" alt="" style="width:100%;height:100%;object-fit:cover">' : '🚗'
@@ -3348,12 +3348,12 @@ function showShare() {
 function closeShare() { document.getElementById('share-modal').classList.remove('open'); document.body.style.overflow = '' }
 function shareWA() {
   if (!lastResult) return
-  var txt = '🚗 *' + lastResult.name + '*\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + lastResult.india_collector_inr + '\n🇺🇸 US: $' + lastResult.us_collector_usd + '\n📈 ' + lastResult.investment + ' Investment\n\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner_\n_hotscan.in_'
+  var txt = '🚗 *' + lastResult.name + '*\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + cleanINR(lastResult.india_collector_inr) + '\n🇺🇸 US: $' + lastResult.us_collector_usd + '\n📈 ' + lastResult.investment + ' Investment\n\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner_\n_hotscan.in_'
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
 }
 async function shareNative() {
   if (!lastResult) return
-  var txt = '🚗 ' + lastResult.name + '\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + lastResult.india_collector_inr + '\n📈 ' + lastResult.investment + ' Investment\n\nScanned with HotScan India 🔍\nhttps://hotscan.in'
+  var txt = '🚗 ' + lastResult.name + '\n📦 ' + lastResult.series + '\n⭐ ' + lastResult.rarity + '\n🇮🇳 India: ₹' + cleanINR(lastResult.india_collector_inr) + '\n📈 ' + lastResult.investment + ' Investment\n\nScanned with HotScan India 🔍\nhttps://hotscan.in'
   if (navigator.share) { try { await navigator.share({title:'HotScan — '+lastResult.name, text:txt}) } catch(e) {} }
   else { await navigator.clipboard.writeText(txt); showToast('Copied to clipboard!', 'success') }
 }
@@ -3559,7 +3559,7 @@ function showMultiResults(cars) {
 
   // Total value
   var totalVal = 0
-  cars.forEach(function(c) { var p=parseFloat((c.india_collector_inr||'0').split('-')[0]); if(!isNaN(p)) totalVal+=p })
+  cars.forEach(function(c) { totalVal += parseINR(c.india_collector_inr) })
   var valBar = document.createElement('div')
   valBar.style.cssText = 'padding:0 14px 12px;font-size:13px;color:var(--text2)'
   valBar.innerHTML = 'Total estimated value: <strong style="color:var(--gold)">₹' + totalVal.toLocaleString('en-IN') + '</strong>'
@@ -3600,7 +3600,7 @@ function showMultiResults(cars) {
     var ser = document.createElement('div'); ser.className = 'multi-car-series'; ser.textContent = car.series || ''
     var prices = document.createElement('div'); prices.className = 'multi-car-prices'
     var rarSpan = document.createElement('span'); rarSpan.className = 'rar ' + rcls(car.rarity); rarSpan.style.cssText='font-size:10px;padding:2px 7px'; rarSpan.textContent = car.rarity||'Common'
-    var priceSpan = document.createElement('span'); priceSpan.className = 'multi-car-inr'; priceSpan.textContent = car.india_collector_inr ? '₹'+car.india_collector_inr : ''
+    var priceSpan = document.createElement('span'); priceSpan.className = 'multi-car-inr'; priceSpan.textContent = car.india_collector_inr ? '₹'+cleanINR(car.india_collector_inr) : ''
     prices.appendChild(rarSpan); prices.appendChild(priceSpan)
     info.appendChild(nm); info.appendChild(ser); info.appendChild(prices)
 
@@ -3928,7 +3928,7 @@ function renderProfilePage() {
   }
   var total = collection.length
   var rare = collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')}).length
-  var val = 0; collection.forEach(function(c){var p=parseFloat((c.india_collector_inr||'0').split('-')[0]);if(!isNaN(p))val+=p})
+  var val = 0; collection.forEach(function(c){ val += parseINR(c.india_collector_inr) })
   var sthCount = collection.filter(function(c){return (c.rarity||'').toLowerCase().includes('super')}).length
   document.getElementById('prof-total').textContent = total
   document.getElementById('prof-value').textContent = val > 0 ? '₹' + val.toLocaleString('en-IN') : '₹0'
@@ -3955,7 +3955,7 @@ function renderProfilePage() {
         var nm = document.createElement('div'); nm.style.cssText = 'font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'; nm.textContent = h.name||'Unknown'
         var mt = document.createElement('div'); mt.style.cssText = 'font-size:10px;color:var(--text3)'; mt.textContent = (h.rarity||'Common') + ' · ' + ago
         info.appendChild(nm); info.appendChild(mt)
-        var price = document.createElement('div'); price.style.cssText = 'font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0'; price.textContent = h.india_collector_inr ? '₹'+h.india_collector_inr : ''
+        var price = document.createElement('div'); price.style.cssText = 'font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0'; price.textContent = h.india_collector_inr ? '₹'+cleanINR(h.india_collector_inr) : ''
         row.appendChild(thumb); row.appendChild(info); row.appendChild(price)
         recentEl.appendChild(row)
       })
@@ -4389,7 +4389,7 @@ function shareViaWA() {
 function runAlertCheck() {
   if (!alerts || !alerts.length) return
   var a = alerts[Math.floor(Math.random()*alerts.length)]
-  var target = parseFloat((a.india_collector_inr||'500').split('-')[0])
+  var target = parseINR(a.india_collector_inr, 500)
   if (Math.random() > 0.75 && target) {
     var found = Math.round(target * (0.55+Math.random()*0.3))
     var save = target - found
@@ -4444,7 +4444,7 @@ function shareResultToGroup(){
     '',
     lastResult.name,
     'Rarity: '+lastResult.rarity,
-    'India Price: Rs.'+(lastResult.india_collector_inr||'?'),
+    'India Price: Rs.'+(cleanINR(lastResult.india_collector_inr)||'?'),
     'US Price: $'+(lastResult.us_collector_usd||'?'),
     'Investment: '+lastResult.investment+' Potential'
   ]
