@@ -21,6 +21,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Razorpay loaded on demand -->
 <!-- Clerk removed — using Supabase auth only -->
+<!-- Privacy-friendly analytics — no cookies, no personal data -->
+<script defer data-domain="hotscan.in" src="https://plausible.io/js/script.js"></script>
+<!-- Service worker registration -->
+<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
@@ -1183,11 +1187,11 @@ body{
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <div style="width:36px;height:36px;background:var(--surface3);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔑</div>
       <div>
-        <div class="key-label">Free Groq API Key Required</div>
-        <div style="font-size:11px;color:var(--text3)">Powers the AI identification engine</div>
+        <div class="key-label">Your Own API Key <span style="font-size:10px;color:var(--green);font-weight:600;background:rgba(45,198,83,.12);padding:2px 7px;border-radius:20px;margin-left:4px">Optional</span></div>
+        <div style="font-size:11px;color:var(--text3)">HotScan works without a key — enter yours for dedicated higher limits</div>
       </div>
     </div>
-    <div class="key-sub">Get your free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> in 2 minutes. Your key is stored only on this device — never sent to our servers.</div>
+    <div class="key-sub">Enter your free key from <a href="https://console.groq.com" target="_blank">console.groq.com</a> for dedicated unlimited use. Your key stays on this device only.</div>
     <div style="display:flex;gap:8px">
       <input class="inp" type="password" id="gkey" placeholder="Paste your gsk_... key here" autocomplete="off" style="margin:0;flex:1">
       <button class="btn-red" style="flex-shrink:0;padding:0 18px;border-radius:10px;font-size:14px;font-weight:700;height:44px" onclick="saveKey()">Save →</button>
@@ -1364,6 +1368,7 @@ body{
     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
     <div style="font-size:10px;color:var(--text3)">Estimated Indian collector market value</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:2px;opacity:.7">⚠️ AI estimates only — not a guarantee of resale value</div>
     <div class="val-breakdown">
       <div class="val-tile"><div class="val-tile-n" id="v-cars">0</div><div class="val-tile-l">Total Cars</div></div>
       <div class="val-tile"><div class="val-tile-n" id="v-rare">0</div><div class="val-tile-l">Rare+</div></div>
@@ -1692,9 +1697,12 @@ body{
     </div>
   </div>
   <div class="more-sec"><div class="more-sec-t">About</div>
-    <div class="more-item" onclick="whatsappSupport()"><div class="more-ic">💬</div><div><div class="more-t">WhatsApp Support</div><div class="more-s">Message us directly for help</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="whatsappSupport()"><div class="more-ic">💬</div><div><div class="more-t">Contact Support</div><div class="more-s">Email us directly for help</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('https://github.com/mahak867/Hotscan')"><div class="more-ic">⭐</div><div><div class="more-t">Star on GitHub</div><div class="more-s">Open source · Free forever</div></div><div class="more-arr">›</div></div>
-    <div class="more-item"><div class="more-ic">ℹ️</div><div><div class="more-t">HotScan India v4.0</div><div class="more-s">India's first Hot Wheels scanner 🇮🇳 · hotscan.in</div></div></div>
+    <div class="more-item" onclick="ol('/privacy.html')"><div class="more-ic">🔒</div><div><div class="more-t">Privacy Policy</div><div class="more-s">How we handle your data</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="ol('/terms.html')"><div class="more-ic">📄</div><div><div class="more-t">Terms of Service</div><div class="more-s">Usage rules and disclaimers</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="showKeySetup()"><div class="more-ic">🔑</div><div><div class="more-t">Personal API Key</div><div class="more-s">Use your own Groq key for dedicated limits</div></div><div class="more-arr">›</div></div>
+    <div class="more-item"><div class="more-ic">ℹ️</div><div><div class="more-t">HotScan India v5.0</div><div class="more-s">India's first Hot Wheels scanner 🇮🇳 · hotscan.in</div></div></div>
   </div>
 </div>
 
@@ -1789,7 +1797,7 @@ body{
       <button class="auth-continue-btn" style="margin-top:20px" onclick="closeAuth()">Got it</button>
     </div>
 
-    <div class="auth-legal">By continuing you agree to our Terms of Service</div>
+    <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" style="color:var(--text2);text-decoration:underline">Terms of Service</a> and <a href="/privacy.html" target="_blank" style="color:var(--text2);text-decoration:underline">Privacy Policy</a></div>
   </div>
 </div>
 
@@ -2156,7 +2164,7 @@ function showSuccessCelebration(){
 // ── Override openAccountModal to show cleaner modal ──
 
 // ════════════════════════════════════════════════════════
-// HOTSCAN INDIA v4.0 — Clean single script
+// HOTSCAN INDIA v5.0 — Clean single script
 // ════════════════════════════════════════════════════════
 
 // ── Config ──
@@ -2165,7 +2173,10 @@ var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 var RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
 var DEV_EMAIL = 'mahakfahad07@gmail.com'
 var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'
-var WA_SUPPORT   = null  // set to 'https://api.whatsapp.com/send?phone=91XXXXXXXXXX...' when ready
+var WA_SUPPORT   = null  // TODO: set to your WhatsApp number e.g. 'https://api.whatsapp.com/send?phone=91XXXXXXXXXX' before launch
+// Groq proxy — the app uses /api/groq (server-side key) so users don't need their own Groq key.
+// Set the GROQ_API_KEY environment variable in the Vercel dashboard.
+// Users can still add their own key below for dedicated higher rate limits.
 var FREE_SCANS = 5
 
 // ── OAuth callback handler — MUST be first ──
@@ -2332,7 +2343,9 @@ window.addEventListener('load', function() {
   } catch(e) { console.warn('Supabase init error:', e) }
 
   // App init
-  if (KEY) document.getElementById('key-card').style.display = 'none'
+  // Hide key card — proxy handles scanning without a personal key
+  // Users can still configure their own key via More → Personal API Key
+  document.getElementById('key-card').style.display = 'none'
   var ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
   var sa = window.matchMedia('(display-mode:standalone)').matches
   var _ib=document.getElementById('ib'); if(_ib&&(!ios||sa)) _ib.style.display='none'
@@ -2550,21 +2563,22 @@ var VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 async function groqVision(imageData, systemPrompt, userPrompt) {
   var b64 = imageData.split(',')[1]
   var mime = imageData.split(';')[0].split(':')[1]
-  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
-    body: JSON.stringify({
-      model: VISION_MODEL,
-      messages: [
-        {role:'system', content:systemPrompt},
-        {role:'user', content:[
-          {type:'image_url', image_url:{url:'data:'+mime+';base64,'+b64}},
-          {type:'text', text:userPrompt}
-        ]}
-      ],
-      temperature: 0.05, max_tokens: 900
-    })
-  })
+  var body = {
+    model: VISION_MODEL,
+    messages: [
+      {role:'system', content:systemPrompt},
+      {role:'user', content:[
+        {type:'image_url', image_url:{url:'data:'+mime+';base64,'+b64}},
+        {type:'text', text:userPrompt}
+      ]}
+    ],
+    temperature: 0.05, max_tokens: 900
+  }
+  var url = KEY ? 'https://api.groq.com/openai/v1/chat/completions' : '/api/groq'
+  var headers = KEY
+    ? {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'}
+    : {'Content-Type':'application/json'}
+  var res = await fetch(url, {method:'POST', headers:headers, body:JSON.stringify(body)})
   if (!res.ok) {
     var bodyText = await res.text().catch(function(){return'{}'})
     var errBody = {}; try { errBody = JSON.parse(bodyText) } catch(ex) {}
@@ -2583,9 +2597,14 @@ async function groqVision(imageData, systemPrompt, userPrompt) {
 
 async function groqText(prompt, model) {
   var chosenModel = model || CODEX_MODEL
-  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  var useProxy = !KEY
+  var url = useProxy ? '/api/groq' : 'https://api.groq.com/openai/v1/chat/completions'
+  var headers = useProxy
+    ? {'Content-Type':'application/json'}
+    : {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'}
+  var res = await fetch(url, {
     method: 'POST',
-    headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+    headers: headers,
     body: JSON.stringify({
       model: chosenModel,
       messages: [{role:'user', content:prompt}],
@@ -2600,9 +2619,9 @@ async function groqText(prompt, model) {
     }
     // On model-unavailable errors try falling back: CODEX → HAIKU, HAIKU → error
     if (res.status >= 400 && chosenModel !== HAIKU_MODEL) {
-      var fb = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      var fb = await fetch(url, {
         method: 'POST',
-        headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+        headers: headers,
         body: JSON.stringify({
           model: HAIKU_MODEL,
           messages: [{role:'user', content:prompt}],
@@ -3250,6 +3269,10 @@ function addAlert() {
   if (alerts.find(function(a) { return a.name === lastResult.name })) { alert('Alert already set for: ' + lastResult.name); return }
   alerts.unshift({id:Date.now(), name:lastResult.name, rarity:lastResult.rarity, india_collector_inr:lastResult.india_collector_inr, added:new Date().toISOString()})
   localStorage.setItem('hs_alerts', JSON.stringify(alerts))
+  // Request notification permission on first alert
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
   renderAlerts(); goPage('alerts')
 }
 function delAlert(id) { alerts = alerts.filter(function(a){return a.id!==id}); localStorage.setItem('hs_alerts',JSON.stringify(alerts)); renderAlerts() }
@@ -3431,9 +3454,13 @@ async function identifyMultipleCars(imageData) {
     '}]}'
   ].join('')
 
-  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  var url2 = KEY ? 'https://api.groq.com/openai/v1/chat/completions' : '/api/groq'
+  var hdrs2 = KEY
+    ? {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'}
+    : {'Content-Type':'application/json'}
+  var res = await fetch(url2, {
     method: 'POST',
-    headers: {'Authorization':'Bearer '+KEY, 'Content-Type':'application/json'},
+    headers: hdrs2,
     body: JSON.stringify({
       model: VISION_MODEL,
       messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
@@ -4349,6 +4376,7 @@ function runAlertCheck() {
     var found = Math.round(target * (0.55+Math.random()*0.3))
     var save = target - found
     if (save > 50) {
+      // Show in-app banner
       var box = document.getElementById('err-box')
       if (box) {
         box.textContent = ''
@@ -4359,6 +4387,16 @@ function runAlertCheck() {
         btn.onclick = (function(n){ return function(){ ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n)) }})(a.name)
         box.appendChild(msg); box.appendChild(btn)
         box.style.cssText='display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold);border-radius:12px;padding:12px;margin-bottom:11px;font-size:13px;line-height:1.6'
+      }
+      // Browser notification (only if permission granted)
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try {
+          new Notification('🔥 HotScan Deal Alert', {
+            body: a.name + ' spotted for ₹' + found.toLocaleString('en-IN') + ' — save ₹' + save.toLocaleString('en-IN'),
+            icon: '/icon-192.png',
+            tag: 'hs-deal-' + a.id,
+          })
+        } catch(e) { /* Notifications blocked or not supported */ }
       }
     }
   }
@@ -4398,7 +4436,11 @@ function shareResultToGroup(){
 }
 
 function whatsappSupport(){
-  if (!WA_SUPPORT) { showToast('Support chat coming soon — email hotscan@gmail.com for help', 'info'); return }
+  if (!WA_SUPPORT) {
+    // Open email as fallback
+    window.open('mailto:mahakfahad07@gmail.com?subject=HotScan+India+Support&body=Hi!+I+need+help+with+the+HotScan+India+app.', '_blank')
+    return
+  }
   var msg = 'Hi! I need help with HotScan India app.'
   window.open('https://wa.me/' + WA_SUPPORT + '?text=' + encodeURIComponent(msg), '_blank')
 }
