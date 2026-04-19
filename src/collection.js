@@ -54,7 +54,10 @@ export function renderCol() {
   document.getElementById('v-sth').textContent = sth
   document.getElementById('v-avg').textContent = total > 0 ? '₹' + Math.round(val/total).toLocaleString('en-IN') : '₹0'
   if (!items.length) {
-    document.getElementById('col-list').innerHTML = '<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">' + (state.filterBy==='all'?'No cars yet':'No '+state.filterBy+' cars') + '</div><div class="empty-s">' + (state.filterBy==='all'?'Scan a car and tap "Add"':'Try a different filter') + '</div></div>'
+    var emptyMsg = state.filterBy === 'all' ? 'No cars yet' : 'No ' + state.filterBy + ' cars'
+    var emptySub = state.filterBy === 'all' ? 'Scan a car and tap "Add" to start your collection' : 'Try a different filter'
+    var ctaBtn = state.filterBy === 'all' ? '<button class="btn-red" onclick="goPage(\'scan\')" style="margin-top:14px">📷 Scan Your First Car →</button>' : ''
+    document.getElementById('col-list').innerHTML = '<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">' + emptyMsg + '</div><div class="empty-s">' + emptySub + '</div>' + ctaBtn + '</div>'
     return
   }
   var list = document.getElementById('col-list')
@@ -67,7 +70,10 @@ export function renderCol() {
     var name = document.createElement('div'); name.className = 'col-name'; name.textContent = c.name||'Unknown'
     var meta = document.createElement('div'); meta.className = 'col-meta'; meta.textContent = c.series||''
     var bottom = document.createElement('div'); bottom.style.cssText = 'display:flex;gap:5px;align-items:center'
-    var rar = document.createElement('span'); rar.className = 'rar ' + rcls(c.rarity); rar.style.cssText = 'font-size:10px;padding:2px 7px'; rar.textContent = c.rarity||'Common'
+    var rar = document.createElement('span'); rar.className = 'rar ' + rcls(c.rarity); rar.style.cssText = 'font-size:11px;padding:3px 8px'
+    var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
+    var colRarity = c.rarity || 'Common'
+    rar.textContent = (rarIcons[colRarity] ? rarIcons[colRarity] + ' ' : '') + colRarity
     var price = document.createElement('span'); price.className = 'col-price'; price.textContent = c.india_collector_inr ? '₹'+cleanINR(c.india_collector_inr) : ''
     bottom.appendChild(rar); bottom.appendChild(price)
     info.appendChild(name); info.appendChild(meta); info.appendChild(bottom)

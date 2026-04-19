@@ -94,6 +94,16 @@ document.addEventListener('DOMContentLoaded', function () {
       handleMultiFiles(e.target.files)
     }
   })
+
+  // Swipe-to-dismiss for result card
+  var resultEl = document.getElementById('result')
+  if (resultEl) {
+    var _swipeStartY = 0
+    resultEl.addEventListener('touchstart', function (e) { _swipeStartY = e.touches[0].clientY }, { passive: true })
+    resultEl.addEventListener('touchend', function (e) {
+      if (e.changedTouches[0].clientY - _swipeStartY > 60) window.resetScan()
+    }, { passive: true })
+  }
 })
 
 // window.load: app init

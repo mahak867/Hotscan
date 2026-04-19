@@ -119,6 +119,7 @@ export async function handleFile(file, mode) {
       document.getElementById('fake-scan-ph').style.display = 'none'
       state.fakeImg64 = await compress(raw, 512)
       document.getElementById('analyze-btn').style.display = 'block'
+      document.getElementById('analyze-btn').classList.add('sticky-btn')
       document.getElementById('analyze-btn').textContent = '🕵️ Check If Fake'
     } else {
       document.getElementById('preview-img').src = raw
@@ -128,6 +129,7 @@ export async function handleFile(file, mode) {
       state.img64 = await compress(raw, 512)
       state.imgThumb = await compressThumb(raw)
       document.getElementById('analyze-btn').style.display = 'block'
+      document.getElementById('analyze-btn').classList.add('sticky-btn')
       document.getElementById('analyze-btn').textContent = '🔎 Identify & Get Live Prices'
     }
     document.getElementById('result').style.display = 'none'
@@ -216,8 +218,10 @@ export function showResult(d) {
   document.getElementById('r-name').textContent = d.name || 'Unknown'
   document.getElementById('r-series').textContent = d.series || ''
   document.getElementById('r-conf').style.width = (d.confidence || 75) + '%'
+  var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
   var rb = document.getElementById('r-rar')
-  rb.textContent = d.rarity || 'Common'; rb.className = 'rar ' + rcls(d.rarity)
+  var rarLabel = d.rarity || 'Common'
+  rb.textContent = (rarIcons[rarLabel] ? rarIcons[rarLabel] + ' ' : '') + rarLabel; rb.className = 'rar ' + rcls(d.rarity)
   var ab = document.getElementById('r-auth')
   if (d.is_authentic !== undefined) {
     ab.style.display = 'inline-flex'
@@ -742,7 +746,8 @@ export function resetScan() {
   document.getElementById('scan-ph').style.display = 'block'
   document.getElementById('scan-area').classList.remove('has-img')
   try { document.getElementById('fake-preview-img').src = ''; document.getElementById('fake-preview-wrap').style.display = 'none'; document.getElementById('fake-scan-ph').style.display = 'block' } catch(e) {}
-  document.getElementById('analyze-btn').style.display = 'none'
+  var abtn = document.getElementById('analyze-btn')
+  abtn.style.display = 'none'; abtn.classList.remove('sticky-btn')
   document.getElementById('result').style.display = 'none'
   document.getElementById('deal-result').style.display = 'none'
   document.getElementById('err-box').style.display = 'none'
