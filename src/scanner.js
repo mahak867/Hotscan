@@ -145,6 +145,12 @@ export async function analyzePhoto() {
     var multiResult = await identifyMultipleCars(state.img64)
     var carData
 
+    // Reject non-Hot Wheels images
+    if (multiResult && multiResult.is_hot_wheels === false) {
+      var what = multiResult.scan_notes || 'not a Hot Wheels die-cast car'
+      throw new Error('Not a Hot Wheels car — AI sees: ' + what + '. Please photograph a Hot Wheels die-cast car.')
+    }
+
     if (multiResult && multiResult.cars && multiResult.cars.length > 1) {
       window.setStep(1, 'done'); window.setStep(2, 'active')
       document.getElementById('timer-lbl').textContent = 'Found ' + multiResult.cars.length + ' cars — fetching prices...'
@@ -390,14 +396,50 @@ export async function scanBarcode() {
   var isBarcode = /^\d{8,14}$/.test(code)
   var prompt
   if (isBarcode) {
-    prompt = 'Hot Wheels UPC barcode: ' + code + '. UPC 027084XXXXXX = Mattel Hot Wheels. Identify the specific car and return ONLY valid JSON:\n{"identified":true,"confidence":80,"name":"car name","series":"series year","casting_year":"year","color":"color","tampo":"tampo","wheel_type":"wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","rarity_reason":"why","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian market insight","barcode_note":"what this barcode tells us"}'
+    var isMattel = /^027084/.test(code)
+    prompt = [
+      'You are a Hot Wheels barcode lookup assistant.',
+      '⚠️ RULES:',
+      '1. Only return identified:true if you have genuine knowledge of this specific barcode.',
+      '2. Hot Wheels UPCs start with 027084. If this barcode does NOT start with 027084, return identified:false.',
+      '3. If you do not have a confident match for this exact barcode, return identified:false.',
+      '4. Do NOT invent or guess a car name. Do NOT default to a random Hot Wheels car.',
+      '5. Rarity MUST reflect only the most common version associated with this barcode.',
+      '',
+      'Barcode: ' + code,
+      isMattel ? 'Note: This has the correct Mattel Hot Wheels UPC prefix (027084).' : '⚠️ This barcode does NOT start with 027084 — it may not be a genuine Hot Wheels product.',
+      '',
+      'Return ONLY valid JSON:',
+      '{"identified":true,"confidence":75,"name":"exact car name from this barcode","series":"series and year","casting_year":"year","color":"color","tampo":"tampo","wheel_type":"wheel type","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","rarity_reason":"why","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian market insight","barcode_note":"what this barcode tells us"}',
+      'If not found: {"identified":false,"reason":"barcode not in database or not a Hot Wheels product"}'
+    ].join('\n')
   } else {
-    prompt = 'Hot Wheels database search: "' + code + '". Find the best matching car, prioritize the most valuable/collectible version. Return ONLY valid JSON:\n{"identified":true,"confidence":88,"name":"exact name","series":"series year","casting_year":"year","color":"most iconic color","tampo":"tampo","wheel_type":"best version wheels","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"why collectors want this","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"specific investment case","fun_fact":"why notable","us_retail_usd":"1.49","us_collector_usd":"5-50","india_retail_inr":"150-500","india_collector_inr":"300-5000","price_trend":"Rising|Stable|Falling","price_trend_reason":"trend reason","india_insight":"Indian collector demand","also_look_for":"related valuable variants"}'
+    prompt = [
+      'You are a Hot Wheels car name lookup assistant.',
+      '⚠️ RULES:',
+      '1. Only return identified:true if "' + code + '" closely matches a real Hot Wheels casting name.',
+      '2. If the query is vague, too short, or does not match any known Hot Wheels car, return identified:false.',
+      '3. Report the MOST COMMON version of this casting — do not default to rarest/most expensive.',
+      '4. If multiple versions exist, note the most representative one. Do not inflate rarity.',
+      '5. Set confidence honestly: 90+ only if the name is an exact casting match.',
+      '',
+      'Search query: "' + code + '"',
+      '',
+      'Return ONLY valid JSON:',
+      '{"identified":true,"confidence":80,"name":"exact Hot Wheels casting name","series":"most common series","casting_year":"year first produced","color":"most common color","tampo":"typical tampo","wheel_type":"standard wheel type for this casting","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"specific reason based on the standard version","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"honest investment case for the standard version","fun_fact":"one interesting fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian collector demand","also_look_for":"notable valuable variants worth knowing about"}',
+      'If no match: {"identified":false,"reason":"no Hot Wheels car matches this search"}'
+    ].join('\n')
   }
   try {
     var d = await groqText(prompt, CODEX_MODEL)
     window.stopTimer()
-    if (!d || !d.identified) throw new Error('Not found. Try the full car name e.g. "Hot Wheels Bone Shaker"')
+    if (!d || !d.identified) {
+      var reason = (d && d.reason) ? d.reason : 'Not found. Try the full car name e.g. "Hot Wheels Bone Shaker"'
+      throw new Error(reason)
+    }
+    if (d.confidence && d.confidence < 40) {
+      throw new Error('Low confidence match (' + d.confidence + '%). Try a more specific name.')
+    }
     state.lastResult = d
     window.showResult(d)
   } catch(err) {
@@ -412,43 +454,52 @@ export async function identifyMultipleCars(imageData) {
   var mime = imageData.split(';')[0].split(':')[1]
 
   var sys = [
-    'You are the world most precise Hot Wheels multi-car identification expert.',
-    'When shown an image with MULTIPLE Hot Wheels cars you MUST:',
-    '1. Count every single car visible, even partially',
-    '2. Identify EACH car individually with complete precision',
-    '3. Never group or generalize — each car gets its own detailed entry',
+    'You are a Hot Wheels multi-car identification expert.',
+    '',
+    '⚠️ CRITICAL — CHECK FIRST:',
+    'Is this image showing Mattel Hot Wheels die-cast cars?',
+    'If NO Hot Wheels cars are visible, return: {"total_cars_found":0,"is_hot_wheels":false,"scan_notes":"<describe what you actually see>","cars":[]}',
+    'Do NOT invent cars. Do NOT match non-Hot Wheels objects to Hot Wheels castings.',
+    '',
+    'If Hot Wheels cars ARE visible:',
+    '1. Count every die-cast car you can clearly see (do not count blurry or barely-visible items)',
+    '2. Identify EACH car individually based only on what is visible',
+    '3. Never group or generalize — each car gets its own entry',
     '4. Scan systematically: top-left to bottom-right, or front-to-back',
     '',
-    'For EACH car identify:',
-    '- Exact casting name and model year',
+    'For EACH car identify only what you can clearly see:',
+    '- Exact casting name and model year (say "Unknown casting" if unsure)',
     '- Color (Spectraflame/metallic = higher value)',
     '- Wheel type (Real Riders rubber = Premium or TH)',
     '- Any visible tampo/graphics',
-    '- Rarity: STH > TH > Vintage > Rare > Premium > Uncommon > Common',
+    '- Rarity: only upgrade from Common if you see CLEAR evidence (e.g. TH logo, rubber tires, redline)',
     '',
-    'RARITY CLUES:',
-    '- Spectraflame paint + rubber wheels + TH logo = Super Treasure Hunt (STH)',
-    '- Metalflake paint + TH logo = Treasure Hunt (TH)',
-    '- Real Riders rubber tires = at minimum Premium',
-    '- Red line on tires = Vintage Redline (pre-1977), very valuable',
-    '- Obvious paint/tampo error = Error Car, extremely valuable'
+    'RARITY — only assign elevated rarity when you can clearly see the evidence:',
+    '- Super Treasure Hunt (STH): MUST see Spectraflame paint + rubber tires + TH logo',
+    '- Treasure Hunt (TH): MUST see special paint + TH flame logo',
+    '- Real Riders rubber tires WITHOUT TH = Premium at most',
+    '- Vintage Redline: MUST see red stripe on tires',
+    '- Default to Common unless evidence is clear'
   ].join('\n')
 
   var usr = [
-    'Carefully examine this image. Count and identify EVERY Hot Wheels car you can see.',
-    'For each car provide complete identification. Return ONLY valid JSON:',
-    '{"total_cars_found":N,',
-    '"scan_notes":"brief note about image quality and what you see",',
+    'Examine this image carefully.',
+    'STEP 1: Are there any Mattel Hot Wheels die-cast cars? If not, return {"total_cars_found":0,"is_hot_wheels":false,"scan_notes":"describe what you see","cars":[]}.',
+    'STEP 2: Count and identify each Hot Wheels car you can CLEARLY see. Do not include partially visible or unidentifiable objects.',
+    'Only describe what you can actually observe — do not invent details.',
+    'Return ONLY valid JSON:',
+    '{"total_cars_found":N,"is_hot_wheels":true,',
+    '"scan_notes":"brief note about image quality and cars visible",',
     '"cars":[{',
     '"car_number":1,',
-    '"name":"EXACT model name",',
-    '"series":"series name and year",',
-    '"casting_year":"year first made",',
+    '"name":"EXACT model name or Unknown casting if unsure",',
+    '"series":"series name and year or Unknown",',
+    '"casting_year":"year first made or Unknown",',
     '"color":"exact color",',
-    '"tampo":"all visible graphics and decorations",',
+    '"tampo":"all visible graphics — or None visible",',
     '"wheel_type":"exact wheel type",',
     '"rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",',
-    '"rarity_reason":"specific visual evidence",',
+    '"rarity_reason":"specific VISIBLE evidence — e.g. can see TH logo + rubber tires",',
     '"condition":"Mint on Card|Near Mint|Very Good|Good",',
     '"investment":"Low|Medium|High|Very High",',
     '"investment_reason":"why",',
@@ -456,7 +507,7 @@ export async function identifyMultipleCars(imageData) {
     '"india_collector_inr":"300-600",',
     '"us_retail_usd":"1.49",',
     '"us_collector_usd":"5-12",',
-    '"confidence":90,',
+    '"confidence":80,',
     '"is_authentic":true,',
     '"fun_fact":"one interesting fact about this casting"',
     '}]}'
@@ -501,6 +552,11 @@ export async function analyzeMultiPhoto() {
       window.setStep(1, 'active')
       document.getElementById('timer-lbl').textContent = 'Scanning image ' + (i+1) + ' of ' + state.multiImages.length + '...'
       var result = await identifyMultipleCars(state.multiImages[i].img64)
+      if (result && result.is_hot_wheels === false) {
+        // Skip this image silently — show a note in scan_notes
+        window.setStep(1, 'done')
+        continue
+      }
       if (result && result.cars) {
         result.cars.forEach(function(car) {
           car._sourceImage = state.multiImages[i].thumb
