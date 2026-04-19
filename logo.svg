@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 40" fill="none">
+  <defs>
+    <linearGradient id="badge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a4fd4"/>
+      <stop offset="100%" stop-color="#0e1e72"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#ccd4e8"/>
+      <stop offset="100%" stop-color="#7888aa"/>
+    </linearGradient>
+    <linearGradient id="darkband" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#07124a"/>
+      <stop offset="100%" stop-color="#0d1e7a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Badge background (slight parallelogram via path) -->
+  <path d="M8 0 L46 0 Q52 0 52 6 L44 34 Q44 40 38 40 L0 40 Q0 34 4 34 Z" fill="url(#badge)"/>
+  <!-- Shine overlay -->
+  <path d="M8 0 L46 0 Q52 0 52 6 L44 20 L0 20 L4 0 Z" fill="url(#shine)"/>
+
+  <!-- H letter — bold italic -->
+  <rect x="7" y="8" width="4" height="22" rx="1.5" fill="url(#silver)" transform="skewX(-6)"/>
+  <rect x="18" y="8" width="4" height="22" rx="1.5" fill="url(#silver)" transform="skewX(-6)"/>
+  <rect x="7" y="17" width="15" height="3.5" rx="1" fill="url(#silver)"/>
+
+  <!-- S letter — bold italic simplified -->
+  <path d="M28,11 Q38,8 38,14 Q38,19.5 28,19.5 Q38,19.5 38,26 Q38,32 28,30"
+        stroke="url(#silver)" stroke-width="4" fill="none" stroke-linecap="round" transform="skewX(-6)"/>
+
+  <!-- Dark banner bar for HOTSCAN text -->
+  <path d="M0 29 L44 29 L40 40 L0 40 Z" fill="url(#darkband)"/>
+
+  <!-- Car silhouette (simple sports-coupe profile) -->
+  <path d="M6,29 Q10,23 15,22 Q20,21 26,22.5 Q31,24 34,27 Q30,29 24,29 Q13,29 6,29 Z"
+        fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.2)" stroke-width="0.8"/>
+  <!-- Wheel circles -->
+  <circle cx="13" cy="29" r="3.5" fill="rgba(10,14,50,0.75)" stroke="rgba(255,255,255,0.25)" stroke-width="0.9"/>
+  <circle cx="26" cy="29" r="3.5" fill="rgba(10,14,50,0.75)" stroke="rgba(255,255,255,0.25)" stroke-width="0.9"/>
+
+  <!-- HOTSCAN in dark banner -->
+  <text x="7" y="39" font-family="'Arial Black',Arial,Impact,sans-serif" font-weight="900"
+        font-size="9.5" fill="#e8e4dc" letter-spacing="1.6">HOTSCAN</text>
+
+  <!-- Wordmark text to the right of badge -->
+  <!-- "HOT" subdued -->
+  <text x="60" y="18" font-family="'Arial Black',Arial,Impact,sans-serif" font-weight="900"
+        font-size="10" fill="#7a88a8" letter-spacing="1">HOT</text>
+  <!-- "SCAN" prominent -->
+  <text x="60" y="35" font-family="'Arial Black',Arial,Impact,sans-serif" font-weight="900"
+        font-size="16" fill="#f0ede8" letter-spacing="1.5">SCAN</text>
+
+  <!-- India tag -->
+  <text x="111" y="18" font-family="'Arial',sans-serif" font-weight="600"
+        font-size="7.5" fill="#5a6888" letter-spacing="0.3">INDIA</text>
+</svg>
