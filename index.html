@@ -325,6 +325,7 @@
       <div class="card-title">📦 List a Car for Sale</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:13px;line-height:1.6">Scan the car first → tap Sell → we auto-fill the details. Buyers will contact you via WhatsApp.</div>
       <input class="inp" id="sl-name" type="text" placeholder="Car name e.g. Bone Shaker STH 2023">
+      <div class="form-section-label">Pricing &amp; Condition</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
         <input class="inp" id="sl-price" type="number" placeholder="Price ₹" style="margin:0">
         <select class="inp" id="sl-cond" style="margin:0">
@@ -346,7 +347,7 @@
       <button class="btn-red" id="sl-submit-btn" style="width:100%;justify-content:center;padding:13px;border-radius:12px;margin-top:4px" onclick="submitListing()">📤 List Now</button>
     </div>
     <div class="card" id="my-listings-card" style="display:none">
-      <div class="card-title">📋 My Active Listings</div>
+      <div class="card-title"><span class="my-listings-dot"></span>My Active Listings</div>
       <div id="my-listings-wrap"></div>
     </div>
     <div class="card">
