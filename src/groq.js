@@ -67,11 +67,7 @@ export async function groqText(prompt, model) {
     body: JSON.stringify({
       model: chosenModel,
       messages: [{role:'user', content:prompt}],
-      temperature: 0.1, max_tokens: 600
-    })
-  })
-  if (!res.ok) {
-    var rtBody = await res.text().catch(function(){return'{}'})
+      temperature: 0.05, max_tokens: 600
     var rtErr = {}; try { rtErr = JSON.parse(rtBody) } catch(ex) {}
     var rtMsg = (rtErr.error && typeof rtErr.error === 'string') ? rtErr.error
               : (rtErr.error && rtErr.error.message) ? rtErr.error.message : null
@@ -88,10 +84,7 @@ export async function groqText(prompt, model) {
         body: JSON.stringify({
           model: HAIKU_MODEL,
           messages: [{role:'user', content:prompt}],
-          temperature: 0.1, max_tokens: 600
-        })
-      })
-      if (!fb.ok) throw new Error('AI text API error ' + fb.status)
+          temperature: 0.05, max_tokens: 600
       var fd = await fb.json()
       var fc = fd.choices && fd.choices[0] && fd.choices[0].message && fd.choices[0].message.content
       if (!fc) throw new Error('Empty fallback response from AI. Try again.')
