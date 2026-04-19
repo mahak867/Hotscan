@@ -13,7 +13,7 @@ import {
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
-  quickSell, checkOLX
+  quickSell, checkOLX, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected
 } from './marketplace.js'
 import {
   goPage, saveKey, showKeySetup, setMode, resetScan,
@@ -56,7 +56,7 @@ Object.assign(window, {
   submitEvent, selectSeries, toggleHunt,
   showProModal, closeProModal, isPro, checkLimit,
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
-  quickSell, checkOLX,
+  quickSell, checkOLX, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected,
   copyRefLink, shareViaWA,
   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
   whatsappSupport,
