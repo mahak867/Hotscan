@@ -50,16 +50,44 @@ export function renderListings(arr) {
   var wrap = document.getElementById('mp-listings-wrap')
   if (!wrap) return
   var items = (arr || _mpListings || []).slice()
+  // #13 — update active filter chip with result count
+  var activeChip = document.querySelector('#mp-filter-chips .filter-chip.active')
+  if (activeChip) {
+    var base = activeChip.textContent.split(' (')[0]
+    activeChip.textContent = items.length > 0 ? base + ' (' + items.length + ')' : base
+  }
   if (!items.length) {
-    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-t">No listings yet</div><div class="empty-s">Be the first — tap Sell above to list your Hot Wheels</div></div>'
+    // #14 — improved empty buy state
+    wrap.innerHTML = [
+      '<div class="card" style="text-align:center;padding:24px 18px">',
+      '  <div style="font-size:36px;margin-bottom:10px">🏪</div>',
+      '  <div style="font-size:15px;font-weight:700;margin-bottom:5px">No listings yet</div>',
+      '  <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Be the first collector to list a Hot Wheels for sale!</div>',
+      '  <button class="btn-red" style="padding:11px 22px;border-radius:12px" onclick="mpMode(\'sell\')">💸 List a Car for Sale →</button>',
+      '</div>'
+    ].join('')
     return
   }
   wrap.innerHTML = ''
+  // #11 — rarity stripe color map
+  var rarityStripe = {
+    'super treasure hunt': '#e63946',
+    'treasure hunt': '#ffd60a',
+    'error car': '#ff6b6b',
+    'vintage': '#ffd60a',
+    'premium': '#4cc9f0',
+    'rare': '#4cc9f0',
+    'uncommon': '#2dc653',
+    'common': 'var(--border)'
+  }
   items.forEach(function(l) {
     var listed = l.listed_at || l.listed
     var diff = Math.floor((Date.now() - new Date(listed)) / 60000)
     var ago = diff < 60 ? diff + 'm ago' : diff < 1440 ? Math.floor(diff/60) + 'h ago' : Math.floor(diff/1440) + 'd ago'
     var card = document.createElement('div'); card.className = 'listing-card'
+    // #11 — left-border rarity stripe
+    var rv = (l.rarity || 'common').toLowerCase()
+    card.style.borderLeft = '3px solid ' + (rarityStripe[rv] || 'var(--border)')
     var thumb = document.createElement('div'); thumb.className = 'listing-thumb'
     if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.textContent = '🚗'
     var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'

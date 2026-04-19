@@ -60,9 +60,13 @@ export function showToast(msg, type, duration){
   type = type || 'info'; duration = duration || 2800
   var existing = document.getElementById('hs-toast')
   if(existing) existing.remove()
+  // #20 — icon prefix per type
+  var iconMap = {success:'✅ ', error:'❌ ', info:'ℹ️ '}
+  var icon = iconMap[type] || ''
   var toast = document.createElement('div')
   toast.id = 'hs-toast'
-  toast.textContent = msg
+  toast.className = 'hs-toast-' + type   // #20 — type-based left border via CSS
+  toast.textContent = icon + msg
   toast.style.cssText = [
     'position:fixed','bottom:80px','left:50%','transform:translateX(-50%) translateY(20px)',
     'background:' + (type==='error' ? '#2a0a0a' : type==='success' ? '#0a1a0a' : '#0d0d1e'),
