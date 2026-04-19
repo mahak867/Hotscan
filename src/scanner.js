@@ -224,7 +224,7 @@ export async function analyzeDeal() {
       [d.savings_or_overpay && d.savings_or_overpay.includes('saving') ? 'You save' : 'You overpay', d.savings_or_overpay || '?']
     ]
     document.getElementById('deal-rows').innerHTML = rows.map(function(r) {
-      return '<div class="deal-row"><span class="deal-k">' + r[0] + '</span><span class="deal-v">' + r[1] + '</span></div>'
+      return '<div class="deal-row"><span class="deal-k">' + escHtml(String(r[0])) + '</span><span class="deal-v">' + escHtml(String(r[1])) + '</span></div>'
     }).join('')
     if (d.suggestion) document.getElementById('deal-tip').textContent = '💡 ' + d.suggestion
     document.getElementById('deal-result').style.display = 'block'
@@ -281,7 +281,7 @@ export async function analyzeFake() {
     if (d.red_flags && d.red_flags.length) rows.push(['⚠️ Red flags', d.red_flags.join(' · ')])
     if (d.india_fake_note) rows.push(['🇮🇳 India note', d.india_fake_note])
     document.getElementById('deal-rows').innerHTML = rows.map(function(r) {
-      return '<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">' + r[0] + '</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">' + r[1] + '</span></div>'
+      return '<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">' + escHtml(String(r[0])) + '</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">' + escHtml(String(r[1])) + '</span></div>'
     }).join('')
     if (d.recommendation) document.getElementById('deal-tip').textContent = '💡 ' + d.recommendation
     document.getElementById('deal-result').style.display = 'block'
