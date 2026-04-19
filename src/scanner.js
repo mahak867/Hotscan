@@ -113,11 +113,12 @@ export async function analyzePhoto() {
   if (!state.img64) return
   if (!window.checkLimit()) return
   var btn = document.getElementById('analyze-btn')
-  btn.disabled = true; btn.textContent = '⏳ Scanning...'
+  btn.disabled = true; btn.textContent = '⏳ Scanning...'; btn.classList.remove('sticky-btn')
   document.getElementById('pipeline').style.display = 'block'
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('result').style.display = 'none'
   document.getElementById('deal-result').style.display = 'none'
+  var skel = document.getElementById('result-skeleton'); if (skel) skel.style.display = 'block'
   window.resetSteps(); window.startTimer('Identifying car...')
   try {
     window.setStep(1, 'active')
@@ -157,6 +158,8 @@ export async function analyzePhoto() {
     window.incScans()
     window.saveToHist(result)
     window.showResult(result)
+    var skel2 = document.getElementById('result-skeleton'); if (skel2) skel2.style.display = 'none'
+    if (navigator.vibrate) navigator.vibrate(200)
     window.updateScanCounter()
     if (!window.isPro()) {
       var rem = window.FREE_SCANS - window.getTodayScans()
@@ -187,6 +190,7 @@ export async function analyzePhoto() {
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify & Get Live Prices'
     document.getElementById('pipeline').style.display = 'none'
+    var skelF = document.getElementById('result-skeleton'); if (skelF) skelF.style.display = 'none'
   }
 }
 
