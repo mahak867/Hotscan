@@ -698,6 +698,51 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   color:var(--gold);border:1px solid rgba(255,214,10,.3);
 }
 
+/* ══ UI/UX UPGRADES ══ */
+
+/* 1. Scan button pulse glow */
+@keyframes btnGlow{0%,100%{box-shadow:0 2px 8px rgba(230,57,70,.25)}50%{box-shadow:0 6px 28px rgba(230,57,70,.65),0 0 0 5px rgba(230,57,70,.1)}}
+.analyze-btn:not(:disabled){animation:shimmer 3s infinite,btnGlow 2.5s infinite}
+.scan-ph .btn-red{animation:btnGlow 2.8s infinite}
+
+/* 2. Rarity badges — larger & more distinct */
+.rar{font-size:12px;padding:4px 10px;border-radius:4px}
+
+/* 3. Price tiles — larger tabular numbers */
+.ptile-val{font-size:22px;font-variant-numeric:tabular-nums}
+
+/* 4. Skeleton loader */
+@keyframes skelShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skel{background:linear-gradient(90deg,var(--surface) 25%,var(--surface3) 50%,var(--surface) 75%);background-size:200% 100%;animation:skelShimmer 1.6s infinite;border-radius:8px}
+#result-skeleton{background:var(--surface);border-radius:12px;overflow:hidden;margin-bottom:11px;border:1px solid var(--border2)}
+.skel-hero{background:var(--surface2);padding:16px;display:flex;gap:12px;align-items:flex-start}
+.skel-thumb{width:80px;height:80px;border-radius:11px;flex-shrink:0}
+.skel-lines{flex:1;display:flex;flex-direction:column;gap:9px;padding-top:4px}
+.skel-line-lg{height:17px;width:75%}
+.skel-line-sm{height:12px;width:50%}
+.skel-badge{height:20px;width:90px}
+.skel-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border2)}
+.skel-tile{background:var(--surface2);height:68px}
+
+/* 5. Mode tab active bottom border */
+.mode-tab.active{border-bottom:2px solid var(--red)}
+
+/* 8. Empty state CTA button style */
+.empty .btn-red{margin-top:14px}
+
+/* 9. Sticky Analyze button when image loaded */
+.analyze-btn.sticky-btn{position:sticky;bottom:90px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+
+/* 10. Toast — already styled in utils.js; adjust bottom for sticky btn clearance */
+#hs-toast{bottom:100px !important}
+
+/* 13. Focus styles for keyboard accessibility */
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* 15. Smoother page transitions (improve existing) */
+@keyframes pageFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page.active{animation:pageFadeIn .15s ease}
+
 /* Collection value card */
 .val-card{
   background:linear-gradient(135deg,#1a1200 0%,#0d0500 50%,#0a0a0a 100%);
