@@ -175,8 +175,14 @@ export async function analyzePhoto() {
       document.getElementById('err-box').innerHTML = '⚡ <strong>Shared scan limit reached.</strong><br><span style="font-size:12px;color:#cc9900">Add your own free key at <a href="https://console.groq.com" target="_blank" style="color:#ffd60a">console.groq.com</a> for unlimited personal access, or upgrade to Pro.</span><br><button onclick="startPayment()" style="margin-top:8px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;border:none;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer">⭐ Get Pro — ₹99/month</button>'
       document.getElementById('err-box').style.cssText = 'display:block;background:#1a1000;border:1px solid rgba(255,214,10,.4);color:var(--gold);border-radius:12px;padding:14px;margin-bottom:11px;font-size:13px;line-height:1.7'
     } else {
-      document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message) + '<div style="margin-top:5px;font-size:11px;color:#cc5555">📸 Tips: bright light · white surface · clear side view</div>'
-      document.getElementById('err-box').style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
+      var eb = document.getElementById('err-box')
+      eb.textContent = ''
+      eb.appendChild(document.createTextNode('⚠️ ' + (err.message || '')))
+      var hintDiv = document.createElement('div')
+      hintDiv.style.cssText = 'margin-top:5px;font-size:11px;color:#cc5555'
+      hintDiv.textContent = '📸 Tips: bright light · white surface · clear side view'
+      eb.appendChild(hintDiv)
+      eb.style.cssText = 'display:block;background:#180808;border:1px solid #4a1a1a;color:#ff8080'
     }
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify & Get Live Prices'
@@ -433,8 +439,9 @@ export async function analyzeMultiPhoto() {
     showMultiResults(allCars)
   } catch(err) {
     window.stopTimer(); window.setStep(1, 'err')
-    document.getElementById('err-box').innerHTML = '⚠️ ' + escHtml(err.message)
-    document.getElementById('err-box').style.display = 'block'
+    var eb2 = document.getElementById('err-box')
+    eb2.textContent = '⚠️ ' + (err.message || '')
+    eb2.style.display = 'block'
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify All Cars (' + state.multiImages.length + ' photos)'
     document.getElementById('pipeline').style.display = 'none'
