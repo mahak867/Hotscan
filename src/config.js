@@ -1,6 +1,8 @@
-export var SUPA_URL  = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
-export var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
-export var RZP_KEY   = 'rzp_live_SX0GLL6DXzycgo'
+// Public / publishable keys — read from build-time env vars (VITE_ prefix)
+// so they never need to be hardcoded in source.  See .env.example.
+export var SUPA_URL  = import.meta.env.VITE_SUPA_URL  || 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
+export var SUPA_KEY  = import.meta.env.VITE_SUPA_KEY  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
+export var RZP_KEY   = import.meta.env.VITE_RZP_KEY   || 'rzp_live_SX0GLL6DXzycgo'
 export var DEV_EMAIL = 'mahakfahad07@gmail.com'
 export var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'
 export var WA_SUPPORT   = null
