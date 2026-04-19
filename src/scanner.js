@@ -8,7 +8,12 @@ async function identifyCar(imageData) {
   var sys = [
     'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2026.',
     '',
-    'IDENTIFICATION RULES — follow precisely:',
+    '⚠️ CRITICAL — FIRST CHECK BEFORE ANYTHING ELSE:',
+    'Is the object in the image a genuine Mattel Hot Wheels die-cast car (or its packaging/card)?',
+    'If NO — return IMMEDIATELY: {"identified":false,"is_hot_wheels":false,"reason":"<describe what you actually see>"}',
+    'Do NOT attempt to match it to any Hot Wheels model. Do NOT guess.',
+    '',
+    'IDENTIFICATION RULES (only if object IS a Hot Wheels die-cast):',
     '1. CASTING: Identify the exact vehicle model (e.g. "69 Camaro" not just "Camaro"). Note year of car, make, model.',
     '2. SERIES: Name exact series e.g. "Hot Wheels 2023 Mainline #087/250" or "Car Culture Japan Historics 3".',
     '3. COLOR: Exact color e.g. "Spectraflame Blue", "Pearl White", "Matte Black", "Kmart Exclusive Red".',
@@ -16,23 +21,29 @@ async function identifyCar(imageData) {
     '5. WHEELS: Exact wheel type — "5-Spoke", "OH5 (Open Hole 5-Spoke)", "Real Riders rubber", "PR5", "10-Spoke", "MC5", "Gold Lace".',
     '6. BASE: Look for Malaysia/China/Thailand/Thailand+China base — indicates era and variation.',
     '',
-    'RARITY DETECTION — critical:',
-    '- Super Treasure Hunt (STH): Spectraflame metallic paint + Real Riders rubber tires + TH logo = VERY RARE ₹4000-15000 India',
-    '- Treasure Hunt (TH): Metalflake/special paint + TH flame logo on card = RARE ₹1000-3000 India',
-    '- Real Riders without TH = Premium series ₹500-1200 India',
-    '- Error Car: wrong tampo/color/part = EXTREMELY VALUABLE ₹5000-50000 India',
-    '- Vintage Redlines (pre-1977): Red stripe on tires = ₹3000-20000 India',
-    '- Basic mainline: Standard 5-spoke plastic wheels = Common ₹150-200 India',
+    'RARITY DETECTION — only assign elevated rarity when physical evidence is visible:',
+    '- Super Treasure Hunt (STH): MUST see Spectraflame metallic paint + Real Riders rubber tires + TH logo',
+    '- Treasure Hunt (TH): MUST see metalflake/special paint + TH flame logo on card',
+    '- Real Riders without TH = Premium series',
+    '- Error Car: MUST see obvious wrong tampo/color/part — do not guess',
+    '- Vintage Redlines (pre-1977): MUST see red stripe on tires',
+    '- Default to Common unless you can clearly see evidence for higher rarity',
     '',
-    'AUTHENTICITY: Check Hot Wheels logo sharpness, Mattel base markings, wheel quality, paint consistency.',
-    'CONFIDENCE: Be precise. 95%+ only if you can clearly read tampo/series. 70-80% if partially visible.'
+    'CONFIDENCE RULES — be honest:',
+    '- 90-100%: You can clearly read series number, tampo, and wheel type',
+    '- 70-89%: Model clearly visible but some details unclear',
+    '- 50-69%: Partially visible or image is blurry',
+    '- Below 50%: Return identified:false — do not guess',
+    '',
+    'AUTHENTICITY: Check Hot Wheels logo sharpness, Mattel base markings, wheel quality, paint consistency.'
   ].join('\n')
 
   var usr = [
-    'Examine this Hot Wheels car image with extreme precision.',
-    'Look at: casting shape, color, ALL tampo graphics, wheel type, base plate, card if visible.',
+    'Examine this image carefully.',
+    'STEP 1: Is this a Mattel Hot Wheels die-cast car? If not, stop and return {"identified":false,"is_hot_wheels":false,"reason":"..."}.',
+    'STEP 2: If yes, identify it with precision. Only describe what you can actually see — do not guess or invent details.',
     'Return ONLY valid JSON — no explanation, no markdown:',
-    '{"identified":true,',
+    '{"identified":true,"is_hot_wheels":true,',
     '"confidence":92,',
     '"name":"EXACT Hot Wheels model name e.g. 69 Dodge Charger Daytona",',
     '"series":"EXACT series e.g. Hot Wheels 2023 Mainline #142/250",',
@@ -43,21 +54,30 @@ async function identifyCar(imageData) {
     '"base_color":"color of the base plate",',
     '"base_origin":"Malaysia|China|Thailand|Unknown",',
     '"rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",',
-    '"rarity_reason":"specific visual evidence for this rarity rating",',
+    '"rarity_reason":"specific VISIBLE evidence for this rarity rating — e.g. can see TH logo + rubber tires",',
     '"condition":"Mint on Card|Near Mint|Very Good|Good|Fair",',
     '"investment":"Low|Medium|High|Very High",',
-    '"investment_reason":"specific market reasoning",',
+    '"investment_reason":"specific market reasoning based on this exact casting and rarity",',
     '"fun_fact":"one specific interesting fact about this exact casting",',
     '"india_insight":"specific Indian collector demand for this car",',
     '"us_retail_usd":"1.49",',
     '"us_collector_usd":"5-12",',
     '"is_authentic":true,',
     '"authenticity_confidence":"High|Medium|Low",',
-    '"authenticity_notes":"specific authenticity observations"}'
+    '"authenticity_notes":"specific observations about logo, base, paint, wheels"}'
   ].join('')
 
   var d = await groqVision(imageData, sys, usr)
-  if (!d.identified) throw new Error('Could not identify. Try: white surface · bright light · side view · include card')
+  if (!d.identified) {
+    if (d.is_hot_wheels === false) {
+      var what = d.reason ? d.reason : 'not a Hot Wheels die-cast car'
+      throw new Error('Not a Hot Wheels car — AI sees: ' + what + '. Please photograph a Hot Wheels die-cast car.')
+    }
+    throw new Error('Could not identify. Try: white surface · bright light · side view · include card')
+  }
+  if (d.confidence && d.confidence < 40) {
+    throw new Error('Image too unclear to identify (confidence ' + d.confidence + '%). Try: brighter light · less blur · closer shot.')
+  }
   return d
 }
 
@@ -74,35 +94,35 @@ async function searchPrices(carName, rarity, castingYear) {
   }
   var p = rp[rarity] || rp['Common']
   var prompt = [
-    'You are India top Hot Wheels market analyst with deep knowledge of:',
-    '- OLX India pricing trends',
-    '- Instagram collector group prices in India',
-    '- Mumbai, Delhi, Bangalore, Chennai swap meet prices',
-    '- Amazon India and Flipkart availability',
-    '- Maido.in and other specialty retailers',
-    '- Import duty impact on US models coming to India',
+    'You are an India Hot Wheels price analyst. Your job is to give REALISTIC, CONSERVATIVE pricing for Indian collectors.',
+    '⚠️ STRICT RULES:',
+    '1. You MUST stay within or close to the stated price bands. Do NOT inflate prices.',
+    '2. Do NOT invent sale data. Only comment on market trends you are confident about.',
+    '3. India retail = what stores like Hamleys / Flipkart charge. India collector = OLX / Instagram resale.',
+    '4. If you are unsure about trend, use "Stable".',
     '',
-    'Price this specific car for Indian collectors:',
     'Car: "' + carName + '"',
     'Rarity: ' + rarity,
     'Casting Year: ' + castingYear,
-    'Base India price range: Retail ₹' + p.r + ', Collector ₹' + p.c,
+    'REQUIRED price bands (stay within these ranges):',
+    '  India retail: ₹' + p.r,
+    '  India collector: ₹' + p.c,
+    '  US retail: $' + p.ur,
+    '  US collector: $' + p.uc,
     '',
-    'Consider:',
-    '1. How popular is this specific model with Indian collectors?',
-    '2. JDM cars (Skyline, Supra, RX-7) and muscle cars (Camaro, Charger) = high demand India',
-    '3. How rare is it to find in India? (most cars never make it to Indian stores)',
-    '4. Has its Indian OLX price been going up or down recently?',
-    '5. Are there active Indian Instagram sellers listing this car?',
+    'Factors to consider:',
+    '- JDM cars (Skyline, Supra, RX-7) and US muscle have higher demand in India',
+    '- Most mainline cars never reach Indian stores — OLX prices reflect import costs',
+    '- Be specific about which Indian collector communities want this car and why',
     '',
-    'Return ONLY valid JSON:',
+    'Return ONLY valid JSON with numbers strictly inside the bands above:',
     '{"india_retail_inr":"' + p.r + '",',
     '"india_collector_inr":"' + p.c + '",',
     '"us_retail_usd":"' + p.ur + '",',
     '"us_collector_usd":"' + p.uc + '",',
     '"price_trend":"Rising|Stable|Falling",',
-    '"price_trend_reason":"specific reason for this car trend in India",',
-    '"india_insight":"2-3 specific sentences about Indian collector demand for this exact model, why they want it, market activity",',
+    '"price_trend_reason":"specific reason — or Stable if uncertain",',
+    '"india_insight":"2-3 sentences about Indian demand for this exact model based on known collector interest",',
     '"sell_platforms":["OLX","Instagram collector groups","Maido"],',
     '"buy_tip":"best way to find this car in India at good price"}'
   ].join('\n')
@@ -196,29 +216,55 @@ export async function analyzePhoto() {
 
 export async function analyzeDeal() {
   var asking = parseFloat(document.getElementById('deal-price').value)
-  var carName = document.getElementById('deal-car-name').value.trim() || (state.lastResult && state.lastResult.name) || ''
-  if (!asking) { alert("Enter the seller's asking price"); return }
+  var carName = (document.getElementById('deal-car-name').value.trim() || (state.lastResult && state.lastResult.name) || '').trim()
+  if (!asking || asking <= 0) { alert("Enter the seller's asking price"); return }
+  if (asking < 50 || asking > 200000) { alert('Please enter a realistic price between ₹50 and ₹2,00,000'); return }
   if (!carName) { alert('Enter the car name or scan it first with Photo mode'); return }
+  if (carName.length < 3) { alert('Enter a more specific car name (at least 3 characters)'); return }
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Checking deal...'
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('deal-result').style.display = 'none'
   window.startTimer('Checking deal...')
-  var prompt = 'India Hot Wheels deal expert. Is ₹' + asking + ' a good price for "' + carName + '"?\nReturn ONLY valid JSON:\n{"verdict":"Steal|Fair Price|Slightly High|Overpriced","fair_india_price":"300-500","verdict_reason":"specific why","suggestion":"exact counter-offer or action","market_retail":"150-200","market_collector":"350-600","savings_or_overpay":"saving ₹X or overpaying ₹X"}'
+  var prompt = [
+    'You are an India Hot Wheels deal checker. Give realistic, honest advice.',
+    '⚠️ RULES: Only use real Indian market price knowledge. Do not inflate or deflate prices.',
+    '  Common mainline = ₹150-250 India retail, ₹200-400 collector.',
+    '  Treasure Hunt = ₹500-2500. Super Treasure Hunt = ₹4000-15000.',
+    '  If the car name is vague or you are unsure, say so in verdict_reason.',
+    '',
+    'Question: Is ₹' + asking + ' a good price for "' + carName + '" in India?',
+    '',
+    'Return ONLY valid JSON with these EXACT keys:',
+    '{"verdict":"Steal|Fair Price|Slightly High|Overpriced",',
+    '"fair_india_price":"realistic INR range e.g. 300-500",',
+    '"verdict_reason":"1-2 sentences explaining why at this price",',
+    '"suggestion":"specific actionable advice e.g. offer ₹X or walk away",',
+    '"market_retail":"India store price e.g. 150-200",',
+    '"market_collector":"India resale price e.g. 350-600",',
+    '"savings_or_overpay":"saving ₹X or overpaying ₹X",',
+    '"confidence":"High|Medium|Low — how sure you are about this car\'s India price"}'
+  ].join('\n')
   try {
     var d = await groqText(prompt, HAIKU_MODEL)
     window.stopTimer()
+    // Validate response has expected fields
+    if (!d.verdict || !['Steal','Fair Price','Slightly High','Overpriced'].includes(d.verdict)) {
+      d.verdict = 'Fair Price'
+    }
     var cfg = {
-      'Steal':       {icon:'🤑', cls:'vd-steal'},
-      'Fair Price':  {icon:'👍', cls:'vd-fair'},
-      'Slightly High':{icon:'🤔',cls:'vd-high'},
-      'Overpriced':  {icon:'❌', cls:'vd-over'}
+      'Steal':        {icon:'🤑', cls:'vd-steal'},
+      'Fair Price':   {icon:'👍', cls:'vd-fair'},
+      'Slightly High':{icon:'🤔', cls:'vd-high'},
+      'Overpriced':   {icon:'❌', cls:'vd-over'}
     }
     var c = cfg[d.verdict] || cfg['Fair Price']
     document.getElementById('deal-verdict-area').className = 'deal-verdict ' + c.cls
     document.getElementById('dv-icon').textContent = c.icon
     document.getElementById('dv-label').textContent = d.verdict
-    document.getElementById('dv-sub').textContent = d.verdict_reason || ''
+    var sub = d.verdict_reason || ''
+    if (d.confidence && d.confidence !== 'High') sub += (sub ? ' ' : '') + '(Price confidence: ' + d.confidence + ')'
+    document.getElementById('dv-sub').textContent = sub
     var rows = [
       ['Car', carName],
       ['Seller asking', '₹' + asking],
@@ -249,40 +295,76 @@ export async function analyzeFake() {
   document.getElementById('err-box').style.display = 'none'
   window.startTimer('Checking authenticity...')
   var sys = [
-    'You are the world leading Hot Wheels authentication specialist with 25 years experience.',
-    'You have examined thousands of genuine and counterfeit Hot Wheels cars.',
+    'You are a Hot Wheels authentication specialist. Your job is to give HONEST verdicts based only on what you can clearly see in the image.',
     '',
-    'GENUINE Hot Wheels signs:',
-    '- Hot Wheels logo: crisp, clean, exact font with the red/yellow flame design',
-    '- Mattel logo on base: sharp, properly spaced',
-    '- Base markings: "HOT WHEELS MATTEL INC." with country of origin',
-    '- Wheels: consistent, smooth rolling, proper fitment',
-    '- Paint: even, no drips, proper metallic flake if applicable',
-    '- Tampo: sharp edges, correct colors, properly aligned',
-    '- Windshield/interior: proper plastic color, correctly fitted',
+    '⚠️ CRITICAL RULES:',
+    '1. If the image is blurry, dark, or key features are not visible → return "Cannot Determine".',
+    '2. Do NOT guess "Authentic" unless you can CLEARLY see at least 3 genuine markers.',
+    '3. Do NOT say "Likely Fake" without specific visible evidence of faking.',
+    '4. Default to "Cannot Determine" when in doubt — it is better than a wrong verdict.',
+    '5. Only include items in good_signs / red_flags that you can actually see in THIS image.',
     '',
-    'FAKE Hot Wheels signs:',
-    '- Blurry or wrong font on Hot Wheels logo',
-    '- Missing or incorrect Mattel markings on base',
-    '- Wheels that look different from standard Hot Wheels',
-    '- Paint drips, bubbles, uneven coverage',
-    '- Tampo with fuzzy edges or wrong colors',
-    '- Wrong proportions or plastic quality',
-    '- Generic base without proper markings',
-    '- Very common in India: Chinese counterfeits, "Motor Wheels" or "Speed Wheels" brands'
+    'GENUINE Hot Wheels markers (must be clearly visible to count):',
+    '- Hot Wheels logo: crisp, correct flame font — can you read it clearly?',
+    '- Mattel base: "HOT WHEELS MATTEL INC." text + country of origin',
+    '- Wheels: properly seated, consistent size, smooth hub',
+    '- Paint: even coverage, no drips or bare spots',
+    '- Tampo: sharp clean edges, correct alignment',
+    '- Window plastic: clear / tinted, properly fitted',
+    '',
+    'FAKE markers (only flag if you actually see this):',
+    '- Blurry/distorted Hot Wheels logo font',
+    '- Generic base or missing Mattel text',
+    '- Wheels that look mismatched or plastic-quality off',
+    '- Paint drips, bubbles, or obvious uneven coverage',
+    '- Fuzzy tampo edges or visibly wrong colors',
+    '- Brand name "Motor Wheels", "Speed Wheels", "Hot Whees" etc.',
+    '- Wrong proportions compared to known Hot Wheels casting'
   ].join('\n')
-  var usr = 'Authenticate this Hot Wheels. Return ONLY valid JSON:\n{"identified":true,"is_authentic":true,"authenticity_score":85,"verdict":"Authentic|Likely Authentic|Uncertain|Likely Fake|Definitely Fake","red_flags":[],"good_signs":[],"recommendation":"advice","india_fake_note":"note about fakes in India"}'
+  var usr = [
+    'Examine this image for Hot Wheels authenticity.',
+    'LIST only what you can ACTUALLY see — do not assume.',
+    'If image quality is poor and you cannot clearly see key markers, return verdict "Cannot Determine".',
+    'Return ONLY valid JSON:',
+    '{"identified":true,"is_authentic":true,"authenticity_score":85,',
+    '"verdict":"Authentic|Likely Authentic|Cannot Determine|Uncertain|Likely Fake|Definitely Fake",',
+    '"image_quality":"Good|Fair|Poor — affects confidence",',
+    '"features_checked":["list each feature you could actually examine"],',
+    '"good_signs":["only genuine markers you can clearly see"],',
+    '"red_flags":["only fake markers you can clearly see"],',
+    '"recommendation":"specific advice based on what you saw",',
+    '"india_fake_note":"brief note on common India counterfeits if relevant"}'
+  ].join('')
   try {
     var d = await groqVision(state.fakeImg64, sys, usr)
     window.stopTimer()
-    var bg = {'Authentic':'vd-steal','Likely Authentic':'vd-steal','Uncertain':'vd-high','Likely Fake':'vd-over','Definitely Fake':'vd-over'}
+    // Validate verdict is within allowed set
+    var allowed = ['Authentic','Likely Authentic','Cannot Determine','Uncertain','Likely Fake','Definitely Fake']
+    if (!d.verdict || !allowed.includes(d.verdict)) d.verdict = 'Cannot Determine'
+    var bg = {
+      'Authentic':'vd-steal',
+      'Likely Authentic':'vd-steal',
+      'Cannot Determine':'vd-fair',
+      'Uncertain':'vd-high',
+      'Likely Fake':'vd-over',
+      'Definitely Fake':'vd-over'
+    }
     document.getElementById('deal-verdict-area').className = 'deal-verdict ' + (bg[d.verdict] || 'vd-fair')
-    document.getElementById('dv-icon').textContent = d.is_authentic ? '✅' : '🚫'
-    document.getElementById('dv-label').textContent = d.verdict || 'Unknown'
-    document.getElementById('dv-sub').textContent = 'Authenticity score: ' + (d.authenticity_score || '?') + '/100'
+    var iconMap = {
+      'Authentic':'✅','Likely Authentic':'✅',
+      'Cannot Determine':'❓','Uncertain':'🤔',
+      'Likely Fake':'⚠️','Definitely Fake':'🚫'
+    }
+    document.getElementById('dv-icon').textContent = iconMap[d.verdict] || '❓'
+    document.getElementById('dv-label').textContent = d.verdict
+    var scoreNote = d.authenticity_score ? 'Authenticity score: ' + d.authenticity_score + '/100' : ''
+    var qualNote = d.image_quality ? ' · Image quality: ' + d.image_quality : ''
+    document.getElementById('dv-sub').textContent = scoreNote + qualNote
     var rows = []
-    if (d.good_signs && d.good_signs.length) rows.push(['✓ Good signs', d.good_signs.join(' · ')])
+    if (d.features_checked && d.features_checked.length) rows.push(['🔍 Checked', d.features_checked.join(' · ')])
+    if (d.good_signs && d.good_signs.length) rows.push(['✓ Genuine markers', d.good_signs.join(' · ')])
     if (d.red_flags && d.red_flags.length) rows.push(['⚠️ Red flags', d.red_flags.join(' · ')])
+    if (!d.good_signs.length && !d.red_flags.length) rows.push(['ℹ️ Note', 'Could not clearly see enough markers to give a definitive verdict.'])
     if (d.india_fake_note) rows.push(['🇮🇳 India note', d.india_fake_note])
     document.getElementById('deal-rows').innerHTML = rows.map(function(r) {
       return '<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">' + escHtml(String(r[0])) + '</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">' + escHtml(String(r[1])) + '</span></div>'
