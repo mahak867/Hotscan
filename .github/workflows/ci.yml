@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Install & Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Check for committed secrets
+        run: |
+          # Fail if any file (outside .env.example) contains a raw Groq secret key pattern
+          if grep -rn --include="*.js" --include="*.ts" --include="*.json" \
+               -E "gsk_[A-Za-z0-9]{40,}" \
+               --exclude-dir=node_modules --exclude-dir=dist .; then
+            echo "ERROR: Possible Groq secret key committed to source."
+            exit 1
+          fi

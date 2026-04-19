@@ -2,6 +2,10 @@
 *.log
 node_modules/
 .env
+.env.local
+.env.*.local
 *.env
 Thumbs.db
 dist/
+.vercel/
+*.tsbuildinfo

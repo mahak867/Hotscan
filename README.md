@@ -19,6 +19,7 @@
 [![Made in India](https://img.shields.io/badge/Made_in-India_🇮🇳-ff9933?style=for-the-badge)](https://www.hotscan.in)
 [![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge)](https://www.hotscan.in)
 [![License](https://img.shields.io/badge/License-MIT-2dc653?style=for-the-badge)](LICENSE)
+[![CI](https://github.com/mahak867/Hotscan/actions/workflows/ci.yml/badge.svg)](https://github.com/mahak867/Hotscan/actions/workflows/ci.yml)
 
 ---
 
@@ -198,6 +199,45 @@ HotScan is a fully installable **Progressive Web App (PWA)**. It sits on your ho
 ### XSS Prevention
 - All AI-generated strings rendered via `innerHTML` pass through `escHtml()` (HTML-encodes `& < > " '`).
 - User inputs pass through `sanitize()` (strips `< > " '`, max 500 chars) before any database write.
+
+---
+
+## 🏗️ Architecture
+
+HotScan is a **three-part project** in one repo:
+
+| Part | Path | Description |
+|---|---|---|
+| **Web App (PWA)** | `src/`, `index.html`, `*.html` | Vanilla JS + Vite 6. All app logic lives in `src/`. Vite bundles it to `dist/` for production. |
+| **API Proxy** | `api/groq.js` | Vercel Edge Function — proxies Groq AI requests server-side so API keys are never exposed to the browser. |
+| **Browser Extension** | `extension/` | Chrome/Edge extension (Manifest V3) that adds a HotScan shortcut to any page. Standalone; uses its own `manifest.json`. |
+
+### Single-command build (web app)
+```bash
+npm run build   # → dist/
+```
+
+### Deploy (Vercel)
+1. Push to `main` — Vercel auto-deploys from the repo root.
+2. `api/groq.js` is auto-detected as a Vercel Edge Function.
+3. Add your Groq keys in **Vercel → Settings → Environment Variables** (see `.env.example`).
+
+---
+
+## 🔑 Environment Variables
+
+The web app's static code has **no server-side secrets** — the Supabase anon key and Razorpay publishable key in `src/config.js` are intentionally public client-side credentials.
+
+The only secrets required are the **Groq API keys** used by the Vercel Edge Function:
+
+| Variable | Required | Description |
+|---|---|---|
+| `GROQ_API_KEY_1` | ✅ | Primary Groq key (`gsk_...`) — get free at [console.groq.com](https://console.groq.com) |
+| `GROQ_API_KEY_2` – `GROQ_API_KEY_5` | Optional | Additional keys for round-robin rotation / rate-limit resilience |
+
+Copy `.env.example` to `.env` for local reference only. **Never commit `.env` to git.**
+
+For local development the app runs without Groq keys (the AI features will show a "key not configured" message); all other features work via Supabase.
 
 ---
 
