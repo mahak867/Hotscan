@@ -1161,3 +1161,40 @@ body{
 .card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
 .result{animation:hwSlideUp .22s ease both}
 
+/* ── SELL PAGE OVERRIDES ── */
+/* 1. Strip looping glow animation from sell-form button; calm + confident */
+#mp-sell .btn-red{
+  animation:none !important;
+  box-shadow:0 2px 8px rgba(230,57,70,.2);
+  transition:transform .15s,box-shadow .15s,opacity .15s;
+}
+#mp-sell .btn-red:hover{box-shadow:0 4px 14px rgba(230,57,70,.35);transform:translateY(-1px)}
+#mp-sell .btn-red:active{transform:scale(.98);opacity:.88}
+
+/* 2. Red focus ring on sell-form inputs (instead of gold) */
+#mp-sell .inp:focus{
+  border-color:var(--red) !important;
+  box-shadow:0 0 0 3px rgba(230,57,70,.15);
+}
+
+/* 3. Section divider label */
+.form-section-label{
+  font-size:10px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.6px;
+  margin-bottom:5px;
+}
+
+/* 4. Listing cards — mobile tap feedback */
+.listing-card:active{
+  transform:translateY(0) !important;
+  box-shadow:none !important;
+  opacity:.88;
+}
+
+/* 5. Live dot for "My Active Listings" title */
+.my-listings-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--green);margin-right:5px;vertical-align:middle;
+  animation:livePulse 2s infinite;
+}
+

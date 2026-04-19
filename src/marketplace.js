@@ -139,6 +139,7 @@ export async function submitListing() {
   if (!state.currentUser)            { showToast('Sign in to list a car for sale', 'error'); window.openAuth(); return }
   if (!state._sb)                    { showToast('Connection error — try again', 'error'); return }
   var btn = document.getElementById('sl-submit-btn')
+  var _listed = false
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Listing…' }
   try {
     await state._sb.from('listings').insert({
@@ -154,12 +155,21 @@ export async function submitListing() {
       image_thumb:  state.imgThumb ? state.imgThumb.substring(0, 4000) : null,
       is_active:    true
     })
+    _listed = true
     ;['sl-name','sl-price','sl-city','sl-notes','sl-phone'].forEach(function(id){ document.getElementById(id).value = '' })
     showToast('Listed! Buyers can now contact you on WhatsApp 🎉', 'success')
     _mpListings = null
-    mpMode('buy')
+    if (btn) {
+      btn.disabled = false
+      btn.style.background = 'var(--green)'
+      btn.style.color = '#000'
+      btn.textContent = '✅ Listed!'
+      setTimeout(function() { mpMode('buy'); btn.style.background = ''; btn.style.color = '' }, 1500)
+    } else {
+      mpMode('buy')
+    }
   } catch(e) { console.error(e); showToast('Could not save listing — try again', 'error') }
-  finally { if (btn) { btn.disabled = false; btn.textContent = '📤 List Now' } }
+  finally { if (btn && !_listed) { btn.disabled = false; btn.textContent = '📤 List Now' } }
 }
 
 export function quickSell() {
