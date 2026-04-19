@@ -15,7 +15,7 @@
 **Point your camera at any Hot Wheels → Get live Indian prices instantly. Free.**
 
 [![Live App](https://img.shields.io/badge/🌐_Live_App-hotscan.in-e63946?style=for-the-badge)](https://www.hotscan.in)
-[![Version](https://img.shields.io/badge/Version-8.1-ffd60a?style=for-the-badge)](https://github.com/mahak867/Hotscan)
+[![Version](https://img.shields.io/badge/Version-8.2-ffd60a?style=for-the-badge)](https://github.com/mahak867/Hotscan)
 [![Made in India](https://img.shields.io/badge/Made_in-India_🇮🇳-ff9933?style=for-the-badge)](https://www.hotscan.in)
 [![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge)](https://www.hotscan.in)
 [![License](https://img.shields.io/badge/License-MIT-2dc653?style=for-the-badge)](LICENSE)
@@ -131,14 +131,14 @@ HotScan is a fully installable **Progressive Web App (PWA)**. It sits on your ho
 
 | Layer | Technology |
 |---|---|
-| Frontend | Vanilla HTML/CSS/JS — single file PWA, zero build step |
+| Frontend | Vanilla JS ES modules — Vite 6 build (`src/`) |
 | PWA | Web App Manifest · Service Worker (cache-first, offline support) |
 | AI Vision | `meta-llama/llama-4-scout-17b-16e-instruct` via Groq |
 | AI Prices | `moonshotai/kimi-k2-instruct` via Groq |
 | Auth | Supabase Auth — Google OAuth + email/password |
 | Database | Supabase PostgreSQL |
 | Payments | Razorpay (₹99/month Pro) |
-| Hosting | GitHub Pages + hotscan.in domain |
+| Hosting | Vercel · hotscan.in domain |
 
 ---
 
@@ -176,14 +176,55 @@ HotScan is a fully installable **Progressive Web App (PWA)**. It sits on your ho
 
 ---
 
-## 🤝 Contributing
+## 🔒 Security & Privacy
 
-PRs welcome. Single file — no build step needed.
+### API Key Protection
+- **No keys in the browser.** Groq API keys are stored exclusively in Vercel environment variables and are never shipped to the client.
+- **Server-side proxy.** Every AI request goes through `/api/groq` — a Vercel Edge Function — which injects the key before forwarding to Groq. The raw key is never visible in browser network traffic.
+- **User-owned key (optional).** Power users can supply their own Groq key in *Settings → Personal API Key*. It is stored only in `localStorage` on their device and sent directly to Groq — it never passes through our servers.
+- **Supabase anon key** is intentionally public (by Supabase design). It is scoped to Row-Level Security policies so each user can only read/write their own rows.
+
+### Rate Limiting & Abuse Prevention
+- **Per-IP rate limit** in the `/api/groq` edge proxy: **10 requests / IP / 60 s** before any Groq call is made.
+- **Key pool rotation.** Up to 5 Groq keys rotate round-robin; on a `429` the proxy immediately retries the next key.
+- **Free scan quota.** Free users get **5 scans / day** (checked against `localStorage`). Pro status is verified server-side via `profiles.is_pro` in Supabase.
+- **CORS allowlist.** The API proxy rejects any origin not in the explicit allowlist (`hotscan.in`, Vercel preview URLs).
+
+### Data Privacy
+- **No PII in AI prompts.** Only the compressed car photo (resized to ≤512 px JPEG) is sent to Groq. No user email, ID, or location is included.
+- **Analytics.** HotScan uses [Plausible](https://plausible.io) — cookieless, GDPR-compliant, no cross-site tracking.
+- Full details: [Privacy Policy →](https://hotscan.in/privacy.html)
+
+### XSS Prevention
+- All AI-generated strings rendered via `innerHTML` pass through `escHtml()` (HTML-encodes `& < > " '`).
+- User inputs pass through `sanitize()` (strips `< > " '`, max 500 chars) before any database write.
+
+---
+
+## 🤝 Contributing
 
 ```bash
 git clone https://github.com/mahak867/Hotscan
-# Open index.html in browser — done
+npm install
+npm run dev      # dev server with HMR at localhost:5173
+npm run build    # production build → dist/
+npm run preview  # preview the production build
 ```
+
+### Module map
+
+| Module | Responsibility |
+|---|---|
+| `src/config.js` | App constants, AI model names, hunt data |
+| `src/state.js` | Shared mutable application state |
+| `src/utils.js` | Pure helpers — `compress`, `escHtml`, `showToast`, `rcls`, etc. |
+| `src/groq.js` | Groq API calls — vision + text |
+| `src/auth.js` | Supabase auth, Google OAuth, Razorpay |
+| `src/scanner.js` | AI car identification, deal/fake/barcode/multi scan |
+| `src/collection.js` | Collection CRUD + Supabase cloud sync |
+| `src/marketplace.js` | Peer-to-peer listing features |
+| `src/ui.js` | Navigation, alerts, share, hunt, referrals, pro modal, profile |
+| `src/main.js` | Entry point — wires all modules, exposes `window.*` for HTML handlers |
 
 ---
 
@@ -195,6 +236,6 @@ git clone https://github.com/mahak867/Hotscan
 
 [⭐ Star this repo](https://github.com/mahak867/Hotscan) · [🐛 Report a bug](https://github.com/mahak867/Hotscan/issues) · [💬 WhatsApp Support](https://api.whatsapp.com/send?phone=919999999999)
 
-*HotScan India v8.1 · hotscan.in*
+*HotScan India v8.2 · hotscan.in*
 
 </div>
