@@ -13,7 +13,7 @@ import {
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
-  quickSell, checkOLX
+  quickSell, checkOLX, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected
 } from './marketplace.js'
 import {
   goPage, saveKey, showKeySetup, setMode, resetScan,
@@ -36,10 +36,9 @@ import {
   analyzeMultiPhoto
 } from './scanner.js'
 
-// OAuth callback — catches Google redirect token
-if (window.location.hash && window.location.hash.includes('access_token')) {
-  window.history.replaceState(null, '', window.location.pathname + window.location.search)
-}
+// NOTE: Do NOT strip the URL hash here — Supabase's detectSessionInUrl:true reads
+// the access_token from the hash when the client initialises. Stripping it early
+// prevents the OAuth redirect flow from working.
 
 // Expose all onclick-callable functions on window
 Object.assign(window, {
@@ -56,7 +55,7 @@ Object.assign(window, {
   submitEvent, selectSeries, toggleHunt,
   showProModal, closeProModal, isPro, checkLimit,
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
-  quickSell, checkOLX,
+  quickSell, checkOLX, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected,
   copyRefLink, shareViaWA,
   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
   whatsappSupport,

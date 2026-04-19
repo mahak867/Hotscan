@@ -53,17 +53,65 @@ export function renderCol() {
   document.getElementById('v-rare').textContent = rare
   document.getElementById('v-sth').textContent = sth
   document.getElementById('v-avg').textContent = total > 0 ? '₹' + Math.round(val/total).toLocaleString('en-IN') : '₹0'
+
+  // #7 — micro sparkline: last 6 months of car additions
+  var sparkEl = document.getElementById('val-sparkline')
+  if (sparkEl) {
+    var now = new Date()
+    var months = []
+    for (var mi = 5; mi >= 0; mi--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - mi, 1)
+      months.push({label: d.toLocaleString('default', {month:'short'}), count: 0})
+    }
+    state.collection.forEach(function(c) {
+      if (!c.added) return
+      var added = new Date(c.added)
+      for (var i = 0; i < 6; i++) {
+        var ref = new Date(now.getFullYear(), now.getMonth() - (5-i), 1)
+        if (added.getMonth() === ref.getMonth() && added.getFullYear() === ref.getFullYear()) {
+          months[i].count++; break
+        }
+      }
+    })
+    var maxCount = Math.max.apply(null, months.map(function(m){return m.count})) || 1
+    sparkEl.innerHTML = ''
+    months.forEach(function(m, idx) {
+      var h = Math.max(Math.round((m.count / maxCount) * 28), m.count > 0 ? 4 : 2)
+      var col = document.createElement('div'); col.className = 'val-spark-col'
+      var bar = document.createElement('div'); bar.className = 'val-spark-bar' + (idx === 5 ? ' now' : '')
+      bar.style.height = h + 'px'
+      var lbl = document.createElement('div'); lbl.className = 'val-spark-lbl'; lbl.textContent = m.label
+      col.appendChild(bar); col.appendChild(lbl)
+      sparkEl.appendChild(col)
+    })
+  }
+
   if (!items.length) {
-    var emptyMsg = state.filterBy === 'all' ? 'No cars yet' : 'No ' + state.filterBy + ' cars'
-    var emptySub = state.filterBy === 'all' ? 'Scan a car and tap "Add" to start your collection' : 'Try a different filter'
-    var ctaBtn = state.filterBy === 'all' ? '<button class="btn-red" onclick="goPage(\'scan\')" style="margin-top:14px">📷 Scan Your First Car →</button>' : ''
-    document.getElementById('col-list').innerHTML = '<div class="empty"><div class="empty-icon">🗂</div><div class="empty-t">' + emptyMsg + '</div><div class="empty-s">' + emptySub + '</div>' + ctaBtn + '</div>'
+    var emptyMsg = state.filterBy === 'all' ? 'Your garage is empty' : 'No ' + state.filterBy + ' cars'
+    var emptySub = state.filterBy === 'all' ? 'Scan your first car to start building your collection!' : 'Try a different filter'
+    var ctaBtn = state.filterBy === 'all' ? '<button class="btn-red" onclick="goPage(\'scan\')" style="margin-top:14px;padding:11px 22px;border-radius:12px">📷 Scan Your First Car →</button>' : ''
+    document.getElementById('col-list').innerHTML = '<div class="empty"><div class="empty-icon">🚗</div><div class="empty-t">' + emptyMsg + '</div><div class="empty-s">' + emptySub + '</div>' + ctaBtn + '</div>'
     return
   }
   var list = document.getElementById('col-list')
   list.innerHTML = ''
+  // #8 — rarity dot color map
+  var dotColors = {
+    'super treasure hunt': '#e63946',
+    'treasure hunt': '#ffd60a',
+    'error car': '#ff6b6b',
+    'vintage': '#ffd60a',
+    'premium': '#4cc9f0',
+    'rare': '#4cc9f0',
+    'uncommon': '#2dc653',
+    'common': '#444'
+  }
   items.forEach(function(c) {
     var div = document.createElement('div'); div.className = 'col-item'
+    // #8 — rarity dot
+    var dot = document.createElement('div'); dot.className = 'col-dot'
+    var rv = (c.rarity||'common').toLowerCase()
+    dot.style.background = dotColors[rv] || '#444'
     var thumb = document.createElement('div'); thumb.className = 'col-thumb'
     if (c.image) { var img = document.createElement('img'); img.src = c.image; img.alt = ''; thumb.appendChild(img) } else thumb.textContent = '🚗'
     var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
@@ -79,13 +127,18 @@ export function renderCol() {
     info.appendChild(name); info.appendChild(meta); info.appendChild(bottom)
     var del = document.createElement('button'); del.className = 'col-del'; del.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;margin-left:auto;flex-shrink:0'; del.textContent = '🗑'
     del.onclick = (function(id) { return function() { delFromCol(id) } })(c.id)
-    div.appendChild(thumb); div.appendChild(info); div.appendChild(del)
+    div.appendChild(dot); div.appendChild(thumb); div.appendChild(info); div.appendChild(del)
     list.appendChild(div)
   })
 }
 
 export function exportVal() {
   if (!state.collection.length) { alert('Add some cars first!'); return }
+  // #9 — loading state on the export button
+  var exportBtn = document.querySelector('[onclick="exportVal()"]')
+  var origText = exportBtn ? exportBtn.textContent : null
+  if (exportBtn) { exportBtn.disabled = true; exportBtn.textContent = '⏳ Generating…' }
+  setTimeout(function() {
   var val = 0; state.collection.forEach(function(c) { val += parseINR(c.india_collector_inr) })
   var date = new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})
   var txt = [
@@ -118,6 +171,8 @@ export function exportVal() {
   var url = URL.createObjectURL(blob)
   var a = document.createElement('a'); a.href = url; a.download = 'HotScan_Valuation_' + new Date().toISOString().split('T')[0] + '.txt'; a.click()
   URL.revokeObjectURL(url)
+  if (exportBtn) { exportBtn.disabled = false; exportBtn.textContent = origText || '📄 Export Valuation Certificate' }
+  }, 120)
 }
 
 export function addCarToCollection(car, thumb) {

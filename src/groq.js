@@ -67,7 +67,7 @@ export async function groqText(prompt, model) {
     body: JSON.stringify({
       model: chosenModel,
       messages: [{role:'user', content:prompt}],
-      temperature: 0.1, max_tokens: 600
+      temperature: 0.05, max_tokens: 600
     })
   })
   if (!res.ok) {
@@ -88,7 +88,7 @@ export async function groqText(prompt, model) {
         body: JSON.stringify({
           model: HAIKU_MODEL,
           messages: [{role:'user', content:prompt}],
-          temperature: 0.1, max_tokens: 600
+          temperature: 0.05, max_tokens: 600
         })
       })
       if (!fb.ok) throw new Error('AI text API error ' + fb.status)

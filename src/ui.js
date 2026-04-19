@@ -43,11 +43,20 @@ export function updateScanCounter() {
 }
 
 // ── Navigation ──
+var _pageOrder = {scan:0,collection:1,marketplace:2,market:3,profile:4,more:5,alerts:6,hunt:7}
+var _prevPageId = 'scan'
 export function goPage(id){
-  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active') })
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active','slide-from-right','slide-from-left') })
   document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active') })
   var pg = document.getElementById('page-'+id)
-  if(pg) pg.classList.add('active')
+  if(pg){
+    // #21 — directional slide
+    var prevIdx = _pageOrder[_prevPageId] !== undefined ? _pageOrder[_prevPageId] : 0
+    var newIdx  = _pageOrder[id]          !== undefined ? _pageOrder[id]          : 0
+    pg.classList.add('active', newIdx >= prevIdx ? 'slide-from-right' : 'slide-from-left')
+    pg.addEventListener('animationend', function(){ pg.classList.remove('slide-from-right','slide-from-left') }, {once:true})
+    _prevPageId = id
+  }
   var ni = document.getElementById('nav-'+id)
   if(ni){
     ni.classList.add('active')
@@ -181,28 +190,46 @@ export function startTimer(lbl) {
   document.getElementById('timer-wrap').style.display = 'block'
   document.getElementById('timer-lbl').textContent = lbl
   document.getElementById('timer-cnt').textContent = '0s'
-  document.getElementById('timer-fill').style.width = '0%'
+  var fill = document.getElementById('timer-fill')
+  fill.style.width = '0%'
+  fill.classList.remove('timer-stuck')
   state.timerInt = setInterval(function() {
     state.timerSec++
     document.getElementById('timer-cnt').textContent = state.timerSec + 's'
-    document.getElementById('timer-fill').style.width = Math.min(state.timerSec/20*100, 95) + '%'
+    fill.style.width = Math.min(state.timerSec/20*100, 95) + '%'
+    // #6 — pulse fill when scan takes >10 s to reassure user
+    if (state.timerSec === 10) fill.classList.add('timer-stuck')
   }, 1000)
 }
 export function stopTimer() {
   clearInterval(state.timerInt)
-  document.getElementById('timer-fill').style.width = '100%'
+  var fill = document.getElementById('timer-fill')
+  fill.classList.remove('timer-stuck')
+  fill.style.width = '100%'
   setTimeout(function() { document.getElementById('timer-wrap').style.display = 'none' }, 600)
 }
 export function setStep(n, s) {
   var el = document.getElementById('ps' + n)
   if (!el) return
+  // also update the parent pip-step for #5 done-highlight
+  var stepEl = el.closest ? el.closest('.pip-step') : el.parentElement
   el.className = 'pip-st'
+  if (stepEl) stepEl.classList.remove('step-done')
   if (s === 'active') { el.classList.add('active'); el.textContent = 'Running...' }
-  else if (s === 'done') { el.classList.add('done'); el.textContent = '✓' }
+  else if (s === 'done') {
+    el.classList.add('done'); el.textContent = '✓'
+    if (stepEl) stepEl.classList.add('step-done')
+  }
   else if (s === 'err') { el.classList.add('err'); el.textContent = 'Failed' }
   else el.textContent = 'Waiting'
 }
-export function resetSteps() { [1,2,3].forEach(function(n) { setStep(n, 'wait') }) }
+export function resetSteps() {
+  [1,2,3].forEach(function(n) {
+    setStep(n, 'wait')
+    var el = document.getElementById('ps' + n)
+    if (el) { var sp = el.closest ? el.closest('.pip-step') : el.parentElement; if(sp) sp.classList.remove('step-done') }
+  })
+}
 export function runAnalyze() {
   if (state.currentMode === 'photo') {
     if (state.multiImages.length > 1) window.analyzeMultiPhoto()
@@ -217,7 +244,11 @@ export function showResult(d) {
   if (state.imgThumb) document.getElementById('r-thumb').innerHTML = '<img src="' + state.imgThumb + '" alt="">'
   document.getElementById('r-name').textContent = d.name || 'Unknown'
   document.getElementById('r-series').textContent = d.series || ''
-  document.getElementById('r-conf').style.width = (d.confidence || 75) + '%'
+  // #1 — color-coded confidence bar: red <50%, gold 50-79%, green ≥80%
+  var conf = d.confidence || 75
+  var confFill = document.getElementById('r-conf')
+  confFill.style.width = conf + '%'
+  confFill.style.background = conf >= 80 ? 'var(--green)' : conf >= 50 ? 'var(--gold)' : 'var(--red)'
   var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
   var rb = document.getElementById('r-rar')
   var rarLabel = d.rarity || 'Common'
@@ -233,6 +264,12 @@ export function showResult(d) {
   document.getElementById('p3').textContent = d.us_retail_usd ? '$' + d.us_retail_usd : '—'
   document.getElementById('p4').textContent = d.us_collector_usd ? '$' + d.us_collector_usd : '—'
   document.getElementById('live-upd').textContent = 'Updated just now'
+  // #4 — pop animation on price tiles
+  document.querySelectorAll('.ptile').forEach(function(tile, i) {
+    tile.classList.remove('pop')
+    setTimeout(function(){ tile.classList.add('pop') }, i * 60)
+    tile.addEventListener('animationend', function(){ tile.classList.remove('pop') }, {once:true})
+  })
   var trend = d.price_trend || 'Stable'
   if (trend !== 'Rising' && trend !== 'Falling' && trend !== 'Stable') trend = 'Stable'
   document.getElementById('trend-ic').textContent = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
@@ -241,6 +278,14 @@ export function showResult(d) {
   ib.textContent = (d.investment || 'Medium') + ' Potential'; ib.className = 'inv-badge'
   var iv = (d.investment || '').toLowerCase()
   ib.classList.add(iv.includes('very') ? 'iv' : iv === 'high' ? 'ih' : iv === 'medium' ? 'im' : 'il')
+  // #16 — investment badge tooltip
+  var tipMap = {
+    'very high': 'Rare — significant value increase expected',
+    'high': 'Strong price growth likely over time',
+    'medium': 'Moderate appreciation expected',
+    'low': 'Stable value — collect for fun'
+  }
+  ib.setAttribute('data-tip', tipMap[iv] || 'AI-estimated investment potential')
   var rows = [['Color',d.color],['Casting Year',d.casting_year],['Tampo',d.tampo],['Wheels',d.wheel_type],['Condition',d.condition],['Rarity Reason',d.rarity_reason],['Why Invest',d.investment_reason],['Fun Fact',d.fun_fact]]
   if (d.barcode_note) rows.push(['Barcode Info', d.barcode_note])
   if (d.also_look_for) rows.push(['Also Look For', d.also_look_for])
@@ -473,14 +518,40 @@ export function renderHunt(series) {
 }
 
 // ── Profile ──
+// #18 — helper: animate a number from 0 to target
+function _animateCount(el, target, duration) {
+  if (!el || target === 0) return
+  var startTime = null
+  function step(ts) {
+    if (!startTime) startTime = ts
+    var progress = Math.min((ts - startTime) / duration, 1)
+    el.textContent = Math.round(progress * target)
+    if (progress < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+
 export function renderProfilePage() {
   var guest = document.getElementById('profile-guest')
   var user = document.getElementById('profile-user')
   if (!state.currentUser) { if(guest) guest.style.display='block'; if(user) user.style.display='none'; return }
   if(guest) guest.style.display='none'; if(user) user.style.display='block'
   var displayName = (state.userProfile && state.userProfile.username) || (state.userProfile && state.userProfile.display_name) || state.currentUser.name || state.currentUser.email.split('@')[0]
-  var initials = displayName[0].toUpperCase()
-  document.getElementById('prof-avatar').textContent = initials
+  // #17 — avatar: 2-char initials + gradient based on first char
+  var initials = displayName.length >= 2 ? (displayName[0] + displayName[1]).toUpperCase() : displayName[0].toUpperCase()
+  var _avatarGrads = [
+    'linear-gradient(135deg,#e63946,#c1121f)',
+    'linear-gradient(135deg,#2a4fd4,#1a2f8a)',
+    'linear-gradient(135deg,#ffd60a,#cc9900)',
+    'linear-gradient(135deg,#2dc653,#1a7a30)',
+    'linear-gradient(135deg,#4cc9f0,#2a8ab0)',
+  ]
+  var avatarEl = document.getElementById('prof-avatar')
+  if (avatarEl) {
+    avatarEl.textContent = initials
+    avatarEl.style.background = _avatarGrads[displayName.charCodeAt(0) % _avatarGrads.length]
+    avatarEl.style.boxShadow = '0 4px 20px rgba(0,0,0,.4)'
+  }
   document.getElementById('prof-name').textContent = displayName
   document.getElementById('prof-email').textContent = (state.userProfile && state.userProfile.username) ? '@' + state.userProfile.username + ' · ' + state.currentUser.email : state.currentUser.email
   var planEl = document.getElementById('prof-plan')
@@ -489,21 +560,38 @@ export function renderProfilePage() {
   if (state.userProfile && state.userProfile.is_developer) {
     planEl.textContent = '👑 Developer — Lifetime Pro'; planEl.className = 'plan-badge plan-dev'
     upEl.style.display = 'none'; sinceEl.textContent = 'You built this app 🚗'
+    // remove upgrade pill if exists
+    var oldPill = document.getElementById('prof-upgrade-pill'); if(oldPill) oldPill.remove()
   } else if (state.userProfile && state.userProfile.is_pro) {
     planEl.textContent = '⭐ Pro Member'; planEl.className = 'plan-badge plan-pro'
     upEl.style.display = 'none'
     if (state.userProfile.pro_since) sinceEl.textContent = 'Pro since ' + new Date(state.userProfile.pro_since).toLocaleDateString('en-IN')
+    var oldPill2 = document.getElementById('prof-upgrade-pill'); if(oldPill2) oldPill2.remove()
   } else {
     planEl.textContent = 'Free Plan'; planEl.className = 'plan-badge plan-free'
     upEl.style.display = 'block'
+    // #19 — inline upgrade pill next to Free badge
+    var existPill = document.getElementById('prof-upgrade-pill')
+    if (!existPill) {
+      var pill = document.createElement('button')
+      pill.id = 'prof-upgrade-pill'
+      pill.textContent = '⭐ Upgrade'
+      pill.style.cssText = 'background:rgba(255,214,10,.15);border:1px solid rgba(255,214,10,.35);color:var(--gold);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle'
+      pill.onclick = function(){ window.showProModal() }
+      planEl.insertAdjacentElement('afterend', pill)
+    }
   }
   var total = state.collection.length
   var rare = state.collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')}).length
   var val = 0; state.collection.forEach(function(c){ val += parseINR(c.india_collector_inr) })
   var sthCount = state.collection.filter(function(c){return (c.rarity||'').toLowerCase().includes('super')}).length
-  document.getElementById('prof-total').textContent = total
+  // #18 — animated number roll for stats
+  var totalEl = document.getElementById('prof-total')
+  var rareEl  = document.getElementById('prof-rare')
+  if (totalEl) _animateCount(totalEl, total, 600)
+  if (rareEl)  _animateCount(rareEl,  sthCount > 0 ? rare : rare, 600)
+  if (sthCount > 0 && rareEl) { setTimeout(function(){ rareEl.textContent = rare + ' ('+sthCount+' STH)' }, 620) }
   document.getElementById('prof-value').textContent = val > 0 ? '₹' + val.toLocaleString('en-IN') : '₹0'
-  document.getElementById('prof-rare').textContent = sthCount > 0 ? rare + ' ('+sthCount+' STH)' : rare
   var used = getTodayScans()
   document.getElementById('prof-scans-lbl').textContent = isPro() ? 'Unlimited scans (Pro)' : 'Scans used today'
   document.getElementById('prof-scans-val').textContent = isPro() ? '∞' : used + '/' + FREE_SCANS
