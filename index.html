@@ -32,6 +32,8 @@
 <div class="app-header">
   <div class="app-header-left">
     <img src="/icon-192.png" alt="HotScan" style="height:28px;width:auto;object-fit:contain;display:block">
+    <!-- #23 — version badge -->
+    <span class="version-badge">v5.0</span>
   </div>
   <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
     <div class="app-user-inner">Sign In</div>
@@ -254,6 +256,8 @@
   <div class="val-card">
     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
+    <!-- #7 — micro sparkline: monthly additions, rendered by JS -->
+    <div id="val-sparkline" class="val-sparkline"></div>
     <div style="font-size:10px;color:var(--text3)">Estimated Indian collector market value</div>
     <div style="font-size:10px;color:var(--text3);margin-top:2px;opacity:.7">⚠️ AI estimates only — not a guarantee of resale value</div>
     <div class="val-breakdown">
@@ -315,7 +319,7 @@
     </div>
     <div id="mp-listings-wrap"></div>
     <div style="text-align:center;margin-top:8px">
-      <button class="btn-dark" style="width:100%;justify-content:center;padding:13px;border-radius:12px" onclick="ol('https://www.olx.in/items/q-hot-wheels')">🔍 Search More on OLX India →</button>
+      <button class="btn-dark" style="width:100%;justify-content:center;padding:13px;border-radius:12px;border:1px solid rgba(255,100,0,.25)" onclick="ol('https://www.olx.in/items/q-hot-wheels')">🔍 Search More on OLX India →</button>
     </div>
   </div>
 
@@ -388,29 +392,33 @@
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Condition affects value significantly. Use this guide when buying or selling.</div>
   </div>
   <div class="condition-grid">
-    <div class="cond-item" style="border-color:rgba(45,198,83,.3)">
+    <div class="cond-item" style="border-color:rgba(45,198,83,.3)" onclick="this.classList.toggle('open')">
       <div class="cond-grade" style="color:var(--green)">MOC</div>
       <div class="cond-name">Mint on Card</div>
       <div class="cond-desc">Sealed in original blister. No bends, scratches or fading. Perfect card and car.</div>
       <div class="cond-price">100% of value</div>
+      <div class="cond-extra">Factory sealed blister with intact hang-tab. Spectraflame paint must be pristine. TH/STH in MOC can hold value for decades. Always store in a UV-protective case.</div>
     </div>
-    <div class="cond-item" style="border-color:rgba(76,201,240,.3)">
+    <div class="cond-item" style="border-color:rgba(76,201,240,.3)" onclick="this.classList.toggle('open')">
       <div class="cond-grade" style="color:var(--blue)">NM</div>
       <div class="cond-name">Near Mint</div>
       <div class="cond-desc">Tiny imperfections. Card may have minor shelf wear. Car is perfect.</div>
       <div class="cond-price">80-90% of value</div>
+      <div class="cond-extra">Opened but never played with. Common for loose collectors. Card may have a price sticker or corner ding. Most loose Real Riders are sold at NM grade.</div>
     </div>
-    <div class="cond-item" style="border-color:rgba(255,214,10,.3)">
+    <div class="cond-item" style="border-color:rgba(255,214,10,.3)" onclick="this.classList.toggle('open')">
       <div class="cond-grade" style="color:var(--gold)">VG</div>
       <div class="cond-name">Very Good</div>
       <div class="cond-desc">Visible wear on card. Car may have light play wear. Still displayable.</div>
       <div class="cond-price">50-70% of value</div>
+      <div class="cond-extra">Inspect under light — small paint chips and wheel axle dirt are common. Good for customs or display only. Negotiate hard: "VG" on OLX often hides LP condition.</div>
     </div>
-    <div class="cond-item" style="border-color:rgba(255,107,107,.3)">
+    <div class="cond-item" style="border-color:rgba(255,107,107,.3)" onclick="this.classList.toggle('open')">
       <div class="cond-grade" style="color:#ff6b6b">LP</div>
       <div class="cond-name">Loose / Played</div>
       <div class="cond-desc">Removed from card. Paint chips, wheel wear, scratches visible.</div>
       <div class="cond-price">20-40% of value</div>
+      <div class="cond-extra">Best for custom builders or display racers. Wheels often need replacing. STH in LP grade can still fetch ₹800–2000 due to Spectraflame rarity. Always check axle integrity.</div>
     </div>
   </div>
 
