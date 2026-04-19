@@ -201,14 +201,133 @@ HotScan is a fully installable **Progressive Web App (PWA)**. It sits on your ho
 
 ---
 
+## 🏗️ Repository Architecture
+
+The repo is split into three independent sub-parts that share a single root `package.json` for the main PWA:
+
+```
+Hotscan/
+├── src/              # Vite-compiled PWA source (Vanilla JS ES modules)
+│   ├── config.js     # App constants & env var bridge
+│   ├── state.js      # Shared mutable state
+│   ├── groq.js       # Groq AI SDK calls (vision + text)
+│   ├── scanner.js    # AI pipeline — identify / price / deal / fake
+│   ├── collection.js # Collection CRUD + Supabase cloud sync
+│   ├── marketplace.js# Peer-to-peer listings
+│   ├── auth.js       # Supabase auth + Razorpay payments
+│   ├── ui.js         # UI layer — navigation, alerts, share, hunt
+│   └── main.js       # Entry point (wires modules, exposes window.*)
+├── api/
+│   └── groq.js       # Vercel Edge Function — Groq API proxy with rate-limiting
+├── extension/        # Chrome/Edge browser extension (standalone, no build step)
+│   ├── manifest.json
+│   ├── popup.html / popup.js / popup.css
+│   └── background.js
+├── index.html        # PWA main app shell
+├── landing.html      # Marketing landing page
+├── sign-in.html      # Auth page
+├── vite.config.js    # Vite build config (output → dist/)
+├── vercel.json       # Vercel routing + headers config
+└── manifest.json     # PWA web-app manifest
+```
+
+**Build commands per sub-part:**
+
+| Part | Build command |
+|---|---|
+| PWA (main app) | `npm run build` → `dist/` |
+| Edge API | No build — deployed as-is by Vercel from `api/` |
+| Browser extension | No build — load `extension/` as unpacked extension |
+
+---
+
+## 🔧 Local Development Setup
+
+### Prerequisites
+
+- **Node.js 20+** (`node -v` to check)
+- A free [Groq API key](https://console.groq.com) (for AI features)
+- A [Supabase](https://supabase.com) project (for auth + collection sync)
+
+### Quick start
+
+```bash
+git clone https://github.com/mahak867/Hotscan
+cd Hotscan
+npm ci                # install exact versions from package-lock.json
+
+cp .env.example .env  # create your local env file — see section below
+# edit .env and fill in your keys
+
+npm run dev           # dev server with HMR at http://localhost:5173
+npm run build         # production build → dist/
+npm run preview       # preview the production build locally
+```
+
+---
+
+## 🔑 Environment Variables
+
+All runtime secrets are injected via environment variables — **never hardcoded**.  
+A full template is in [`.env.example`](.env.example).
+
+### For local development
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+| Variable | Required | Description |
+|---|---|---|
+| `GROQ_API_KEY_1` | ✅ | Groq API key for AI inference. Get one free at [console.groq.com](https://console.groq.com) |
+| `GROQ_API_KEY_2` … `_5` | Optional | Additional Groq keys — rotated round-robin to spread quota |
+| `VITE_SUPA_URL` | ✅ | Your Supabase project URL |
+| `VITE_SUPA_KEY` | ✅ | Supabase **anon** (public) key — safe to expose, protected by RLS |
+| `VITE_RZP_KEY` | Optional | Razorpay **publishable** key for payments |
+
+> **Note:** `GROQ_API_KEY_*` variables are read server-side by the Vercel Edge Function at `api/groq.js` and are **never** shipped to the browser.  
+> `VITE_*` variables are baked into the client bundle at build time — only use them for intentionally public/publishable keys.
+
+### For Vercel deployment
+
+Add the same variables in **Vercel Dashboard → Project → Settings → Environment Variables**.  
+`VITE_*` variables must be set for **both** Production and Preview environments.
+
+---
+
+## 🚀 Deployment
+
+### Vercel (recommended — live at [hotscan.in](https://www.hotscan.in))
+
+1. Fork / import the repo in [Vercel](https://vercel.com/new)
+2. Vercel auto-detects Vite — no framework override needed
+3. Add all environment variables listed above in **Settings → Environment Variables**
+4. Click **Deploy** — Vercel runs `npm run build` and serves `dist/`
+5. The `api/` folder is automatically deployed as Vercel Edge Functions
+6. Point your custom domain in **Settings → Domains**
+
+> `vercel.json` already configures SPA routing rewrites and correct headers for the PWA manifest and service worker.
+
+### Browser Extension (Chrome / Edge)
+
+1. Open `chrome://extensions`
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked** → select the `extension/` folder
+4. The HotScan extension icon appears in your toolbar
+
+---
+
 ## 🤝 Contributing
 
 ```bash
 git clone https://github.com/mahak867/Hotscan
-npm install
-npm run dev      # dev server with HMR at localhost:5173
-npm run build    # production build → dist/
-npm run preview  # preview the production build
+npm ci
+cp .env.example .env   # fill in your keys
+npm run dev            # dev server with HMR at http://localhost:5173
+npm run build          # production build → dist/
+npm run preview        # preview the production build
 ```
 
 ### Module map
