@@ -310,6 +310,19 @@ export async function initAuth(){
       window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){})
       updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
     }
+    // Layer 3: force-refresh expired token — fixes "logged out on reload" in normal tabs
+    if(!state.currentUser){
+      try{
+        var rr=await state._sb.auth.refreshSession()
+        if(rr.data&&rr.data.session&&rr.data.session.user){
+          var u=rr.data.session.user
+          state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
+          await loadProfile()
+          window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){})
+          updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
+        }
+      }catch(e){}
+    }
   }catch(e){ console.warn('initAuth:',e) }
   updateHeaderUI()
 }

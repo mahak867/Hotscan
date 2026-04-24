@@ -523,7 +523,7 @@ export async function identifyMultipleCars(imageData) {
     body: JSON.stringify({
       model: VISION_MODEL,
       messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
-      temperature: 0.05, max_tokens: 2000
+      temperature: 0.02, max_tokens: 2500
     })
   })
   if (!res.ok) {

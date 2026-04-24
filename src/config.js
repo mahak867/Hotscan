@@ -1,15 +1,18 @@
-// Public / publishable keys — read from build-time env vars (VITE_ prefix)
-// so they never need to be hardcoded in source.  See .env.example.
-export var SUPA_URL  = import.meta.env.VITE_SUPA_URL  || 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
-export var SUPA_KEY  = import.meta.env.VITE_SUPA_KEY  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
-export var RZP_KEY   = import.meta.env.VITE_RZP_KEY   || 'rzp_live_SX0GLL6DXzycgo'
+// Keys — safe fallbacks for browser ES module usage without Vite build
+// import.meta.env is Vite-only; guard it so raw browser loads don't crash
+var _env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
+export var SUPA_URL  = _env.VITE_SUPA_URL  || 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
+export var SUPA_KEY  = _env.VITE_SUPA_KEY  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
+export var RZP_KEY   = _env.VITE_RZP_KEY   || 'rzp_live_SX0GLL6DXzycgo'
 export var DEV_EMAIL = 'mahakfahad07@gmail.com'
 export var WA_COMMUNITY = 'https://chat.whatsapp.com/HotScanIndia'
 export var WA_SUPPORT   = null
 export var FREE_SCANS = 5
-export var HAIKU_MODEL  = "llama-3.1-8b-instant"
-export var CODEX_MODEL  = "moonshotai/kimi-k2-instruct"
-export var VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+// Models — Maverick: 128 experts vs Scout's 16, better STH/TH detection
+// kimi-k2-instruct deprecated Sept 2025 → llama-3.3-70b-versatile
+export var HAIKU_MODEL  = 'llama-3.1-8b-instant'
+export var CODEX_MODEL  = 'llama-3.3-70b-versatile'
+export var VISION_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
 
 export var HUNT_DATA = {
   mainline:[
