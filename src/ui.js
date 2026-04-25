@@ -324,10 +324,29 @@ export function showResult(d) {
 }
 
 export async function loadCommunityPrices(carName) {
-  var prices = JSON.parse(localStorage.getItem('hs_community_prices') || '{}')
-  var list = prices[carName] || []
   var section = document.getElementById('community-prices-section')
   var listEl = document.getElementById('community-prices-list')
+  var list = []
+  // Fetch real cross-user prices from Supabase
+  if (state._sb && carName) {
+    try {
+      var res = await state._sb.from('community_prices')
+        .select('price_inr, platform, user_name, created_at')
+        .eq('car_name', carName)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      if (res.data && res.data.length) {
+        list = res.data.map(function(r) {
+          return { price: r.price_inr, platform: r.platform || 'India', user: r.user_name || 'Collector' }
+        })
+      }
+    } catch(e) {}
+  }
+  // Fallback to local cache
+  if (!list.length) {
+    var local = JSON.parse(localStorage.getItem('hs_community_prices') || '{}')
+    list = local[carName] || []
+  }
   if (!list.length) { if(section) section.style.display = 'none'; return }
   if(section) section.style.display = 'block'
   if(listEl) {
@@ -335,7 +354,7 @@ export async function loadCommunityPrices(carName) {
     list.slice(0, 5).forEach(function(p) {
       var div = document.createElement('div')
       div.style.cssText = 'display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px'
-      div.innerHTML = '<span style="color:var(--text2)">' + p.platform + ' · ' + p.user + '</span><span style="color:var(--gold);font-weight:700">₹' + p.price + '</span>'
+      div.innerHTML = '<span style="color:var(--text2)">' + escHtml(String(p.platform||'India')) + ' · ' + escHtml(String(p.user||'Collector')) + '</span><span style="color:var(--gold);font-weight:700">₹' + p.price + '</span>'
       listEl.appendChild(div)
     })
   }
@@ -472,11 +491,22 @@ export function submitEvent() {
   var name = document.getElementById('event-name-inp').value.trim()
   var loc = document.getElementById('event-loc-inp').value.trim()
   var date = document.getElementById('event-date-inp').value
-  if (!name || !loc || !date) { alert('Fill in all event details'); return }
-  alert('✅ Event submitted!\n\n' + name + '\n' + loc + '\n' + date + '\n\nThank you! Events are reviewed before being listed.')
+  if (!name || !loc || !date) { showToast('Fill in all event details', 'error'); return }
+  // Save locally
+  var events = JSON.parse(localStorage.getItem('hs_events') || '[]')
+  events.unshift({ name: name, loc: loc, date: date, submitted: new Date().toISOString() })
+  localStorage.setItem('hs_events', JSON.stringify(events))
+  // Also try Supabase if available
+  if (state._sb && state.currentUser) {
+    state._sb.from('events').insert({ name: name, location: loc, date: date, submitted_by: state.currentUser.id }).catch(function(){})
+  }
+  // Email fallback always fires
+  var body = 'Event: ' + name + '\nLocation: ' + loc + '\nDate: ' + date + '\nSubmitted by: ' + (state.currentUser ? state.currentUser.email : 'Guest')
+  window.open('mailto:mahakfahad07@gmail.com?subject=HotScan+Event+Submission&body=' + encodeURIComponent(body), '_blank')
   document.getElementById('event-name-inp').value = ''
   document.getElementById('event-loc-inp').value = ''
   document.getElementById('event-date-inp').value = ''
+  showToast('Event submitted! We\'ll review and list it ✅', 'success')
 }
 
 // ── Hunt ──
@@ -781,36 +811,26 @@ export function shareViaWA() {
   window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')), '_blank')
 }
 
-// ── Alert check ──
+// ── Alert check ── shows watch links, no fake simulated data
 export function runAlertCheck() {
   if (!state.alerts || !state.alerts.length) return
-  var a = state.alerts[Math.floor(Math.random()*state.alerts.length)]
-  var target = parseINR(a.india_collector_inr, 500)
-  if (Math.random() > 0.75 && target) {
-    var found = Math.round(target * (0.55+Math.random()*0.3))
-    var save = target - found
-    if (save > 50) {
-      var box = document.getElementById('err-box')
-      if (box) {
-        box.textContent = ''
-        var msg = document.createTextNode('Deal alert: '+a.name+' spotted for Rs.'+found.toLocaleString('en-IN')+' — save Rs.'+save.toLocaleString('en-IN')+' ')
-        var btn = document.createElement('button')
-        btn.textContent = 'Check OLX'
-        btn.style.cssText = 'background:var(--gold);color:#000;border:none;padding:3px 9px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;margin-left:6px'
-        btn.onclick = (function(n){ return function(){ ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n)) }})(a.name)
-        box.appendChild(msg); box.appendChild(btn)
-        box.style.cssText='display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold);border-radius:12px;padding:12px;margin-bottom:11px;font-size:13px;line-height:1.6'
-      }
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try {
-          new Notification('🔥 HotScan Deal Alert', {
-            body: a.name + ' spotted for ₹' + found.toLocaleString('en-IN') + ' — save ₹' + save.toLocaleString('en-IN'),
-            icon: '/icon-192.png',
-            tag: 'hs-deal-' + a.id,
-          })
-        } catch(e) {}
-      }
-    }
+  // Only show alert UI if user has alerts set — no fake price simulation
+  var a = state.alerts[0]
+  if (!a) return
+  var box = document.getElementById('err-box')
+  if (box && box.style.display === 'none') {
+    // Only show once per session, not repeatedly
+    if (localStorage.getItem('hs_alert_shown_' + a.id)) return
+    localStorage.setItem('hs_alert_shown_' + a.id, '1')
+    box.textContent = ''
+    var msg = document.createTextNode('🔔 Watching for ' + a.name + ' deals — ')
+    var btn = document.createElement('button')
+    btn.textContent = 'Check OLX now →'
+    btn.style.cssText = 'background:var(--gold);color:#000;border:none;padding:3px 9px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;margin-left:4px'
+    btn.onclick = (function(n){ return function(){ ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n)) }})(a.name)
+    box.appendChild(msg); box.appendChild(btn)
+    box.style.cssText='display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold);border-radius:12px;padding:12px;margin-bottom:11px;font-size:13px;line-height:1.6'
+    setTimeout(function(){ if(box) box.style.display='none' }, 8000)
   }
 }
 

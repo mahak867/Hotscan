@@ -8,6 +8,7 @@ const PRECACHE = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
+  '/logo.png',
 ]
 
 self.addEventListener('install', function (e) {
