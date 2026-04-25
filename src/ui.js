@@ -728,22 +728,83 @@ export async function saveOLXAccount() {
 }
 
 // ── Price history ──
-export function renderPriceHistory(name, rarity, currentPriceStr) {
+export async function renderPriceHistory(name, rarity, currentPriceStr) {
   var section = document.getElementById('phc')
   var barsEl = document.getElementById('phc-bars')
   var footerEl = document.getElementById('phc-footer')
+  var titleEl = document.getElementById('phc-title')
   if (!section || !barsEl) return
+
   var base = parseFloat((currentPriceStr || '300').split('-')[0]) || 300
-  var vol = {'Super Treasure Hunt':0.22,'Treasure Hunt':0.16,'Vintage':0.18,'Rare':0.12,'Premium':0.10,'Uncommon':0.07,'Common':0.05}[rarity] || 0.08
-  var trend = {'Super Treasure Hunt':1.14,'Treasure Hunt':1.09,'Vintage':1.13,'Rare':1.05,'Premium':1.03}[rarity] || 1.01
-  var months = ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Now']
-  var prices = []
-  var p = base / Math.pow(trend, 7)
-  for (var i = 0; i < 8; i++) {
-    p = p * trend * (1 + (Math.random()-0.5)*vol)
-    prices.push(Math.round(p))
+
+  // Try to get real community price data from Supabase
+  var realData = []
+  if (state._sb && name) {
+    try {
+      var res = await state._sb.from('community_prices')
+        .select('price_inr, created_at')
+        .eq('car_name', name)
+        .order('created_at', { ascending: true })
+        .limit(50)
+      if (res.data && res.data.length >= 3) {
+        realData = res.data
+      }
+    } catch(e) {}
   }
-  prices[7] = base
+
+  var months, prices, isReal = false
+
+  if (realData.length >= 3) {
+    // Build real monthly averages from community data
+    isReal = true
+    var buckets = {}
+    realData.forEach(function(r) {
+      var d = new Date(r.created_at)
+      var key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
+      if (!buckets[key]) buckets[key] = []
+      buckets[key].push(r.price_inr)
+    })
+    var keys = Object.keys(buckets).sort().slice(-8)
+    months = keys.map(function(k) {
+      var d = new Date(k + '-01')
+      return d.toLocaleString('default', { month: 'short' })
+    })
+    if (months.length > 0) months[months.length-1] = 'Now'
+    prices = keys.map(function(k) {
+      var vals = buckets[k]
+      return Math.round(vals.reduce(function(a,b){return a+b},0)/vals.length)
+    })
+    if (titleEl) titleEl.textContent = 'Real Price History — India ₹'
+    var aiLabel = document.querySelector('.phc-lbl span[style]')
+    if (aiLabel) aiLabel.textContent = realData.length + ' community reports'
+  } else {
+    // Estimated trend — clearly labeled
+    isReal = false
+    var vol = {'Super Treasure Hunt':0.22,'Treasure Hunt':0.16,'Vintage':0.18,'Rare':0.12,'Premium':0.10,'Uncommon':0.07,'Common':0.05}[rarity] || 0.08
+    var trendMult = {'Super Treasure Hunt':1.14,'Treasure Hunt':1.09,'Vintage':1.13,'Rare':1.05,'Premium':1.03}[rarity] || 1.01
+    var now = new Date()
+    months = []
+    for (var mi = 7; mi >= 0; mi--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - mi, 1)
+      months.push(d.toLocaleString('default', { month: 'short' }))
+    }
+    months[7] = 'Now'
+    prices = []
+    var p = base / Math.pow(trendMult, 7)
+    // Use deterministic seed based on car name so chart doesn't change on every render
+    var seed = name ? name.split('').reduce(function(a,c){return a+c.charCodeAt(0)},0) : 42
+    for (var i = 0; i < 8; i++) {
+      seed = (seed * 1664525 + 1013904223) & 0xffffffff
+      var rand = (seed >>> 16) / 65535
+      p = p * trendMult * (1 + (rand - 0.5) * vol)
+      prices.push(Math.round(p))
+    }
+    prices[7] = base
+    if (titleEl) titleEl.textContent = 'Estimated Price Trend — India ₹'
+    var aiLbl = document.querySelector('.phc-lbl span[style]')
+    if (aiLbl) aiLbl.textContent = 'AI estimate · no real data yet'
+  }
+
   var max = Math.max.apply(null, prices)
   var min = Math.min.apply(null, prices)
   var range = max - min || 1
@@ -751,7 +812,9 @@ export function renderPriceHistory(name, rarity, currentPriceStr) {
   prices.forEach(function(v, i) {
     var h = Math.round(((v-min)/range)*60 + 8)
     var col = document.createElement('div'); col.className='phc-col'
-    var bar = document.createElement('div'); bar.className='phc-bar'+(i===7?' now':'')
+    var bar = document.createElement('div')
+    bar.className = 'phc-bar' + (i===prices.length-1?' now':'')
+    if (isReal) bar.style.background = 'var(--green)'
     bar.style.height = h+'px'
     var val = document.createElement('div'); val.className='phc-val'
     val.textContent = v>=1000 ? '₹'+(v/1000).toFixed(1)+'K' : '₹'+v
@@ -759,9 +822,9 @@ export function renderPriceHistory(name, rarity, currentPriceStr) {
     col.appendChild(val); col.appendChild(bar); col.appendChild(mo)
     barsEl.appendChild(col)
   })
-  var chg = prices[7]-prices[0]
+  var chg = prices[prices.length-1] - prices[0]
   var chgPct = Math.round(chg/prices[0]*100)
-  footerEl.innerHTML = '<span style="color:'+(chg>=0?'var(--green)':'#ff6b6b')+';font-weight:700">'+(chg>=0?'↑':'↓')+Math.abs(chgPct)+'%</span><span style="color:var(--text3);font-size:11px;margin-left:4px">over 7 months · Indian market</span>'
+  footerEl.innerHTML = '<span style="color:'+(chg>=0?'var(--green)':'#ff6b6b')+';font-weight:700">'+(chg>=0?'↑':'↓')+Math.abs(chgPct)+'%</span><span style="color:var(--text3);font-size:11px;margin-left:4px">'+(isReal?'based on '+realData.length+' real reports':'estimated · submit your price above to improve'  )+'</span>'
   section.style.display = 'block'
 }
 

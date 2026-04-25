@@ -1,0 +1,109 @@
+// HotScan India — Razorpay Webhook Handler (Vercel Edge Function)
+//
+// Verifies payment server-side using Razorpay webhook signature,
+// then marks the user as Pro in Supabase.
+//
+// Setup:
+// 1. Go to Razorpay Dashboard → Settings → Webhooks → Add new webhook
+//    URL: https://hotscan.in/api/razorpay-webhook
+//    Events: payment.captured
+//    Secret: (create one, copy it)
+// 2. Add to Vercel Environment Variables:
+//    RAZORPAY_WEBHOOK_SECRET = your_webhook_secret
+//    SUPABASE_SERVICE_KEY    = your supabase service_role key (NOT anon key)
+//    VITE_SUPA_URL           = https://qptxrvvpbrnklzpxjtfr.supabase.co
+
+export const config = { runtime: 'edge' }
+
+const SUPA_URL = process.env.VITE_SUPA_URL || 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
+
+async function verifyRazorpaySignature(body, signature, secret) {
+  const encoder = new TextEncoder()
+  const keyData = encoder.encode(secret)
+  const msgData = encoder.encode(body)
+  const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sigBuffer = await crypto.subtle.sign('HMAC', key, msgData)
+  const sigHex = Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
+  return sigHex === signature
+}
+
+async function markUserPro(userId, paymentId) {
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY
+  if (!serviceKey) {
+    console.error('SUPABASE_SERVICE_KEY not set')
+    return false
+  }
+  const res = await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${userId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({
+      is_pro: true,
+      pro_since: new Date().toISOString(),
+      razorpay_payment_id: paymentId,
+    })
+  })
+  return res.ok
+}
+
+export default async function handler(req) {
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 })
+  }
+
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
+  if (!webhookSecret) {
+    return new Response('Webhook secret not configured', { status: 500 })
+  }
+
+  const signature = req.headers.get('x-razorpay-signature')
+  if (!signature) {
+    return new Response('Missing signature', { status: 400 })
+  }
+
+  const body = await req.text()
+
+  // Verify signature
+  const isValid = await verifyRazorpaySignature(body, signature, webhookSecret)
+  if (!isValid) {
+    console.error('Invalid Razorpay webhook signature')
+    return new Response('Invalid signature', { status: 400 })
+  }
+
+  let event
+  try {
+    event = JSON.parse(body)
+  } catch (e) {
+    return new Response('Invalid JSON', { status: 400 })
+  }
+
+  // Handle payment.captured event
+  if (event.event === 'payment.captured') {
+    const payment = event.payload?.payment?.entity
+    if (!payment) return new Response('No payment data', { status: 400 })
+
+    const paymentId = payment.id
+    const userId = payment.notes?.user_id
+
+    if (!userId) {
+      console.error('No user_id in payment notes — payment:', paymentId)
+      return new Response('No user_id in notes', { status: 400 })
+    }
+
+    const success = await markUserPro(userId, paymentId)
+    if (!success) {
+      console.error('Failed to update Supabase for user:', userId)
+      return new Response('DB update failed', { status: 500 })
+    }
+
+    console.log('Pro activated for user:', userId, 'payment:', paymentId)
+    return new Response('OK', { status: 200 })
+  }
+
+  // Ignore other events
+  return new Response('Event ignored', { status: 200 })
+}
