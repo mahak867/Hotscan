@@ -367,10 +367,13 @@ export async function analyzeFake() {
     var qualNote = d.image_quality ? ' · Image quality: ' + d.image_quality : ''
     document.getElementById('dv-sub').textContent = scoreNote + qualNote
     var rows = []
-    if (d.features_checked && d.features_checked.length) rows.push(['🔍 Checked', d.features_checked.join(' · ')])
-    if (d.good_signs && d.good_signs.length) rows.push(['✓ Genuine markers', d.good_signs.join(' · ')])
-    if (d.red_flags && d.red_flags.length) rows.push(['⚠️ Red flags', d.red_flags.join(' · ')])
-    if (!d.good_signs.length && !d.red_flags.length) rows.push(['ℹ️ Note', 'Could not clearly see enough markers to give a definitive verdict.'])
+    var goodSigns = Array.isArray(d.good_signs) ? d.good_signs : []
+    var redFlags = Array.isArray(d.red_flags) ? d.red_flags : []
+    var featChecked = Array.isArray(d.features_checked) ? d.features_checked : []
+    if (featChecked.length) rows.push(['🔍 Checked', featChecked.join(' · ')])
+    if (goodSigns.length) rows.push(['✓ Genuine markers', goodSigns.join(' · ')])
+    if (redFlags.length) rows.push(['⚠️ Red flags', redFlags.join(' · ')])
+    if (!goodSigns.length && !redFlags.length) rows.push(['ℹ️ Note', 'Could not clearly see enough markers to give a definitive verdict.'])
     if (d.india_fake_note) rows.push(['🇮🇳 India note', d.india_fake_note])
     document.getElementById('deal-rows').innerHTML = rows.map(function(r) {
       return '<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">' + escHtml(String(r[0])) + '</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">' + escHtml(String(r[1])) + '</span></div>'

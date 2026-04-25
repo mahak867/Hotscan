@@ -65,8 +65,33 @@ Object.assign(window, {
   analyzeMultiPhoto,
 })
 
-// DOMContentLoaded: file input event listeners
+// DOMContentLoaded: file input event listeners + mobile dock touch
 document.addEventListener('DOMContentLoaded', function () {
+  // Mobile dock: tap dock background to expand, tap outside to collapse
+  var dock = document.querySelector('.nav-dock')
+  if (dock) {
+    var _dockOpen = false
+    var _dockTimer = null
+    dock.addEventListener('touchstart', function (e) {
+      if (!_dockOpen) {
+        _dockOpen = true
+        dock.classList.add('touch-open')
+        clearTimeout(_dockTimer)
+        _dockTimer = setTimeout(function () {
+          _dockOpen = false
+          dock.classList.remove('touch-open')
+        }, 3500)
+      }
+    }, { passive: true })
+    document.addEventListener('touchstart', function (e) {
+      if (_dockOpen && !dock.contains(e.target)) {
+        _dockOpen = false
+        dock.classList.remove('touch-open')
+        clearTimeout(_dockTimer)
+      }
+    }, { passive: true })
+  }
+
   var fc = document.getElementById('fc')
   var fg = document.getElementById('fg')
   var fcFake = document.getElementById('fc-fake')

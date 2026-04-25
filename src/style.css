@@ -41,6 +41,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   width:48px;height:48px;border-radius:16px;cursor:pointer;
   position:relative;transition:all .18s cubic-bezier(.34,1.56,.64,1);
   color:rgba(255,255,255,.32);background:none;border:none;
+  touch-action:manipulation;-webkit-touch-callout:none;user-select:none;
 }
 .nav-item:hover{
   color:rgba(255,255,255,.75);
@@ -83,7 +84,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 
 
 /* push page content above fixed nav */
-.page{padding-bottom:100px !important}
+.page{padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 115px) !important}
 .app-header{
   background:rgba(10,10,10,.96);
   border-bottom:1px solid var(--border);
@@ -109,7 +110,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
   transition:all .2s;
 }
 .app-user-inner:hover{border-color:var(--border3);color:var(--text)}
-.page{display:none;padding:13px;max-width:500px;margin:0 auto;padding-bottom:105px}
+.page{display:none;padding:13px;max-width:500px;margin:0 auto;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 115px)}
 .page.active{display:block}
 .page-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
 .page-title{font-size:18px;font-weight:800}
@@ -732,7 +733,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .empty .btn-red{margin-top:14px}
 
 /* 9. Sticky Analyze button when image loaded */
-.analyze-btn.sticky-btn{position:sticky;bottom:90px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+.analyze-btn.sticky-btn{position:sticky;bottom:calc(env(safe-area-inset-bottom, 0px) + 80px);z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.6)}
 
 /* 10. Toast — already styled in utils.js; adjust bottom for sticky btn clearance */
 #hs-toast{bottom:100px !important}
@@ -1059,6 +1060,7 @@ body{
     background .2s,
     transform .22s cubic-bezier(.34,1.56,.64,1);
   -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;user-select:none;
 }
 .nav-item svg{
   flex-shrink:0;min-width:19px;opacity:0;
@@ -1284,3 +1286,17 @@ body{
   }
 }
 
+/* ── Mobile dock: touch-open mirrors hover state ── */
+.nav-dock.touch-open{ gap:3px; padding:8px 12px; }
+.nav-dock.touch-open .nav-item{ width:46px;opacity:1;color:rgba(255,255,255,.55) !important; }
+.nav-dock.touch-open .nav-item svg{ opacity:.6; }
+.nav-dock.touch-open .nav-item.active{ color:#fff !important;background:rgba(255,255,255,.1) !important; }
+.nav-dock.touch-open .nav-item.active svg{ opacity:1; }
+.nav-dock.touch-open .nav-scan-btn{ background:var(--red) !important;color:#fff !important;width:54px !important;height:54px !important; }
+.nav-dock.touch-open .nav-divider{ width:1px;opacity:1;margin:0 4px; }
+
+/* ── Prevent input zoom on iOS (font-size < 16px triggers zoom) ── */
+input, select, textarea { font-size:16px !important; }
+.inp { font-size:16px !important; }
+/* Override back to smaller only for display text (non-interactive) */
+.auth-input { font-size:16px !important; }

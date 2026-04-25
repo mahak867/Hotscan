@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="HotScan">
-<meta name="theme-color" content="#e63946">
+<meta name="theme-color" content="#0a0a0a">
 <meta name="description" content="India's #1 Hot Wheels scanner. Live prices, rarity, collection tracker. Free.">
 <meta property="og:title" content="HotScan India — India's First Hot Wheels Scanner">
 <meta property="og:description" content="Scan any Hot Wheels car. Get live Indian market prices in seconds. Free.">
@@ -18,6 +18,8 @@
 <meta name="color-scheme" content="dark">
 <title>HotScan India — Hot Wheels Scanner</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="shortcut icon" type="image/png" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Razorpay loaded on demand -->
@@ -31,8 +33,8 @@
 <body>
 <div class="app-header">
   <div class="app-header-left">
-    <img src="/logo.svg" alt="HotScan" style="height:36px;width:auto;display:block;flex-shrink:0" onclick="goPage('scan')" onerror="this.style.display='none';document.getElementById('hs-fallback-logo').style.display='flex'">
-    <!-- Fallback wordmark if SVG fails -->
+    <img src="/logo.png" alt="HotScan" style="height:38px;width:auto;display:block;flex-shrink:0;cursor:pointer" onclick="goPage('scan')" onerror="this.style.display='none';document.getElementById('hs-fallback-logo').style.display='flex'">
+    <!-- Fallback wordmark if PNG fails -->
     <div id="hs-fallback-logo" style="display:none;align-items:center;gap:8px;cursor:pointer" onclick="goPage('scan')">
       <img src="/icon-192.png" alt="HS" style="height:32px;width:32px;border-radius:8px;display:block;flex-shrink:0">
       <span style="font-size:15px;font-weight:900;letter-spacing:-.3px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;color:#f0ede8">HOT<span style="color:#4cc9f0">SCAN</span></span>
@@ -171,8 +173,8 @@
   <button class="analyze-btn" id="analyze-btn" onclick="runAnalyze()">Identify this Car</button>
   <!-- Pipeline -->
   <div class="pipeline" id="pipeline">
-    <div class="pip-step"><div class="pip-ic">👁</div><div class="pip-lbl">Identifying car<div class="pip-sub">Llama 4 Scout vision</div></div><div class="pip-st" id="ps1">Waiting</div></div>
-    <div class="pip-step"><div class="pip-ic">💰</div><div class="pip-lbl">Fetching live prices<div class="pip-sub">Kimi K2 market analysis</div></div><div class="pip-st" id="ps2">Waiting</div></div>
+    <div class="pip-step"><div class="pip-ic">👁</div><div class="pip-lbl">Identifying car<div class="pip-sub">Llama 4 Maverick vision</div></div><div class="pip-st" id="ps1">Waiting</div></div>
+    <div class="pip-step"><div class="pip-ic">💰</div><div class="pip-lbl">Fetching live prices<div class="pip-sub">Llama 3.3 70B analysis</div></div><div class="pip-st" id="ps2">Waiting</div></div>
     <div class="pip-step" style="border-bottom:none"><div class="pip-ic">✅</div><div class="pip-lbl">Building result<div class="pip-sub">Compiling data</div></div><div class="pip-st" id="ps3">Waiting</div></div>
   </div>
   <div id="timer-wrap"><div class="timer-row"><div class="timer-lbl" id="timer-lbl">Scanning...</div><div class="timer-cnt" id="timer-cnt">0s</div></div><div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:0%"></div></div></div>
