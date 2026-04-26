@@ -176,7 +176,7 @@ export async function submitListing() {
   var _listed = false
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Listing…' }
   try {
-    var imgThumb = window._slImgThumb || (state.imgThumb ? state.imgThumb.substring(0, 4000) : null)
+    var imgThumb = window._slImgThumb || (state.imgThumb ? state.imgThumb.substring(0, 8000) : null)
     await state._sb.from('listings').insert({
       seller_id:    state.currentUser.id,
       seller_name:  (state.userProfile && state.userProfile.display_name) || state.currentUser.name || state.currentUser.email.split('@')[0],
@@ -314,7 +314,7 @@ export function slPhotoSelected(input) {
     if (wrap && img) {
       img.src = e.target.result
       wrap.style.display = 'block'
-      window._slImgThumb = e.target.result.substring(0, 4000)
+      window._slImgThumb = e.target.result.substring(0, 8000)
     }
     var label = document.getElementById('sl-photo-label')
     if (label) label.style.display = 'none'
@@ -324,7 +324,7 @@ export function slPhotoSelected(input) {
 
 export async function checkOLX() {
   var inp = document.getElementById('olx-inp').value.trim()
-  if (!inp) { alert('Paste a listing title'); return }
+  if (!inp) { showToast('Paste a listing title first', 'error'); return }
   var prompt = [
     'Indian Hot Wheels market expert. Analyse this OLX listing: "'+inp+'".',
     'Return ONLY valid JSON:',
@@ -345,5 +345,5 @@ export async function checkOLX() {
     document.getElementById('olx-tip').textContent = tip ? '💡 '+tip : ''
     document.getElementById('olx-result-box').style.display = 'block'
     document.getElementById('olx-result-box').scrollIntoView({behavior:'smooth',block:'start'})
-  } catch(e) { alert('Error: '+e.message) }
+  } catch(e) { showToast('Error: ' + e.message, 'error') }
 }

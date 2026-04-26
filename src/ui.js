@@ -76,7 +76,7 @@ export function goPage(id){
 // ── Key ──
 export function saveKey() {
   var v = document.getElementById('gkey').value.trim()
-  if (!v) { alert('Enter your Groq key'); return }
+  if (!v) { showToast('Enter your Groq key', 'error'); return }
   state.KEY = v; localStorage.setItem('hs_key', v)
   document.getElementById('key-card').style.display = 'none'
 }
@@ -364,7 +364,7 @@ export async function submitPrice() {
   if (!state.lastResult) return
   var price = document.getElementById('community-price').value
   var platform = document.getElementById('community-platform').value
-  if (!price) { alert('Enter the price you paid'); return }
+  if (!price) { showToast('Enter the price you paid', 'error'); return }
   var entry = {
     car: state.lastResult.name,
     price: parseInt(price),
@@ -389,7 +389,7 @@ export async function submitPrice() {
     } catch(e) { console.warn('Community price save error:', e) }
   }
   document.getElementById('community-price').value = ''
-  alert('✅ Price submitted! Thank you for helping the community.')
+  showToast('✅ Price submitted! Thank you for helping the community.', 'success')
   loadCommunityPrices(state.lastResult.name)
 }
 
@@ -853,7 +853,7 @@ export function updateRefUI() {
     var s = JSON.parse(localStorage.getItem('hs_scans')||'{}')
     s.bonus = (s.bonus||0) + 10
     localStorage.setItem('hs_scans', JSON.stringify(s))
-    setTimeout(function(){ alert('🎁 Welcome! You got 10 bonus scans from your referral link.') }, 1500)
+    setTimeout(function(){ showToast('🎁 Welcome! You got 10 bonus scans from your referral link.', 'success') }, 1500)
   }
 }
 
@@ -861,7 +861,7 @@ export function copyRefLink() {
   var link = getRefLink()
   if (navigator.clipboard) {
     navigator.clipboard.writeText(link).then(function(){ showToast('Referral link copied!', 'success') })
-  } else { alert('Your link: '+link) }
+  } else { showToast('Your link: ' + link, 'success') }
 }
 
 export function shareViaWA() {

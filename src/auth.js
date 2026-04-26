@@ -439,7 +439,7 @@ export async function loadRazorpay(){
 
 export async function startPayment() {
   await loadRazorpay()
-  if(!window.Razorpay){ alert('Payment unavailable. Try again.'); return }
+  if(!window.Razorpay){ showToast('Payment unavailable. Try again.', 'error'); return }
   if (!state.currentUser) { closeAccountModal(); openAuth(); return }
   var options = {
     key: RZP_KEY, amount: 9900, currency: 'INR',
@@ -456,10 +456,10 @@ export async function startPayment() {
         }
       } catch(e) { console.warn('Pro DB update error:', e) }
       closeAccountModal(); window.closeProModal(); updateHeaderUI(); window.renderProfilePage()
-      setTimeout(function() { alert('🎉 Welcome to HotScan Pro!\nUnlimited scans activated!') }, 500)
+      setTimeout(function() { showToast('🎉 Welcome to HotScan Pro! Unlimited scans activated.', 'success') }, 300)
     }
   }
   var rzp = new window.Razorpay(options)
-  rzp.on('payment.failed', function(r) { alert('Payment failed: ' + r.error.description) })
+  rzp.on('payment.failed', function(r) { showToast('Payment failed: ' + r.error.description, 'error') })
   closeAccountModal(); window.closeProModal(); rzp.open()
 }

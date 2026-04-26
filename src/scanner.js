@@ -223,10 +223,10 @@ export async function analyzePhoto() {
 export async function analyzeDeal() {
   var asking = parseFloat(document.getElementById('deal-price').value)
   var carName = (document.getElementById('deal-car-name').value.trim() || (state.lastResult && state.lastResult.name) || '').trim()
-  if (!asking || asking <= 0) { alert("Enter the seller's asking price"); return }
-  if (asking < 50 || asking > 200000) { alert('Please enter a realistic price between ₹50 and ₹2,00,000'); return }
-  if (!carName) { alert('Enter the car name or scan it first with Photo mode'); return }
-  if (carName.length < 3) { alert('Enter a more specific car name (at least 3 characters)'); return }
+  if (!asking || asking <= 0) { window.showToast("Enter the seller's asking price", 'error'); return }
+  if (asking < 50 || asking > 200000) { window.showToast('Enter a realistic price between ₹50 and ₹2,00,000', 'error'); return }
+  if (!carName) { window.showToast('Enter the car name or scan it first with Photo mode', 'error'); return }
+  if (carName.length < 3) { window.showToast('Enter a more specific car name (at least 3 characters)', 'error'); return }
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Checking deal...'
   document.getElementById('err-box').style.display = 'none'
@@ -392,7 +392,7 @@ export async function analyzeFake() {
 
 export async function scanBarcode() {
   var code = document.getElementById('barcode-input').value.trim()
-  if (!code) { alert('Enter a barcode, collector number, or car name'); return }
+  if (!code) { window.showToast('Enter a barcode, collector number, or car name', 'error'); return }
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('result').style.display = 'none'
   window.startTimer('Looking up...')
@@ -658,7 +658,7 @@ export function showMultiResults(cars) {
 
     var actRow = document.createElement('div'); actRow.style.cssText = 'display:flex;gap:6px;margin-top:8px'
     var addBtn = document.createElement('button'); addBtn.className = 'multi-add-btn'; addBtn.textContent = '➕ Add to Collection'
-    addBtn.onclick = (function(c) { return function() { addCarToCollection(c, c._sourceImage); alert(c.name + ' added to collection!') } })(car)
+    addBtn.onclick = (function(c) { return function() { addCarToCollection(c, c._sourceImage); window.showToast(c.name + ' added to collection! 🚗', 'success') } })(car)
     var shareBtn = document.createElement('button'); shareBtn.className = 'multi-add-btn'; shareBtn.textContent = '📤 Share'
     shareBtn.onclick = (function(c) { return function() { state.lastResult=c; state.imgThumb=c._sourceImage; window.showShare() } })(car)
     actRow.appendChild(addBtn); actRow.appendChild(shareBtn)

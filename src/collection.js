@@ -133,7 +133,7 @@ export function renderCol() {
 }
 
 export function exportVal() {
-  if (!state.collection.length) { alert('Add some cars first!'); return }
+  if (!state.collection.length) { showToast('Add some cars first!', 'error'); return }
   // #9 — loading state on the export button
   var exportBtn = document.querySelector('[onclick="exportVal()"]')
   var origText = exportBtn ? exportBtn.textContent : null
