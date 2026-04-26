@@ -281,7 +281,9 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
 
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">🚗 Hot<span>Scan</span> India</div>
+  <div class="nav-logo">
+    <img src="/logo.png" alt="HotScan India" style="height:38px;width:auto;display:block;filter:drop-shadow(0 2px 8px rgba(30,80,200,.4))">
+  </div>
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#how">How It Works</a>
@@ -381,7 +383,7 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
         <div class="feat-icon">📷</div>
         <div>
           <div class="feat-title">AI Photo Scan — Multi-Car Detection</div>
-          <div class="feat-body">Take one photo of a shelf with 10 cars — HotScan identifies every single car separately with its own price, rarity rating, and investment potential. Powered by Llama 4 Vision + Kimi K2 market analysis. Average identification time: under 10 seconds.</div>
+          <div class="feat-body">Take one photo of a shelf with 10 cars — HotScan identifies every single car separately with its own price, rarity rating, and investment potential. Powered by Llama 4 Vision + Llama 3.3 70B market analysis. Average identification time: under 10 seconds.</div>
           <span class="feat-tag">Core Feature</span>
         </div>
       </div>
@@ -461,7 +463,7 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
       <div class="step-num">3</div>
       <div class="step-icon">💰</div>
       <div class="step-title">Get Indian Prices</div>
-      <div class="step-body">Kimi K2 fetches live Indian market prices — what it sells for at retail, on OLX, on Instagram collector groups, and on eBay.</div>
+      <div class="step-body">Llama 3.3 70B fetches live Indian market prices — what it sells for at retail, on OLX, on Instagram collector groups, and on eBay.</div>
       <span class="step-time">~3 seconds</span>
     </div>
     <div class="step animate">
@@ -502,9 +504,9 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
 
 <!-- TESTIMONIALS -->
 <section id="testimonials" class="animate">
-  <div class="section-tag">Real Collectors. Real Finds.</div>
-  <h2 class="section-title">They used to guess.<br>Now they know.</h2>
-  <p class="section-sub">HotScan is already changing how Indian collectors buy, sell and trade.</p>
+  <div class="section-tag">What Collectors Are Saying</div>
+  <h2 class="section-title">Built for the way<br>India collects.</h2>
+  <p class="section-sub">Scenarios our users experience every day — from swap meets to OLX buys to Hamleys hunts.</p>
   <div class="testimonials-grid">
     <div class="testi-card animate">
       <div class="testi-stars">★★★★★</div>
@@ -790,71 +792,88 @@ document.querySelectorAll('.problem-grid .problem-card, .features-grid .feature-
   el.style.transitionDelay = (i * 0.1) + 's'
 })
 
-// ── Live scan counter ──────────────────────────────────────────────────────
-// Growth model: app launched Sep 1 2025. Ramps from ~15/day to ~85/day.
+// ── Live scan counter — real data from Supabase ────────────────────────────
 ;(function() {
-  var LAUNCH = new Date('2025-09-01T00:00:00Z')
-  var SEED   = 423
-  var now    = Date.now()
-  var days   = Math.max(0, Math.floor((now - LAUNCH.getTime()) / 86400000))
+  var SUPA_URL = 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNzc5MDcsImV4cCI6MjA2MDY1MzkwN30.q2Og6-yMNFfGxCHEd9JJBKBWP7TjJZkjRiD5RCgfCEM'
 
-  // Piecewise linear ramp: each bucket is 30 days
-  var rates = [15, 20, 28, 38, 50, 62, 72, 80, 85, 88, 90, 92]
-  var total  = SEED
-  for (var d = 0; d < days; d++) {
-    var bucket = Math.min(Math.floor(d / 30), rates.length - 1)
-    total += rates[bucket]
+  function animateCount(el, target) {
+    var start = Math.floor(target * 0.82)
+    var dur = 1800, t0 = null
+    function tick(ts) {
+      if (!t0) t0 = ts
+      var p = Math.min((ts - t0) / dur, 1)
+      var ease = 1 - Math.pow(1 - p, 3)
+      el.textContent = Math.floor(start + (target - start) * ease).toLocaleString('en-IN')
+      if (p < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
   }
 
-  // Update traction strip
-  var strip = document.getElementById('traction-scans')
-  if (strip) strip.textContent = total.toLocaleString('en-IN') + '+'
-
-  // Animate hero counter
-  var el = document.getElementById('scan-counter')
-  if (!el) return
-  var target   = total
-  var startVal = Math.floor(target * 0.72)
-  var duration = 1800
-  var start    = null
-
-  function tick(ts) {
-    if (!start) start = ts
-    var elapsed  = ts - start
-    var progress = Math.min(elapsed / duration, 1)
-    var ease     = 1 - Math.pow(1 - progress, 3)
-    var current  = Math.floor(startVal + (target - startVal) * ease)
-    el.textContent = current.toLocaleString('en-IN')
-    if (progress < 1) requestAnimationFrame(tick)
-  }
-  requestAnimationFrame(tick)
+  // Fetch real count from scan_logs table
+  fetch(SUPA_URL + '/rest/v1/scan_logs?select=id', {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY,
+               'Prefer': 'count=exact', 'Range': '0-0' }
+  }).then(function(r) {
+    var count = parseInt(r.headers.get('content-range')?.split('/')[1] || '0')
+    if (count > 0) {
+      var el = document.getElementById('scan-counter')
+      var strip = document.getElementById('traction-scans')
+      if (el) animateCount(el, count)
+      if (strip) strip.textContent = count.toLocaleString('en-IN') + '+'
+    } else {
+      // Fallback: use conservative seeded estimate if table is empty
+      var el = document.getElementById('scan-counter')
+      if (el) { el.textContent = '—'; el.title = 'Launching soon' }
+    }
+  }).catch(function() {
+    // Offline / error fallback — show nothing rather than fake data
+    var el = document.getElementById('scan-counter')
+    if (el) el.textContent = '—'
+  })
 })()
 
 // ── Investor form ──────────────────────────────────────────────────────────
-function submitInvestorForm(e) {
+async function submitInvestorForm(e) {
   e.preventDefault()
-  var f    = e.target
+  var f       = e.target
+  var btn     = f.querySelector('button[type=submit]')
   var name    = f.querySelector('[name=name]').value.trim()
   var company = f.querySelector('[name=company]').value.trim()
   var email   = f.querySelector('[name=email]').value.trim()
   var ticket  = f.querySelector('[name=ticket]').value
   var message = f.querySelector('[name=message]').value.trim()
-
-  var body=encodeURIComponent(
-    'Name: ' + name + '\n' +
-    (company ? 'Company: ' + company + '\n' : '') +
-    'Email: ' + email + '\n' +
-    (ticket ? 'Ticket: ' + ticket + '\n' : '') +
-    (message ? '\nMessage:\n' + message : '')
-  )
-  var subject = encodeURIComponent('HotScan India — Investment Interest from ' + name)
-  window.location.href = 'mailto:mahakfahad07@gmail.com?subject=' + subject + '&body=' + body
-
-  // Show success message after short delay
-  setTimeout(function() {
-    f.style.display = 'none'
-    document.getElementById('inv-form-success').style.display = 'block'
-  }, 800)
+  if (!name || !email) return
+  btn.textContent = 'Sending…'
+  btn.disabled = true
+  try {
+    // FormSubmit — no setup needed, delivers to email reliably
+    var res = await fetch('https://formsubmit.co/ajax/mahakfahad07@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        _subject: 'HotScan Investor Interest — ' + name + (company ? ' (' + company + ')' : ''),
+        name: name,
+        email: email,
+        company: company || 'Individual',
+        ticket_size: ticket || 'Not specified',
+        message: message || '(no message)',
+        _template: 'table',
+        _captcha: 'false'
+      })
+    })
+    var data = await res.json()
+    if (data.success === 'true' || data.success === true) {
+      f.style.display = 'none'
+      document.getElementById('inv-form-success').style.display = 'block'
+    } else { throw new Error('Form submission failed') }
+  } catch(err) {
+    // Fallback to mailto
+    var body = encodeURIComponent('Name: '+name+'\nCompany: '+(company||'—')+'\nEmail: '+email+'\nTicket: '+(ticket||'—')+'\n\n'+message)
+    window.open('mailto:mahakfahad07@gmail.com?subject=HotScan+Investor+Interest+from+'+encodeURIComponent(name)+'&body='+body)
+    btn.textContent = 'Connect With Us →'
+    btn.disabled = false
+  }
 }
 </script>
 <script>

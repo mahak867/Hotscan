@@ -3,91 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#e63946">
 <title>Privacy Policy — HotScan India</title>
-<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
+<meta name="theme-color" content="#080808">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0ede8;padding:0 0 60px}
-.hdr{background:#141414;border-bottom:1px solid #1f1f1f;padding:16px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
-.hdr a{color:#888;text-decoration:none;font-size:14px}
-.hdr-title{font-size:17px;font-weight:800;color:#f0ede8}
-.container{max-width:680px;margin:0 auto;padding:28px 20px}
-h1{font-size:24px;font-weight:900;margin-bottom:6px;color:#f0ede8}
-.updated{font-size:12px;color:#888;margin-bottom:28px}
-h2{font-size:15px;font-weight:700;color:#e63946;margin:24px 0 8px;text-transform:uppercase;letter-spacing:.5px}
-p{font-size:14px;color:#c8c4bf;line-height:1.75;margin-bottom:10px}
-ul{font-size:14px;color:#c8c4bf;line-height:2;padding-left:20px;margin-bottom:10px}
-a{color:#4cc9f0;text-decoration:none}
-.footer-links{margin-top:36px;display:flex;gap:20px;font-size:13px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:#080808;color:#e5e5e5;line-height:1.7;padding:0 24px 80px}
+.wrap{max-width:720px;margin:0 auto;padding-top:60px}
+a{color:#4CC9F0;text-decoration:none}
+h1{font-size:36px;font-weight:800;color:#fff;margin-bottom:8px}
+.meta{font-size:13px;color:#666;margin-bottom:48px}
+h2{font-size:20px;font-weight:700;color:#fff;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid #1f1f1f}
+p,li{font-size:15px;color:#aaa;margin-bottom:12px}
+ul{padding-left:20px;margin-bottom:12px}
+.back{display:inline-flex;align-items:center;gap:6px;color:#666;font-size:14px;margin-bottom:32px;text-decoration:none}
+.back:hover{color:#fff}
+strong{color:#e5e5e5}
 </style>
 </head>
 <body>
-<div class="hdr">
-  <a href="/index.html">← Back to App</a>
-  <div class="hdr-title">HotScan India</div>
-</div>
-<div class="container">
+<div class="wrap">
+  <a href="https://hotscan.in" class="back">← Back to HotScan</a>
   <h1>Privacy Policy</h1>
-  <div class="updated">Last updated: April 2026</div>
+  <p class="meta">Last updated: April 2026 · HotScan India · hotscan.in</p>
 
-  <h2>1. Overview</h2>
-  <p>HotScan India ("the App", "we", "us") is committed to protecting your privacy. This policy explains what data we collect, how we use it, and your rights.</p>
+  <h2>1. Who We Are</h2>
+  <p>HotScan India ("HotScan", "we", "our") is a web application operated by Mahak Fahad, Chennai, India. We help Hot Wheels collectors identify cars, check live Indian market prices, and manage their collections.</p>
 
-  <h2>2. Data We Collect</h2>
+  <h2>2. What Data We Collect</h2>
+  <p><strong>Account information:</strong> When you sign in with Google or email, we collect your email address and a display name. We do not access any other Google account data.</p>
+  <p><strong>Collection data:</strong> Cars you add to your collection — name, rarity, price data, and optional thumbnail image — are stored in our database and synced to your account.</p>
+  <p><strong>Scan images:</strong> Photos you upload for scanning are sent to Groq AI for identification. We compress images to ≤512px before sending. Images are <strong>not stored</strong> after the scan is complete.</p>
+  <p><strong>Payment information:</strong> If you subscribe to Pro, payment is processed by Razorpay. We never see or store your card number. We receive only a payment confirmation from Razorpay.</p>
+  <p><strong>Usage data:</strong> We use Plausible Analytics — a privacy-first, cookieless analytics tool — to understand how many people use the app. No personal data is collected by analytics.</p>
+  <p><strong>Error data:</strong> We use Sentry to log JavaScript errors. Error reports include the browser type, OS, and the code line that failed. No personal data is included in error reports.</p>
+
+  <h2>3. What We Do Not Collect</h2>
   <ul>
-    <li><strong>Account data:</strong> When you sign up, we store your email address, username, and profile details in Supabase (our database provider).</li>
-    <li><strong>Collection data:</strong> Cars you add to your collection are stored in your local device storage and optionally synced to our Supabase database when you are signed in.</li>
-    <li><strong>Scan images:</strong> Photos you upload for scanning are sent to Groq's API for AI processing. We do not permanently store your scan images.</li>
-    <li><strong>Community prices:</strong> Prices you submit are stored in our database and displayed to other users.</li>
-    <li><strong>Marketplace listings:</strong> Listings you create, including your city and WhatsApp number, are stored in our database and shown to other users.</li>
-    <li><strong>Usage data:</strong> We use Plausible Analytics (privacy-friendly, no cookies, no personal data) to understand aggregate app usage.</li>
+    <li>We do not sell your data to anyone, ever.</li>
+    <li>We do not run ads or work with ad networks.</li>
+    <li>We do not use tracking cookies.</li>
+    <li>We do not collect your location.</li>
+    <li>We do not access your device contacts, camera roll, or microphone.</li>
   </ul>
 
-  <h2>3. How We Use Your Data</h2>
+  <h2>4. How We Store Data</h2>
+  <p>Your data is stored in <strong>Supabase</strong> (hosted on AWS, ap-south-1 / us-east-1). Supabase uses Row Level Security — your data is only accessible to your account. We use HTTPS everywhere.</p>
+
+  <h2>5. Your Rights</h2>
+  <p>You can request deletion of all your account data at any time by emailing <a href="mailto:mahakfahad07@gmail.com">mahakfahad07@gmail.com</a>. We will delete your account and all associated data within 7 days.</p>
+  <p>You can export your collection data from the app at any time using the PDF export feature.</p>
+
+  <h2>6. Third-Party Services</h2>
   <ul>
-    <li>To provide the core scanning, collection, and marketplace features.</li>
-    <li>To sync your collection across devices when you are signed in.</li>
-    <li>To display community-submitted prices to all users.</li>
-    <li>To process Pro subscription payments via Razorpay.</li>
-    <li>To improve the App based on aggregate usage patterns.</li>
+    <li><strong>Groq AI</strong> — processes scan images for car identification. <a href="https://groq.com/privacy" target="_blank">Groq Privacy Policy</a></li>
+    <li><strong>Supabase</strong> — database and authentication. <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></li>
+    <li><strong>Razorpay</strong> — payment processing. <a href="https://razorpay.com/privacy/" target="_blank">Razorpay Privacy Policy</a></li>
+    <li><strong>Plausible Analytics</strong> — cookieless analytics. <a href="https://plausible.io/privacy" target="_blank">Plausible Privacy Policy</a></li>
+    <li><strong>Sentry</strong> — error monitoring. <a href="https://sentry.io/privacy/" target="_blank">Sentry Privacy Policy</a></li>
   </ul>
 
-  <h2>4. Third-Party Services</h2>
-  <ul>
-    <li><strong>Supabase</strong> — database and authentication (servers in Singapore/US). <a href="https://supabase.com/privacy" target="_blank">Privacy Policy</a></li>
-    <li><strong>Groq</strong> — AI inference for image and text analysis. Images are sent to Groq solely for processing. <a href="https://groq.com/privacy-policy/" target="_blank">Privacy Policy</a></li>
-    <li><strong>Razorpay</strong> — payment processing for Pro subscriptions. <a href="https://razorpay.com/privacy/" target="_blank">Privacy Policy</a></li>
-    <li><strong>Plausible Analytics</strong> — cookieless, GDPR-compliant analytics. No personal data is collected. <a href="https://plausible.io/data-policy" target="_blank">Data Policy</a></li>
-  </ul>
+  <h2>7. Children</h2>
+  <p>HotScan is intended for users aged 13 and above. We do not knowingly collect data from children under 13.</p>
 
-  <h2>5. Your Groq API Key</h2>
-  <p>If you choose to enter your own Groq API key, it is stored only in your device's local storage. It is never sent to our servers — only to Groq's API directly from your device.</p>
+  <h2>8. Changes</h2>
+  <p>If we make significant changes to this policy, we will notify users via the app. Continued use of HotScan after changes constitutes acceptance.</p>
 
-  <h2>6. Data Retention</h2>
-  <p>Account and collection data is retained as long as your account is active. You can delete your account and all associated data by contacting us at <a href="mailto:mahakfahad07@gmail.com">mahakfahad07@gmail.com</a>.</p>
-
-  <h2>7. Children's Privacy</h2>
-  <p>The App is not directed to children under 13. We do not knowingly collect personal data from children under 13.</p>
-
-  <h2>8. Security</h2>
-  <p>We use Supabase Row Level Security (RLS) to ensure users can only access their own data. All data is transmitted over HTTPS.</p>
-
-  <h2>9. Your Rights</h2>
-  <p>Under applicable laws (including India's Digital Personal Data Protection Act, 2023), you have the right to access, correct, or delete your personal data. Contact us at <a href="mailto:mahakfahad07@gmail.com">mahakfahad07@gmail.com</a> to exercise these rights.</p>
-
-  <h2>10. Changes to This Policy</h2>
-  <p>We may update this privacy policy. We will notify you of significant changes via the App.</p>
-
-  <h2>11. Contact</h2>
+  <h2>9. Contact</h2>
   <p>Questions? Email us at <a href="mailto:mahakfahad07@gmail.com">mahakfahad07@gmail.com</a></p>
-
-  <div class="footer-links">
-    <a href="/terms.html">Terms of Service</a>
-    <a href="/index.html">Back to App</a>
-  </div>
 </div>
 </body>
 </html>
