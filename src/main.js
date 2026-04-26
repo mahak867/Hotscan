@@ -39,13 +39,12 @@ import {
 
 // ── Sentry error monitoring ────────────────────────────────────────────
 Sentry.init({
-  dsn: 'https://b1a2c3d4e5f6g7h8@o0.ingest.sentry.io/0', // replace with real DSN from sentry.io
+  dsn: 'https://d30983e80b41aa7d1074e677160ffe4d@o4511283952353280.ingest.us.sentry.io/4511283969851392',
   environment: window.location.hostname === 'hotscan.in' ? 'production' : 'development',
   release: 'hotscan@5.0.0',
   integrations: [Sentry.browserTracingIntegration()],
-  tracesSampleRate: 0.1, // 10% of transactions — free tier friendly
+  tracesSampleRate: 0.1,
   beforeSend: function(event) {
-    // Don't send events from dev/preview URLs
     if (window.location.hostname.includes('localhost') || window.location.hostname.includes('vercel.app')) return null
     return event
   }

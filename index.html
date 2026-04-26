@@ -18,8 +18,9 @@
 <meta name="color-scheme" content="dark">
 <title>HotScan India — Hot Wheels Scanner</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="/icon-192.png">
-<link rel="shortcut icon" type="image/png" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="shortcut icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Razorpay loaded on demand -->
@@ -33,7 +34,7 @@
 <body>
 <div class="app-header">
   <div class="app-header-left">
-    <img src="/logo.png" alt="HotScan" style="height:42px;width:auto;display:block;flex-shrink:0;cursor:pointer" onclick="goPage('scan')" onerror="this.style.display='none';document.getElementById('hs-fallback-logo').style.display='flex'">
+    <img src="/logo.png" alt="HotScan" style="height:42px;width:auto;display:block;flex-shrink:0;cursor:pointer;filter:drop-shadow(0 2px 8px rgba(30,80,200,.45))" onclick="goPage('scan')" onerror="this.style.display='none';document.getElementById('hs-fallback-logo').style.display='flex'">
     <!-- Fallback wordmark if PNG fails -->
     <div id="hs-fallback-logo" style="display:none;align-items:center;gap:8px;cursor:pointer" onclick="goPage('scan')">
       <img src="/icon-192.png" alt="HS" style="height:32px;width:32px;border-radius:8px;display:block;flex-shrink:0">
