@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { escHtml, cleanINR, parseINR, showToast, rcls } from './utils.js'
+import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm } from './utils.js'
 import { groqText } from './groq.js'
 import { HAIKU_MODEL } from './config.js'
 
@@ -151,7 +151,8 @@ export async function renderMyListings(arr) {
 
 export async function deleteListing(id) {
   if (!state.currentUser || !state._sb) return
-  if (!confirm('Remove this listing? Buyers will no longer see it.')) return
+  var ok = await hsConfirm('Remove Listing', 'Buyers will no longer see this car for sale.', 'Remove', '🗑️')
+  if (!ok) return
   try {
     await state._sb.from('listings').update({is_active: false}).eq('id', id).eq('seller_id', state.currentUser.id)
     showToast('Listing removed', 'success')
@@ -172,6 +173,15 @@ export async function submitListing() {
   if (!phone || phone.length !== 10) { showToast('Enter a valid 10-digit WhatsApp number', 'error'); return }
   if (!state.currentUser)            { showToast('Sign in to list a car for sale', 'error'); window.openAuth(); return }
   if (!state._sb)                    { showToast('Connection error — try again', 'error'); return }
+
+  // Rate limit: max 3 listings per hour
+  var now = Date.now()
+  var listTimes = JSON.parse(localStorage.getItem('hs_list_times') || '[]').filter(function(t) { return now - t < 3600000 })
+  if (listTimes.length >= 3) {
+    var wait = Math.ceil((3600000 - (now - listTimes[0])) / 60000)
+    showToast('You can list up to 3 cars per hour. Try again in ' + wait + ' min.', 'error')
+    return
+  }
   var btn = document.getElementById('sl-submit-btn')
   var _listed = false
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Listing…' }
@@ -191,8 +201,12 @@ export async function submitListing() {
       is_active:    true
     })
     _listed = true
-    // Save city for next time
-    try { if (city) localStorage.setItem('hs_sell_city', city) } catch(e) {}
+    // Save city and rate limit timestamp
+    try {
+      if (city) localStorage.setItem('hs_sell_city', city)
+      listTimes.push(Date.now())
+      localStorage.setItem('hs_list_times', JSON.stringify(listTimes))
+    } catch(e) {}
     window._slImgThumb = null
     ;['sl-name','sl-price','sl-city','sl-notes','sl-phone'].forEach(function(id){ document.getElementById(id).value = '' })
     // Reset preview

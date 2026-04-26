@@ -773,6 +773,19 @@
   </div>
 </div>
 
+<!-- ── Custom Confirm Modal ───────────────────────────────────────────── -->
+<div id="hs-confirm-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);align-items:center;justify-content:center" onclick="if(event.target===this)window._confirmReject&&window._confirmReject()">
+  <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+    <div id="hs-confirm-icon" style="font-size:36px;margin-bottom:12px">⚠️</div>
+    <div id="hs-confirm-title" style="font-size:17px;font-weight:700;color:#f0ede8;margin-bottom:8px"></div>
+    <div id="hs-confirm-msg" style="font-size:13px;color:#9ca3af;line-height:1.6;margin-bottom:22px"></div>
+    <div style="display:flex;gap:10px">
+      <button id="hs-confirm-cancel" style="flex:1;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;color:#9ca3af;font-size:14px;font-weight:600;cursor:pointer" onclick="window._confirmReject&&window._confirmReject()">Cancel</button>
+      <button id="hs-confirm-ok" style="flex:1;padding:13px;background:#e63946;border:none;border-radius:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer" onclick="window._confirmResolve&&window._confirmResolve()">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>

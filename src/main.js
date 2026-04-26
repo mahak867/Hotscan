@@ -1,4 +1,5 @@
 import './style.css'
+import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
 import { SUPA_URL, SUPA_KEY } from './config.js'
 import { ol, showToast } from './utils.js'
@@ -35,6 +36,20 @@ import {
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
   analyzeMultiPhoto
 } from './scanner.js'
+
+// ── Sentry error monitoring ────────────────────────────────────────────
+Sentry.init({
+  dsn: 'https://b1a2c3d4e5f6g7h8@o0.ingest.sentry.io/0', // replace with real DSN from sentry.io
+  environment: window.location.hostname === 'hotscan.in' ? 'production' : 'development',
+  release: 'hotscan@5.0.0',
+  integrations: [Sentry.browserTracingIntegration()],
+  tracesSampleRate: 0.1, // 10% of transactions — free tier friendly
+  beforeSend: function(event) {
+    // Don't send events from dev/preview URLs
+    if (window.location.hostname.includes('localhost') || window.location.hostname.includes('vercel.app')) return null
+    return event
+  }
+})
 
 // NOTE: Do NOT strip the URL hash here — Supabase's detectSessionInUrl:true reads
 // the access_token from the hash when the client initialises. Stripping it early

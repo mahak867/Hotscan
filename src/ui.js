@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
-import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize } from './utils.js'
+import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
 
 // ── Pro helpers ──
@@ -17,7 +17,11 @@ export function incScans() {
   return c
 }
 export function isPro() {
+  // Always trust server-verified profile first
   if (state.userProfile && (state.userProfile.is_pro || state.userProfile.is_developer)) return true
+  // localStorage is only a cache — only valid if user is logged in
+  // (prevents localStorage.setItem('hs_pro','true') exploit when not logged in)
+  if (!state.currentUser) return false
   return localStorage.getItem('hs_pro') === 'true'
 }
 export function checkLimit() {
@@ -405,7 +409,13 @@ export function addAlert() {
   renderAlerts(); goPage('alerts')
 }
 export function delAlert(id) { state.alerts = state.alerts.filter(function(a){return a.id!==id}); localStorage.setItem('hs_alerts',JSON.stringify(state.alerts)); renderAlerts() }
-export function clearAlerts() { if(!confirm('Clear all alerts?'))return; state.alerts=[]; localStorage.setItem('hs_alerts','[]'); renderAlerts() }
+export async function clearAlerts() {
+  var ok = await hsConfirm('Clear All Alerts', 'Your price watchlist will be emptied.', 'Clear All', '🔔')
+  if (!ok) return
+  state.alerts = []
+  localStorage.setItem('hs_alerts', '[]')
+  renderAlerts()
+}
 export function renderAlerts() {
   if (!state.alerts.length) {
     document.getElementById('alerts-list').innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><div class="empty-t">No alerts yet</div><div class="empty-s">Scan a car and tap "Alert" to watch for deals</div></div>'

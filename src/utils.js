@@ -96,3 +96,27 @@ export function rcls(r) {
   var rv = (r || '').toLowerCase()
   return rv.includes('super') ? 'rs' : rv.includes('treasure') ? 'rt' : rv.includes('error') ? 're' : rv.includes('rare') || rv.includes('vintage') || rv.includes('premium') ? 'rr' : rv.includes('uncommon') ? 'ru' : 'rc'
 }
+
+// Custom confirm — replaces browser confirm() with a styled modal
+// Usage: await hsConfirm('Title', 'Message', 'Delete', '🗑️')
+export function hsConfirm(title, message, okLabel, icon) {
+  return new Promise(function(resolve, reject) {
+    var overlay = document.getElementById('hs-confirm-overlay')
+    var titleEl = document.getElementById('hs-confirm-title')
+    var msgEl   = document.getElementById('hs-confirm-msg')
+    var okBtn   = document.getElementById('hs-confirm-ok')
+    var iconEl  = document.getElementById('hs-confirm-icon')
+    if (!overlay) { resolve(window.confirm(message || title)); return }
+    if (titleEl) titleEl.textContent = title || 'Are you sure?'
+    if (msgEl)   msgEl.textContent   = message || ''
+    if (okBtn)   okBtn.textContent   = okLabel || 'Confirm'
+    if (iconEl)  iconEl.textContent  = icon || '⚠️'
+    // Red for destructive, gold for neutral
+    var isDestructive = (okLabel || '').toLowerCase().includes('delete') || (okLabel || '').toLowerCase().includes('remove') || (okLabel || '').toLowerCase().includes('clear')
+    if (okBtn) okBtn.style.background = isDestructive ? '#e63946' : '#ffd60a'
+    if (okBtn) okBtn.style.color = isDestructive ? '#fff' : '#000'
+    overlay.style.display = 'flex'
+    window._confirmResolve = function() { overlay.style.display = 'none'; resolve(true) }
+    window._confirmReject  = function() { overlay.style.display = 'none'; resolve(false) }
+  })
+}
