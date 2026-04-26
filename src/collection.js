@@ -134,44 +134,72 @@ export function renderCol() {
 
 export function exportVal() {
   if (!state.collection.length) { showToast('Add some cars first!', 'error'); return }
-  // #9 — loading state on the export button
   var exportBtn = document.querySelector('[onclick="exportVal()"]')
-  var origText = exportBtn ? exportBtn.textContent : null
-  if (exportBtn) { exportBtn.disabled = true; exportBtn.textContent = '⏳ Generating…' }
+  if (exportBtn) { exportBtn.disabled = true; exportBtn.textContent = '⏳ Generating PDF…' }
+
   setTimeout(function() {
-  var val = 0; state.collection.forEach(function(c) { val += parseINR(c.india_collector_inr) })
-  var date = new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})
-  var txt = [
-    'HOTSCAN INDIA - COLLECTION VALUATION CERTIFICATE',
-    '='.repeat(50),
-    'Generated: ' + date,
-    'App: HotScan India v5.0 (hotscan.in)',
-    'Collector: ' + (state.currentUser ? state.currentUser.email : 'Guest'),
-    '',
-    'COLLECTION SUMMARY',
-    'Total Cars: ' + state.collection.length,
-    'Rare+ Cars: ' + state.collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage')}).length,
-    'Treasure Hunts: ' + state.collection.filter(function(c){return (c.rarity||'').toLowerCase().includes('treasure')}).length,
-    'Estimated Total Value: Rs.' + val.toLocaleString('en-IN') + ' INR',
-    'Average Car Value: Rs.' + (state.collection.length?Math.round(val/state.collection.length).toLocaleString('en-IN'):'0') + ' INR',
-    '',
-    'CAR LIST',
-    state.collection.map(function(c,i){
-      return (i+1)+'. '+(c.name||'Unknown')+' | '+(c.rarity||'Common')+' | Rs.'+(cleanINR(c.india_collector_inr)||'N/A')+(c.color?' | '+c.color:'')
-    }).join('\n'),
-    '',
-    '='.repeat(50),
-    'DISCLAIMER: Values are AI-estimated based on Indian collector market data.',
-    'For insurance or legal purposes, obtain a professional appraisal.',
-    '',
-    'HotScan India v5.0 - hotscan.in',
-    'India first Hot Wheels Scanner'
-  ].join('\n')
-  var blob = new Blob([txt], {type:'text/plain'})
-  var url = URL.createObjectURL(blob)
-  var a = document.createElement('a'); a.href = url; a.download = 'HotScan_Valuation_' + new Date().toISOString().split('T')[0] + '.txt'; a.click()
-  URL.revokeObjectURL(url)
-  if (exportBtn) { exportBtn.disabled = false; exportBtn.textContent = origText || '📄 Export Valuation Certificate' }
+    var val = 0
+    state.collection.forEach(function(c) { val += parseINR(c.india_collector_inr) })
+    var date = new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})
+    var collector = state.currentUser ? (state.currentUser.name || state.currentUser.email) : 'Collector'
+    var rareCars  = state.collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage')})
+    var thCars    = state.collection.filter(function(c){return(c.rarity||'').toLowerCase().includes('treasure')})
+
+    var rows = state.collection.map(function(c, i) {
+      var r = c.rarity || 'Common'
+      var rCol = r.toLowerCase().includes('super') ? '#ffd60a' : r.toLowerCase().includes('treasure') ? '#ff9500' : r.toLowerCase().includes('rare')||r.toLowerCase().includes('vintage')||r.toLowerCase().includes('error') ? '#4cc9f0' : '#aaa'
+      return '<tr style="border-bottom:1px solid #1f1f1f">'
+        + '<td style="padding:8px 10px;color:#aaa;font-size:12px">' + (i+1) + '</td>'
+        + '<td style="padding:8px 10px;font-weight:600;color:#f0ede8;font-size:13px">' + escHtml(c.name||'Unknown') + (c.color?'<br><span style="font-size:11px;color:#666">'+escHtml(c.color)+'</span>':'') + '</td>'
+        + '<td style="padding:8px 10px"><span style="color:'+rCol+';font-size:12px;font-weight:700">'+escHtml(r)+'</span></td>'
+        + '<td style="padding:8px 10px;font-weight:700;color:#ffd60a;font-size:13px">₹' + (cleanINR(c.india_collector_inr)||'N/A') + '</td>'
+        + '<td style="padding:8px 10px;font-size:11px;color:'+(c.investment==='📈 Rising'?'#2dc653':c.investment==='📉 Falling'?'#e63946':'#aaa')+'">'+(c.investment||'—')+'</td>'
+        + '</tr>'
+    }).join('')
+
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+      + '<title>HotScan Valuation Certificate</title>'
+      + '<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a0a;color:#f0ede8;font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif;padding:40px}'
+      + '@media print{body{padding:20px}}'
+      + '.cert{max-width:800px;margin:0 auto;background:#111;border:1px solid #222;border-radius:16px;overflow:hidden}'
+      + '.cert-header{background:linear-gradient(135deg,#1B3A5C,#0a0a0a);padding:36px 40px;border-bottom:1px solid #222}'
+      + '.cert-logo{font-size:28px;font-weight:900;color:#fff;letter-spacing:2px;margin-bottom:4px}'
+      + '.cert-logo span{color:#e63946}'
+      + '.cert-title{font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:2px}'
+      + '.cert-body{padding:32px 40px}'
+      + '.cert-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:32px}'
+      + '.meta-box{background:#1a1a1a;border:1px solid #222;border-radius:10px;padding:16px}'
+      + '.meta-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}'
+      + '.meta-val{font-size:20px;font-weight:800;color:#f0ede8}'
+      + '.meta-val.gold{color:#ffd60a}'
+      + 'table{width:100%;border-collapse:collapse;margin-top:8px}'
+      + 'th{padding:10px;text-align:left;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #222}'
+      + '.cert-footer{padding:20px 40px;border-top:1px solid #1a1a1a;font-size:11px;color:#555;display:flex;justify-content:space-between}'
+      + '</style></head><body>'
+      + '<div class="cert">'
+      + '<div class="cert-header"><div class="cert-logo">HOT<span>SCAN</span> INDIA</div><div class="cert-title">Collection Valuation Certificate · ' + date + '</div></div>'
+      + '<div class="cert-body">'
+      + '<div class="cert-meta">'
+      + '<div class="meta-box"><div class="meta-label">Collector</div><div class="meta-val" style="font-size:15px">'+escHtml(collector)+'</div></div>'
+      + '<div class="meta-box"><div class="meta-label">Total Cars</div><div class="meta-val">'+state.collection.length+'</div></div>'
+      + '<div class="meta-box"><div class="meta-label">Estimated Value</div><div class="meta-val gold">₹'+val.toLocaleString('en-IN')+'</div></div>'
+      + '<div class="meta-box"><div class="meta-label">Rare+ Cars</div><div class="meta-val">'+rareCars.length+'</div></div>'
+      + '<div class="meta-box"><div class="meta-label">Treasure Hunts</div><div class="meta-val" style="color:#ff9500">'+thCars.length+'</div></div>'
+      + '<div class="meta-box"><div class="meta-label">Avg Value</div><div class="meta-val gold" style="font-size:16px">₹'+(state.collection.length?Math.round(val/state.collection.length).toLocaleString('en-IN'):'0')+'</div></div>'
+      + '</div>'
+      + '<table><thead><tr><th>#</th><th>Car</th><th>Rarity</th><th>India Value</th><th>Trend</th></tr></thead><tbody>' + rows + '</tbody></table>'
+      + '</div>'
+      + '<div class="cert-footer"><span>HotScan India v5.0 · hotscan.in · India\'s First Hot Wheels Scanner</span><span>Values are AI-estimated · Not for insurance/legal use</span></div>'
+      + '</div></body></html>'
+
+    var win = window.open('', '_blank', 'width=900,height=700')
+    if (!win) { showToast('Allow popups to export PDF', 'error'); return }
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+    setTimeout(function() { win.print() }, 600)
+    if (exportBtn) { exportBtn.disabled = false; exportBtn.textContent = '📄 Export Valuation Certificate' }
+    showToast('PDF ready — use "Save as PDF" in the print dialog', 'success')
   }, 120)
 }
 

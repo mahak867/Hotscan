@@ -14,6 +14,13 @@ export function incScans() {
   var d = JSON.parse(localStorage.getItem('hs_scans') || '{}')
   var c = (d.date === t ? (d.count || 0) : 0) + 1
   localStorage.setItem('hs_scans', JSON.stringify({date:t, count:c}))
+  // Log to Supabase scan_logs so landing page counter is real
+  if (state._sb) {
+    state._sb.from('scan_logs').insert({
+      user_id: state.currentUser ? state.currentUser.id : null,
+      scanned_at: new Date().toISOString(),
+    }).catch(function() {}) // silent fail — never block the scan
+  }
   return c
 }
 export function isPro() {
@@ -840,30 +847,59 @@ export async function renderPriceHistory(name, rarity, currentPriceStr) {
 
 // ── Referral ──
 export function getRefCode() {
-  if (state.currentUser) return state.currentUser.id.substring(0,8)
+  // Use first 8 chars of user ID if logged in — stable across devices
+  if (state.currentUser) return state.currentUser.id.substring(0, 8)
   var c = localStorage.getItem('hs_refcode')
-  if (!c) { c=Math.random().toString(36).substring(2,10); localStorage.setItem('hs_refcode',c) }
+  if (!c) { c = Math.random().toString(36).substring(2, 10); localStorage.setItem('hs_refcode', c) }
   return c
 }
-export function getRefLink() { return 'https://hotscan.in?ref='+getRefCode() }
+export function getRefLink() { return 'https://hotscan.in?ref=' + getRefCode() }
 
-export function updateRefUI() {
+export async function updateRefUI() {
   var el = document.getElementById('ref-link-txt')
   if (el) el.textContent = getRefLink()
-  var refs = JSON.parse(localStorage.getItem('hs_refs')||'[]')
+
+  // Fetch real referral count from Supabase
+  var refCount = 0
+  if (state._sb && state.currentUser) {
+    try {
+      var myCode = getRefCode()
+      var res = await state._sb.from('referrals')
+        .select('id', { count: 'exact', head: true })
+        .eq('referrer_code', myCode)
+      refCount = res.count || 0
+    } catch(e) {
+      // Fallback to localStorage count
+      refCount = JSON.parse(localStorage.getItem('hs_refs') || '[]').length
+    }
+  } else {
+    refCount = JSON.parse(localStorage.getItem('hs_refs') || '[]').length
+  }
+
   var cnt = document.getElementById('ref-cnt')
   var bon = document.getElementById('ref-bonus-n')
   var rnk = document.getElementById('ref-rank')
-  if (cnt) cnt.textContent = refs.length
-  if (bon) bon.textContent = refs.length * 10
-  if (rnk) rnk.textContent = refs.length >= 10 ? '🏆 Top' : refs.length >= 5 ? '⭐' : '—'
+  if (cnt) cnt.textContent = refCount
+  if (bon) bon.textContent = refCount * 10
+  if (rnk) rnk.textContent = refCount >= 10 ? '🏆 Top' : refCount >= 5 ? '⭐' : '—'
+
+  // Handle incoming referral
   var ref = new URLSearchParams(window.location.search).get('ref')
   if (ref && ref !== getRefCode() && !localStorage.getItem('hs_used_ref')) {
     localStorage.setItem('hs_used_ref', ref)
-    var s = JSON.parse(localStorage.getItem('hs_scans')||'{}')
-    s.bonus = (s.bonus||0) + 10
+    // Grant bonus scans locally
+    var s = JSON.parse(localStorage.getItem('hs_scans') || '{}')
+    s.bonus = (s.bonus || 0) + 10
     localStorage.setItem('hs_scans', JSON.stringify(s))
-    setTimeout(function(){ showToast('🎁 Welcome! You got 10 bonus scans from your referral link.', 'success') }, 1500)
+    // Log to Supabase
+    if (state._sb) {
+      state._sb.from('referrals').insert({
+        referrer_code: ref,
+        referred_user_id: state.currentUser ? state.currentUser.id : null,
+        created_at: new Date().toISOString()
+      }).catch(function() {})
+    }
+    setTimeout(function() { showToast('🎁 Welcome! You got 10 bonus scans from your referral link.', 'success') }, 1500)
   }
 }
 
