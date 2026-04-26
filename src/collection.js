@@ -203,17 +203,22 @@ export function addCarToCollection(car, thumb) {
 }
 
 export async function fullCloudSync() {
-  if (!state.currentUser || !state._sb) return
+  if (!state.currentUser || !state._sb) return false
   try {
-    var res = await state._sb.from('collection').select('*').eq('user_id', state.currentUser.id).order('added_at', {ascending:false})
+    // 1. Fetch cloud items
+    var res = await state._sb.from('collection')
+      .select('*')
+      .eq('user_id', state.currentUser.id)
+      .order('added_at', { ascending: false })
+
+    var cloudItems = []
     if (res.data && res.data.length > 0) {
-      state.collection = res.data.map(function(d) {
+      cloudItems = res.data.map(function(d) {
         return {
           id: d.id, name: d.name, series: d.series,
           casting_year: d.casting_year, rarity: d.rarity,
           color: d.color, tampo: d.tampo,
           wheel_type: d.wheel_type,
-          condition_grade: d.condition_grade,
           india_retail_inr: d.india_retail_inr,
           india_collector_inr: d.india_collector_inr,
           us_retail_usd: d.us_retail_usd,
@@ -222,36 +227,97 @@ export async function fullCloudSync() {
           investment_reason: d.investment_reason,
           fun_fact: d.fun_fact,
           india_insight: d.india_insight,
-          purchase_price: d.purchase_price,
-          purchase_platform: d.purchase_platform,
-          notes: d.notes,
-          image: d.image_thumb,
-          added: d.added_at
+          // Don't use truncated image from cloud — keep local if available
+          image: d.image_thumb || null,
+          added: d.added_at,
+          _synced: true
         }
       })
+    }
+
+    // 2. Get local items that are NOT yet in cloud (have numeric/float IDs from Date.now())
+    var cloudNames = cloudItems.map(function(c) { return (c.name || '').toLowerCase() })
+    var localOnly = state.collection.filter(function(c) {
+      // Cloud IDs are UUIDs (strings with dashes), local IDs are numbers
+      var isLocalId = typeof c.id === 'number' || String(c.id).indexOf('-') === -1
+      return isLocalId && !cloudNames.includes((c.name || '').toLowerCase())
+    })
+
+    // 3. Upload local-only items to cloud
+    for (var i = 0; i < localOnly.length; i++) {
+      var item = localOnly[i]
+      await saveToCloud(item)
+    }
+
+    // 4. Merge: cloud items + any local-only items not yet uploaded
+    // Prefer cloud data (authoritative), keep local images if cloud image is missing
+    var localImageMap = {}
+    state.collection.forEach(function(c) {
+      if (c.image && c.name) localImageMap[(c.name || '').toLowerCase()] = c.image
+    })
+
+    // Re-fetch after uploading local items
+    if (localOnly.length > 0) {
+      var res2 = await state._sb.from('collection')
+        .select('*')
+        .eq('user_id', state.currentUser.id)
+        .order('added_at', { ascending: false })
+      if (res2.data) {
+        cloudItems = res2.data.map(function(d) {
+          var nameKey = (d.name || '').toLowerCase()
+          return {
+            id: d.id, name: d.name, series: d.series,
+            casting_year: d.casting_year, rarity: d.rarity,
+            color: d.color, tampo: d.tampo,
+            wheel_type: d.wheel_type,
+            india_retail_inr: d.india_retail_inr,
+            india_collector_inr: d.india_collector_inr,
+            us_retail_usd: d.us_retail_usd,
+            us_collector_usd: d.us_collector_usd,
+            investment: d.investment,
+            investment_reason: d.investment_reason,
+            fun_fact: d.fun_fact,
+            india_insight: d.india_insight,
+            // Restore local image if cloud image is truncated/missing
+            image: localImageMap[nameKey] || d.image_thumb || null,
+            added: d.added_at,
+            _synced: true
+          }
+        })
+      }
+    } else {
+      // Restore local images into cloud items
+      cloudItems = cloudItems.map(function(c) {
+        var nameKey = (c.name || '').toLowerCase()
+        if (!c.image && localImageMap[nameKey]) c.image = localImageMap[nameKey]
+        return c
+      })
+    }
+
+    if (cloudItems.length > 0) {
+      state.collection = cloudItems
       localStorage.setItem('hs_col', JSON.stringify(state.collection))
       renderCol()
       return true
     }
-  } catch(e) { console.warn('Cloud sync error:', e) }
+  } catch(e) {
+    console.warn('Cloud sync error:', e)
+  }
   return false
 }
 
+// Alias — kept for compatibility, routes to fullCloudSync
 export async function syncCollectionFromCloud() {
-  if (!state.currentUser || !state._sb) return
-  try {
-    var res = await state._sb.from('collection').select('*').eq('user_id', state.currentUser.id).order('added_at', {ascending:false})
-    if (res.data && res.data.length > 0) {
-      state.collection = res.data.map(function(d) { return {id:d.id, name:d.name, series:d.series, rarity:d.rarity, color:d.color, india_collector_inr:d.india_collector_inr, investment:d.investment, image:d.image_thumb, added:d.added_at} })
-      localStorage.setItem('hs_col', JSON.stringify(state.collection))
-      renderCol()
-    }
-  } catch(e) { console.warn('Sync error:', e) }
+  return fullCloudSync()
 }
 
 export async function saveToCloud(item) {
   if (!state.currentUser || !state._sb) return null
   try {
+    // Store up to 8KB of the thumbnail — enough for a compressed 64px JPEG
+    // If image is larger (unlikely after compress()), skip it to avoid DB errors
+    var thumb = item.image || null
+    if (thumb && thumb.length > 8000) thumb = null
     var res = await state._sb.from('collection').insert({
       user_id: state.currentUser.id,
       name: item.name,
@@ -269,7 +335,7 @@ export async function saveToCloud(item) {
       investment_reason: item.investment_reason,
       fun_fact: item.fun_fact,
       india_insight: item.india_insight,
-      image_thumb: item.image ? item.image.substring(0, 4000) : null,
+      image_thumb: thumb,
       added_at: item.added
     }).select('id').single()
     if (res.data && res.data.id) return res.data.id
