@@ -459,48 +459,112 @@ export function saveToHist(d) {
 
 // ── Share ──
 export function showShare() {
-  if(!state.lastResult){ showToast('Scan a car first to share', 'error'); return }
-  document.getElementById('sc-name').textContent = state.lastResult.name || '—'
-  document.getElementById('sc-series').textContent = state.lastResult.series || '—'
-  var scr = document.getElementById('sc-rar'); scr.textContent = state.lastResult.rarity || 'Common'; scr.className = 'rar ' + rcls(state.lastResult.rarity)
-  document.getElementById('sc-inv').textContent = (state.lastResult.investment||'') + ' Investment'
-  document.getElementById('sc-inr').textContent = state.lastResult.india_collector_inr ? '₹'+cleanINR(state.lastResult.india_collector_inr) : '—'
-  document.getElementById('sc-usd').textContent = state.lastResult.us_collector_usd ? '$'+state.lastResult.us_collector_usd : '—'
+  if (!state.lastResult) { showToast('Scan a car first to share', 'error'); return }
+  var r = state.lastResult
+  document.getElementById('sc-name').textContent   = r.name || '—'
+  document.getElementById('sc-series').textContent = r.series || '—'
+  var scr = document.getElementById('sc-rar')
+  scr.textContent = r.rarity || 'Common'
+  scr.className   = 'rar ' + rcls(r.rarity)
+  var trendArrow = r.investment === '📈 Rising' ? '📈' : r.investment === '📉 Falling' ? '📉' : '➡️'
+  document.getElementById('sc-inv').textContent = trendArrow + ' ' + (r.investment || '') + ' Investment'
+  document.getElementById('sc-inr').textContent = r.india_collector_inr ? '₹' + cleanINR(r.india_collector_inr) : '—'
+  document.getElementById('sc-usd').textContent = r.us_collector_usd ? '$' + r.us_collector_usd : '—'
+  // Use logo image instead of emoji in share card
+  var logoEl = document.getElementById('sc-logo-img')
+  if (logoEl) logoEl.src = '/logo.png'
   var sci = document.getElementById('sc-img')
-  sci.innerHTML = state.imgThumb ? '<img src="'+state.imgThumb+'" alt="" style="width:100%;height:100%;object-fit:cover">' : '🚗'
+  sci.innerHTML = state.imgThumb
+    ? '<img src="' + state.imgThumb + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px">'
+    : '<span style="font-size:36px">🚗</span>'
   document.getElementById('share-modal').classList.add('open')
   document.body.style.overflow = 'hidden'
 }
 export function closeShare() { document.getElementById('share-modal').classList.remove('open'); document.body.style.overflow = '' }
+
 export function shareWA() {
   if (!state.lastResult) return
-  var txt = '🚗 *' + state.lastResult.name + '*\n📦 ' + state.lastResult.series + '\n⭐ ' + state.lastResult.rarity + '\n🇮🇳 India: ₹' + cleanINR(state.lastResult.india_collector_inr) + '\n🇺🇸 US: $' + state.lastResult.us_collector_usd + '\n📈 ' + state.lastResult.investment + ' Investment\n\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner_\n_hotscan.in_'
+  var r = state.lastResult
+  var trend = r.investment === '📈 Rising' ? '📈 Rising' : r.investment === '📉 Falling' ? '📉 Falling' : '➡️ Stable'
+  var txt = '🏎️ *' + r.name + '*\n'
+    + '📦 ' + (r.series || '') + '\n'
+    + '⭐ ' + (r.rarity || 'Common') + '\n'
+    + '🇮🇳 India: ₹' + (cleanINR(r.india_collector_inr) || '?') + '\n'
+    + '🇺🇸 US: $' + (r.us_collector_usd || '?') + '\n'
+    + trend + ' Investment\n'
+    + (r.india_insight ? '💡 ' + r.india_insight + '\n' : '')
+    + '\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner · hotscan.in_'
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
 }
+
+export function shareResultToGroup() {
+  if (!state.lastResult) return
+  var r = state.lastResult
+  var trend = r.investment === '📈 Rising' ? '📈 Rising' : r.investment === '📉 Falling' ? '📉 Falling' : '➡️ Stable'
+  var lines = [
+    '🏎️ Just scanned this with HotScan India!',
+    '',
+    '*' + r.name + '*',
+    '📦 Series: ' + (r.series || '—'),
+    '⭐ Rarity: ' + (r.rarity || 'Common'),
+    '🇮🇳 India Price: ₹' + (cleanINR(r.india_collector_inr) || '?'),
+    '🇺🇸 US Price: $' + (r.us_collector_usd || '?'),
+    trend + ' Investment Potential',
+  ]
+  if (r.india_insight) lines.push('', '💡 ' + r.india_insight)
+  lines.push('', '🔍 Try HotScan free: hotscan.in')
+  window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank')
+}
+
+export async function copyShareText() {
+  if (!state.lastResult) return
+  var r = state.lastResult
+  var trend = r.investment === '📈 Rising' ? '📈 Rising' : r.investment === '📉 Falling' ? '📉 Falling' : '➡️ Stable'
+  var txt = r.name + '\n'
+    + (r.series || '') + ' · ' + (r.rarity || 'Common') + '\n'
+    + '🇮🇳 India: ₹' + (cleanINR(r.india_collector_inr) || '?') + '\n'
+    + trend + ' Investment\n'
+    + (r.india_insight ? r.india_insight + '\n' : '')
+    + '\nScanned with HotScan India · hotscan.in'
+  try {
+    await navigator.clipboard.writeText(txt)
+    showToast('Copied! Paste anywhere — WhatsApp, Instagram, OLX 📋', 'success')
+  } catch(e) { showToast('Select and copy manually: ' + txt.substring(0, 40) + '…', 'error') }
+}
+
 export async function shareNative() {
   if (!state.lastResult) return
-  var txt = '🚗 ' + state.lastResult.name + '\n📦 ' + state.lastResult.series + '\n⭐ ' + state.lastResult.rarity + '\n🇮🇳 India: ₹' + cleanINR(state.lastResult.india_collector_inr) + '\n📈 ' + state.lastResult.investment + ' Investment\n\nScanned with HotScan India 🔍\nhttps://hotscan.in'
-  if (navigator.share) { try { await navigator.share({title:'HotScan — '+state.lastResult.name, text:txt}) } catch(e) {} }
-  else { await navigator.clipboard.writeText(txt); showToast('Copied to clipboard!', 'success') }
+  var r = state.lastResult
+  var txt = r.name + '\n' + (r.series || '') + '\n⭐ ' + (r.rarity || 'Common')
+    + '\n🇮🇳 India: ₹' + (cleanINR(r.india_collector_inr) || '?')
+    + '\n📈 ' + (r.investment || '') + ' Investment'
+    + '\n\nScanned with HotScan India 🔍\nhttps://hotscan.in'
+  if (navigator.share) {
+    try { await navigator.share({ title: 'HotScan — ' + r.name, text: txt }) } catch(e) {}
+  } else {
+    try { await navigator.clipboard.writeText(txt); showToast('Copied to clipboard!', 'success') } catch(e) {}
+  }
 }
+
+export async function shareInstagram() {
+  // Instagram doesn't support direct deep links with text — copy text + open Instagram
+  await copyShareText()
+  setTimeout(function() {
+    showToast('Text copied! Opening Instagram — paste in your story/post 📸', 'success')
+    window.open('instagram://app', '_blank')
+    setTimeout(function() { window.open('https://www.instagram.com', '_blank') }, 800)
+  }, 600)
+}
+
 export function shareApp() {
-  var txt = '🚗 India\'s first Hot Wheels scanner is here!\n\nScan any Hot Wheels car and instantly get:\n✅ Rarity rating\n✅ Indian market prices in ₹\n✅ Investment potential\n✅ Where to buy & sell in India\n\nFree! No app download needed 🇮🇳\n\n👉 hotscan.in'
-  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
-}
-export function shareResultToGroup(){
-  if(!state.lastResult)return
-  var lines=[
-    'Just scanned this with HotScan India!',
-    '',
-    state.lastResult.name,
-    'Rarity: '+state.lastResult.rarity,
-    'India Price: Rs.'+(cleanINR(state.lastResult.india_collector_inr)||'?'),
-    'US Price: $'+(state.lastResult.us_collector_usd||'?'),
-    'Investment: '+state.lastResult.investment+' Potential'
-  ]
-  if(state.lastResult.india_insight) lines.push('','Insight: '+state.lastResult.india_insight)
-  lines.push('','Try HotScan free: '+getRefLink())
-  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank')
+  var txt = '🏎️ India\'s first Hot Wheels scanner is here!\n\nScan any Hot Wheels car and instantly get:\n✅ Exact rarity — Common, TH, STH, Vintage\n✅ Indian market prices in ₹\n✅ Investment potential\n✅ Fake detector\n✅ Track your collection\n\nFree! No app download needed 🇮🇳\n\n👉 hotscan.in'
+  if (navigator.share) {
+    navigator.share({ title: 'HotScan India', text: txt }).catch(function() {
+      window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+    })
+  } else {
+    window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+  }
 }
 
 // ── Events ──

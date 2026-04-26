@@ -636,10 +636,13 @@
 
 <!-- Share Modal -->
 <div class="modal-overlay" id="share-modal">
-  <div style="width:100%;max-width:330px">
-    <div style="text-align:right;margin-bottom:8px"><button onclick="closeShare()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;line-height:1">✕</button></div>
+  <div style="width:100%;max-width:340px">
+    <div style="text-align:right;margin-bottom:8px"><button onclick="closeShare()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;line-height:1;touch-action:manipulation">✕</button></div>
     <div class="share-card">
-      <div class="sc-logo"><div class="sc-logo-ic">🚗</div><div class="sc-logo-txt">HotScan India</div><div class="sc-url">hotscan.in</div></div>
+      <div class="sc-logo">
+        <img id="sc-logo-img" src="/logo.png" alt="HotScan" style="height:28px;width:auto;filter:drop-shadow(0 1px 4px rgba(30,80,200,.4))">
+        <div class="sc-url" style="margin-left:4px;font-size:11px;color:var(--text3)">hotscan.in</div>
+      </div>
       <div class="sc-img" id="sc-img">🚗</div>
       <div style="font-size:17px;font-weight:800;margin-bottom:2px" id="sc-name">—</div>
       <div style="font-size:11px;color:var(--text2);margin-bottom:8px" id="sc-series">—</div>
@@ -650,7 +653,13 @@
       </div>
       <div class="sc-footer">Scanned with HotScan India 🔍 · Free at hotscan.in</div>
     </div>
-    <div class="sc-btns"><button class="sc-btn sc-btn-wa" onclick="shareWA()">💬 WhatsApp</button><button class="sc-btn" style="background:#25D366;color:#fff" onclick="shareResultToGroup()">👥 Send to Group</button><button class="sc-btn sc-btn-sh" onclick="shareNative()">📤 More</button></div>
+    <div class="sc-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+      <button class="sc-btn sc-btn-wa" onclick="shareWA()" style="border-radius:12px;padding:12px 8px;font-size:13px;font-weight:700">💬 WhatsApp</button>
+      <button class="sc-btn" style="background:#25D366;color:#fff;border-radius:12px;padding:12px 8px;font-size:13px;font-weight:700" onclick="shareResultToGroup()">👥 WA Group</button>
+      <button class="sc-btn" style="background:#E1306C;color:#fff;border-radius:12px;padding:12px 8px;font-size:13px;font-weight:700" onclick="shareInstagram()">📸 Instagram</button>
+      <button class="sc-btn sc-btn-sh" onclick="copyShareText()" style="border-radius:12px;padding:12px 8px;font-size:13px;font-weight:700">📋 Copy Text</button>
+    </div>
+    <button onclick="shareNative()" style="width:100%;margin-top:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text2);border-radius:12px;padding:11px;font-size:13px;cursor:pointer;touch-action:manipulation">📤 More options…</button>
   </div>
 </div>
 

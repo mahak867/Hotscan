@@ -12,7 +12,8 @@ export var FREE_SCANS = 5
 // kimi-k2-instruct deprecated Sept 2025 → llama-3.3-70b-versatile
 export var HAIKU_MODEL  = 'llama-3.1-8b-instant'
 export var CODEX_MODEL  = 'llama-3.3-70b-versatile'
-export var VISION_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
+export var VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+export var VISION_FALLBACK = 'llama-3.2-11b-vision-preview'
 
 export var HUNT_DATA = {
   mainline:[

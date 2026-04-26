@@ -80,3 +80,34 @@ create policy "Anyone can submit an event"
 create policy "Anyone can read approved events"
   on events for select
   using (approved = true or auth.uid() = submitted_by);
+
+-- ── 5. Profiles table — add missing columns if they don't exist
+-- Run these individually if the profiles table already exists:
+alter table profiles add column if not exists whatsapp_phone text;
+alter table profiles add column if not exists olx_username text;
+alter table profiles add column if not exists display_name text;
+alter table profiles add column if not exists username text unique;
+alter table profiles add column if not exists is_pro boolean default false;
+alter table profiles add column if not exists is_developer boolean default false;
+alter table profiles add column if not exists pro_since timestamptz;
+alter table profiles add column if not exists razorpay_payment_id text;
+
+-- If profiles table doesn't exist yet, create it:
+create table if not exists profiles (
+  id                  uuid primary key references auth.users(id) on delete cascade,
+  email               text,
+  display_name        text,
+  username            text unique,
+  whatsapp_phone      text,
+  olx_username        text,
+  is_pro              boolean default false,
+  is_developer        boolean default false,
+  pro_since           timestamptz,
+  razorpay_payment_id text,
+  created_at          timestamptz default now()
+);
+
+alter table profiles enable row level security;
+create policy if not exists "Users can read own profile" on profiles for select using (auth.uid() = id);
+create policy if not exists "Users can update own profile" on profiles for update using (auth.uid() = id);
+create policy if not exists "Users can insert own profile" on profiles for insert with check (auth.uid() = id);

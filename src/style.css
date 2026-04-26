@@ -664,51 +664,19 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Displ
 .ldot{animation:livePulse 2s infinite}
 @keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
-/* Smooth analyze button */
+/* Smooth analyze button — clean pulse, no distracting shimmer */
 .analyze-btn{position:relative;overflow:hidden}
-.analyze-btn::after{
-  content:'';position:absolute;top:-50%;left:-60%;
-  width:40%;height:200%;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
-  transform:skewX(-20deg);
-  animation:shimmer 3s infinite;
-}
-@keyframes shimmer{0%{left:-60%}100%{left:120%}}
-
-/* Better chip/filter styles */
-.chip{transition:all .15s;cursor:pointer}
-.chip:active{transform:scale(.96)}
-
-/* Auth modal animation */
-.auth-modal .auth-sheet{
-  animation:authSlideUp .3s cubic-bezier(.4,0,.2,1);
-}
-@keyframes authSlideUp{
-  from{transform:translateY(40px);opacity:0}
-  to{transform:translateY(0);opacity:1}
-}
-
-/* Profile hero gradient — HW themed */
-.prof-hero{
-  background:linear-gradient(135deg,#1a0000 0%,#0d0000 40%,#0a0a0a 100%);
-  border-color:rgba(230,57,70,.2);
-}
-
-/* Better plan badges */
-.plan-dev{
-  background:linear-gradient(135deg,rgba(230,57,70,.15),rgba(255,214,10,.1));
-  color:var(--gold);border:1px solid rgba(255,214,10,.3);
-}
+.analyze-btn::after{display:none !important}
 
 /* ══ UI/UX UPGRADES ══ */
 
-/* 1. Scan button pulse glow */
-@keyframes btnGlow{0%,100%{box-shadow:0 2px 8px rgba(230,57,70,.25)}50%{box-shadow:0 6px 28px rgba(230,57,70,.65),0 0 0 5px rgba(230,57,70,.1)}}
-.analyze-btn:not(:disabled){animation:shimmer 3s infinite,btnGlow 2.5s infinite}
-.scan-ph .btn-red{animation:btnGlow 2.8s infinite}
-
-/* 2. Rarity badges — larger & more distinct */
-.rar{font-size:12px;padding:4px 10px;border-radius:4px}
+/* 1. Scan button — subtle professional pulse */
+@keyframes btnPulse{
+  0%,100%{box-shadow:0 2px 14px rgba(230,57,70,.28)}
+  50%{box-shadow:0 4px 24px rgba(230,57,70,.52),0 0 0 3px rgba(230,57,70,.06)}
+}
+.analyze-btn:not(:disabled){animation:btnPulse 3s ease-in-out infinite}
+.scan-ph .btn-red{animation:btnPulse 3s ease-in-out infinite}
 
 /* 3. Price tiles — larger tabular numbers */
 .ptile-val{font-size:22px;font-variant-numeric:tabular-nums}
