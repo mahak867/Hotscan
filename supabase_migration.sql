@@ -61,3 +61,51 @@ alter table profiles add column if not exists is_pro boolean default false;
 alter table profiles add column if not exists is_developer boolean default false;
 alter table profiles add column if not exists pro_since timestamptz;
 alter table profiles add column if not exists razorpay_payment_id text;
+
+-- ── 6. Critical missing policies — run these in Supabase SQL Editor
+-- Without the UPDATE policy, profile saves (WA number, OLX, username) silently fail
+
+-- Profiles: allow users to update their own row
+do $$ begin
+  create policy "profiles_update" on profiles
+    for update using (auth.uid() = id) with check (auth.uid() = id);
+exception when duplicate_object then null;
+end $$;
+
+-- Profiles: allow users to insert their own row (for new users)
+do $$ begin
+  create policy "profiles_insert" on profiles
+    for insert with check (auth.uid() = id);
+exception when duplicate_object then null;
+end $$;
+
+-- Profiles: allow users to read their own row
+do $$ begin
+  create policy "profiles_select" on profiles
+    for select using (auth.uid() = id);
+exception when duplicate_object then null;
+end $$;
+
+-- Collection: prevent exact duplicates per user+name
+-- (stops same car being uploaded multiple times on repeated syncs)
+create unique index if not exists idx_collection_user_name
+  on collection(user_id, lower(name));
+
+-- Collection: RLS policies
+alter table collection enable row level security;
+do $$ begin
+  create policy "collection_select" on collection for select using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create policy "collection_insert" on collection for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create policy "collection_update" on collection for update using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create policy "collection_delete" on collection for delete using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;

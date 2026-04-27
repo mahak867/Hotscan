@@ -745,7 +745,11 @@ export function renderProfilePage() {
   if (olxEl) olxEl.value = (state.userProfile && state.userProfile.olx_username) ? state.userProfile.olx_username : ''
   if (olxStatus) {
     if (state.userProfile && state.userProfile.olx_username) {
-      olxStatus.innerHTML = '✅ Linked · <a href="' + escHtml(buildOLXProfileUrl(state.userProfile.olx_username)) + '" target="_blank" style="color:var(--blue-brand);text-decoration:none">View OLX profile →</a>'
+      var u = state.userProfile.olx_username
+      var profileUrl = 'https://www.olx.in/profile/' + encodeURIComponent(u)
+      var searchUrl  = 'https://www.olx.in/items/q-hot+wheels+' + encodeURIComponent(u)
+      olxStatus.innerHTML = '✅ Linked — <a href="' + escHtml(profileUrl) + '" target="_blank" style="color:#4cc9f0;text-decoration:none;font-weight:600">View OLX Profile →</a>'
+        + ' &nbsp;<a href="' + escHtml(searchUrl) + '" target="_blank" style="color:#2dc653;text-decoration:none;font-size:12px">Your listings →</a>'
     } else {
       olxStatus.textContent = 'Link your OLX account to speed up selling — shows your profile in deal alerts'
     }

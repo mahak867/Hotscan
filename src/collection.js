@@ -28,7 +28,13 @@ export function addToCol() {
 }
 
 export function delFromCol(id) {
-  if (state._sb && state.currentUser) deleteFromCloud(id)
+  // Find the item first to get its cloud UUID (if it has one)
+  var item = state.collection.find(function(c) { return c.id === id })
+  // Only delete from cloud if it has a real UUID (not a local numeric id)
+  if (item && state._sb && state.currentUser) {
+    var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
+    if (cloudId) deleteFromCloud(cloudId)
+  }
   state.collection = state.collection.filter(function(c) { return c.id !== id })
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
   renderCol()
@@ -349,11 +355,11 @@ export async function syncCollectionFromCloud() {
 export async function saveToCloud(item) {
   if (!state.currentUser || !state._sb) return null
   try {
-    // Store up to 8KB of the thumbnail — enough for a compressed 64px JPEG
-    // If image is larger (unlikely after compress()), skip it to avoid DB errors
     var thumb = item.image || null
     if (thumb && thumb.length > 8000) thumb = null
-    var res = await state._sb.from('collection').insert({
+    // Use upsert so re-syncing never creates duplicates
+    // If item already has a cloud UUID, update it; otherwise insert fresh
+    var payload = {
       user_id: state.currentUser.id,
       name: item.name,
       series: item.series,
@@ -372,7 +378,14 @@ export async function saveToCloud(item) {
       india_insight: item.india_insight,
       image_thumb: thumb,
       added_at: item.added
-    }).select('id').single()
+    }
+    // If it already has a UUID id, include it so upsert updates the right row
+    if (item.id && typeof item.id === 'string' && item.id.includes('-')) {
+      payload.id = item.id
+    }
+    var res = await state._sb.from('collection')
+      .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
+      .select('id').single()
     if (res.data && res.data.id) return res.data.id
   } catch(e) { console.warn('Cloud save error:', e) }
   return null
