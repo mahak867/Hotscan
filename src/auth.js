@@ -451,7 +451,7 @@ export async function startPayment() {
       localStorage.setItem('hs_pro', 'true')
       try {
         if (state._sb) {
-          await state._sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_subscription_id:response.razorpay_payment_id}).eq('id', state.currentUser.id)
+          await state._sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_payment_id:response.razorpay_payment_id}).eq('id', state.currentUser.id)
           await loadProfile()
         }
       } catch(e) { console.warn('Pro DB update error:', e) }

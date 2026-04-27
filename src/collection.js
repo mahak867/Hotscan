@@ -230,8 +230,15 @@ export function addCarToCollection(car, thumb) {
   return item
 }
 
-export async function fullCloudSync() {
-  if (!state.currentUser || !state._sb) return false
+export async function fullCloudSync(retryCount) {
+  // Retry up to 3 times if Supabase client not yet initialized
+  if (!state._sb || !state.currentUser) {
+    if ((retryCount || 0) < 3) {
+      await new Promise(function(r){ setTimeout(r, 800) })
+      return fullCloudSync((retryCount || 0) + 1)
+    }
+    return false
+  }
   try {
     // 1. Fetch cloud items
     var res = await state._sb.from('collection')
