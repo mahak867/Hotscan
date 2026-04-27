@@ -407,7 +407,7 @@ export async function submitPrice() {
 // ── Alerts ──
 export function addAlert() {
   if(!state.lastResult){ showToast('Scan a car first to set a price alert', 'error'); return }
-  if (state.alerts.find(function(a) { return a.name === state.lastResult.name })) { alert('Alert already set for: ' + state.lastResult.name); return }
+  if (state.alerts.find(function(a) { return a.name === state.lastResult.name })) { showToast('Alert already set for: ' + state.lastResult.name, 'error'); return }
   state.alerts.unshift({id:Date.now(), name:state.lastResult.name, rarity:state.lastResult.rarity, india_collector_inr:state.lastResult.india_collector_inr, added:new Date().toISOString()})
   localStorage.setItem('hs_alerts', JSON.stringify(state.alerts))
   if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
@@ -466,11 +466,12 @@ export function showShare() {
   var scr = document.getElementById('sc-rar')
   scr.textContent = r.rarity || 'Common'
   scr.className   = 'rar ' + rcls(r.rarity)
-  var trendArrow = r.investment === '📈 Rising' ? '📈' : r.investment === '📉 Falling' ? '📉' : '➡️'
-  document.getElementById('sc-inv').textContent = trendArrow + ' ' + (r.investment || '') + ' Investment'
+  var trend = r.price_trend || 'Stable'
+  var trendArrow = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
+  var invest = r.investment || 'Medium'
+  document.getElementById('sc-inv').textContent = trendArrow + ' ' + trend + ' · ' + invest + ' Investment'
   document.getElementById('sc-inr').textContent = r.india_collector_inr ? '₹' + cleanINR(r.india_collector_inr) : '—'
   document.getElementById('sc-usd').textContent = r.us_collector_usd ? '$' + r.us_collector_usd : '—'
-  // Use logo image instead of emoji in share card
   var logoEl = document.getElementById('sc-logo-img')
   if (logoEl) logoEl.src = '/logo.png'
   var sci = document.getElementById('sc-img')
@@ -485,13 +486,14 @@ export function closeShare() { document.getElementById('share-modal').classList.
 export function shareWA() {
   if (!state.lastResult) return
   var r = state.lastResult
-  var trend = r.investment === '📈 Rising' ? '📈 Rising' : r.investment === '📉 Falling' ? '📉 Falling' : '➡️ Stable'
+  var trend = r.price_trend || 'Stable'
+  var trendEmoji = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
   var txt = '🏎️ *' + r.name + '*\n'
     + '📦 ' + (r.series || '') + '\n'
     + '⭐ ' + (r.rarity || 'Common') + '\n'
     + '🇮🇳 India: ₹' + (cleanINR(r.india_collector_inr) || '?') + '\n'
     + '🇺🇸 US: $' + (r.us_collector_usd || '?') + '\n'
-    + trend + ' Investment\n'
+    + trendEmoji + ' Price Trend: ' + trend + ' · ' + (r.investment || 'Medium') + ' Investment\n'
     + (r.india_insight ? '💡 ' + r.india_insight + '\n' : '')
     + '\n_Scanned with HotScan India 🔍_\n_India\'s #1 Hot Wheels Scanner · hotscan.in_'
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
@@ -500,7 +502,8 @@ export function shareWA() {
 export function shareResultToGroup() {
   if (!state.lastResult) return
   var r = state.lastResult
-  var trend = r.investment === '📈 Rising' ? '📈 Rising' : r.investment === '📉 Falling' ? '📉 Falling' : '➡️ Stable'
+  var trend = r.price_trend || 'Stable'
+  var trendEmoji = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
   var lines = [
     '🏎️ Just scanned this with HotScan India!',
     '',
@@ -509,7 +512,7 @@ export function shareResultToGroup() {
     '⭐ Rarity: ' + (r.rarity || 'Common'),
     '🇮🇳 India Price: ₹' + (cleanINR(r.india_collector_inr) || '?'),
     '🇺🇸 US Price: $' + (r.us_collector_usd || '?'),
-    trend + ' Investment Potential',
+    trendEmoji + ' Price Trend: ' + trend + ' · ' + (r.investment || 'Medium') + ' Investment',
   ]
   if (r.india_insight) lines.push('', '💡 ' + r.india_insight)
   lines.push('', '🔍 Try HotScan free: hotscan.in')
@@ -519,11 +522,12 @@ export function shareResultToGroup() {
 export async function copyShareText() {
   if (!state.lastResult) return
   var r = state.lastResult
-  var trend = r.investment === '📈 Rising' ? '📈 Rising' : r.investment === '📉 Falling' ? '📉 Falling' : '➡️ Stable'
+  var trend = r.price_trend || 'Stable'
+  var trendEmoji = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
   var txt = r.name + '\n'
     + (r.series || '') + ' · ' + (r.rarity || 'Common') + '\n'
     + '🇮🇳 India: ₹' + (cleanINR(r.india_collector_inr) || '?') + '\n'
-    + trend + ' Investment\n'
+    + trendEmoji + ' ' + trend + ' · ' + (r.investment || 'Medium') + ' Investment\n'
     + (r.india_insight ? r.india_insight + '\n' : '')
     + '\nScanned with HotScan India · hotscan.in'
   try {
@@ -535,9 +539,11 @@ export async function copyShareText() {
 export async function shareNative() {
   if (!state.lastResult) return
   var r = state.lastResult
+  var trend = r.price_trend || 'Stable'
+  var trendEmoji = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
   var txt = r.name + '\n' + (r.series || '') + '\n⭐ ' + (r.rarity || 'Common')
     + '\n🇮🇳 India: ₹' + (cleanINR(r.india_collector_inr) || '?')
-    + '\n📈 ' + (r.investment || '') + ' Investment'
+    + '\n' + trendEmoji + ' ' + trend + ' · ' + (r.investment || 'Medium') + ' Investment'
     + '\n\nScanned with HotScan India 🔍\nhttps://hotscan.in'
   if (navigator.share) {
     try { await navigator.share({ title: 'HotScan — ' + r.name, text: txt }) } catch(e) {}
