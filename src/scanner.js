@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { VISION_MODEL, CODEX_MODEL, HAIKU_MODEL } from './config.js'
-import { groqVision, groqText, parseJSON } from './groq.js'
+import { groqVision, groqText, groqJSON, parseJSON } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
 import { addCarToCollection } from './collection.js'
 
@@ -126,7 +126,7 @@ async function searchPrices(carName, rarity, castingYear) {
     '"sell_platforms":["OLX","Instagram collector groups","Maido"],',
     '"buy_tip":"best way to find this car in India at good price"}'
   ].join('\n')
-  try { return await groqText(prompt, CODEX_MODEL) } catch(e) { return null }
+  try { return await groqJSON(prompt, CODEX_MODEL) } catch(e) { return null }
 }
 
 export async function analyzePhoto() {
@@ -252,7 +252,7 @@ export async function analyzeDeal() {
     '"confidence":"High|Medium|Low — how sure you are about this car\'s India price"}'
   ].join('\n')
   try {
-    var d = await groqText(prompt, HAIKU_MODEL)
+    var d = await groqJSON(prompt, HAIKU_MODEL)
     window.stopTimer()
     // Validate response has expected fields
     if (!d.verdict || !['Steal','Fair Price','Slightly High','Overpriced'].includes(d.verdict)) {
@@ -434,7 +434,7 @@ export async function scanBarcode() {
     ].join('\n')
   }
   try {
-    var d = await groqText(prompt, CODEX_MODEL)
+    var d = await groqJSON(prompt, CODEX_MODEL)
     window.stopTimer()
     if (!d || !d.identified) {
       var reason = (d && d.reason) ? d.reason : 'Not found. Try the full car name e.g. "Hot Wheels Bone Shaker"'

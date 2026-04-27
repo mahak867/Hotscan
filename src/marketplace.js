@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm } from './utils.js'
-import { groqText } from './groq.js'
+import { groqText, groqJSON } from './groq.js'
 import { HAIKU_MODEL } from './config.js'
 
 var _mpFilter = 'all'
@@ -351,25 +351,41 @@ export function slPhotoSelected(input) {
 export async function checkOLX() {
   var inp = document.getElementById('olx-inp').value.trim()
   if (!inp) { showToast('Paste a listing title first', 'error'); return }
+  var btn = document.querySelector('[onclick="checkOLX()"]')
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Analysing...' }
   var prompt = [
-    'Indian Hot Wheels market expert. Analyse this OLX listing: "'+inp+'".',
+    'You are an Indian Hot Wheels market expert. Analyse this OLX listing title: "' + inp + '".',
+    '⚠️ RULES:',
+    '1. Only comment on Hot Wheels. If this is not a Hot Wheels listing, say so in car_name.',
+    '2. Use REALISTIC Indian prices — Common: ₹150-350, TH: ₹500-2500, STH: ₹4000-15000.',
+    '3. Extract the listing price from the title if present, else set listing_price_inr to null.',
+    '4. verdict must be one of: Steal, Fair, Slightly High, Overpriced',
+    '',
     'Return ONLY valid JSON:',
-    '{"car_name":"name","rarity":"rarity","fair_price_inr":"300-600","listing_price_inr":400,"verdict":"Steal|Fair|Overpriced","verdict_reason":"specific why","buyer_advice":"what to do","red_flags":"concerns or empty string"}'
-  ].join(' ')
+    '{"car_name":"exact car name or Not a Hot Wheels listing","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","fair_price_inr":"300-600","listing_price_inr":400,"verdict":"Steal|Fair|Slightly High|Overpriced","verdict_reason":"specific 1-2 sentence reason","buyer_advice":"specific actionable advice","red_flags":"specific concerns or empty string","confidence":"High|Medium|Low"}'
+  ].join('\n')
   try {
-    var d = await groqText(prompt, HAIKU_MODEL)
-    if (!d) throw new Error('Could not analyse')
-    document.getElementById('olx-fair-px').textContent = 'Fair: Rs.'+d.fair_price_inr
-    document.getElementById('olx-verdict-txt').textContent = (d.verdict||'') + ' — ' + (d.verdict_reason||'')
-    var rows = [['Car',d.car_name],['Rarity',d.rarity],['Listed price','Rs.'+(d.listing_price_inr||'?')],['Fair price','Rs.'+(d.fair_price_inr||'?')]]
-    document.getElementById('olx-rows').innerHTML = rows.filter(function(r){return r[1]}).map(function(r){
-      return '<div class="deal-row"><span class="deal-k">'+r[0]+'</span><span class="deal-v">'+r[1]+'</span></div>'
+    var d = await groqJSON(prompt, HAIKU_MODEL)
+    if (!d) throw new Error('Could not analyse listing')
+    document.getElementById('olx-fair-px').textContent = 'Fair: ₹' + (d.fair_price_inr || '?')
+    var verdictIcon = {Steal:'🤑', Fair:'👍', 'Slightly High':'🤔', Overpriced:'❌'}[d.verdict] || '❓'
+    document.getElementById('olx-verdict-txt').textContent = verdictIcon + ' ' + (d.verdict || '') + ' — ' + (d.verdict_reason || '')
+    var rows = [
+      ['Car', d.car_name],
+      ['Rarity', d.rarity],
+      ['Listed price', d.listing_price_inr ? '₹' + d.listing_price_inr : 'Not in title'],
+      ['Fair India price', '₹' + (d.fair_price_inr || '?')],
+      ['Confidence', d.confidence || 'Medium']
+    ]
+    document.getElementById('olx-rows').innerHTML = rows.filter(function(r){ return r[1] }).map(function(r) {
+      return '<div class="deal-row"><span class="deal-k">' + escHtml(String(r[0])) + '</span><span class="deal-v">' + escHtml(String(r[1])) + '</span></div>'
     }).join('')
     var tip = ''
-    if (d.buyer_advice) tip += 'Advice: '+d.buyer_advice
-    if (d.red_flags) tip += (tip?' | ':'')+d.red_flags
-    document.getElementById('olx-tip').textContent = tip ? '💡 '+tip : ''
+    if (d.buyer_advice) tip += d.buyer_advice
+    if (d.red_flags) tip += (tip ? ' ⚠️ ' : '') + d.red_flags
+    document.getElementById('olx-tip').textContent = tip ? '💡 ' + tip : ''
     document.getElementById('olx-result-box').style.display = 'block'
-    document.getElementById('olx-result-box').scrollIntoView({behavior:'smooth',block:'start'})
+    document.getElementById('olx-result-box').scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch(e) { showToast('Error: ' + e.message, 'error') }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '🔍 Analyse Listing' } }
 }

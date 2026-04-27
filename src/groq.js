@@ -97,3 +97,10 @@ export async function groqText(prompt, model) {
   if (!content) throw new Error('Empty response from AI. Try again.')
   return content
 }
+
+// groqJSON — like groqText but parses and returns the JSON object
+// Use this whenever the prompt asks for JSON output
+export async function groqJSON(prompt, model) {
+  var raw = await groqText(prompt, model)
+  return parseJSON(raw)
+}
