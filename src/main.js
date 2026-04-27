@@ -81,6 +81,9 @@ Object.assign(window, {
   analyzeMultiPhoto,
 })
 
+// Alias — called directly from HTML button
+window.syncCollectionFromCloud = window.fullCloudSync
+
 // DOMContentLoaded: file input event listeners + mobile dock touch
 document.addEventListener('DOMContentLoaded', function () {
   // Mobile dock: tap dock background to expand, tap outside to collapse
