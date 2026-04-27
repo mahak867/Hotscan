@@ -9,6 +9,28 @@ export function getTodayScans() {
   var d = JSON.parse(localStorage.getItem('hs_scans') || '{}')
   return d.date === t ? (d.count || 0) : 0
 }
+
+// Server-side scan count — called after auth ready, overrides localStorage if higher
+// Prevents localStorage clear bypass
+export async function syncScanCountFromServer() {
+  if (!state._sb || !state.currentUser || isPro()) return
+  try {
+    var today = new Date()
+    var startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
+    var res = await state._sb.from('scan_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', state.currentUser.id)
+      .gte('scanned_at', startOfDay)
+    var serverCount = res.count || 0
+    var localCount = getTodayScans()
+    // Use whichever is higher — can't go backwards
+    if (serverCount > localCount) {
+      var t = new Date().toDateString()
+      localStorage.setItem('hs_scans', JSON.stringify({ date: t, count: serverCount }))
+      updateScanCounter()
+    }
+  } catch(e) { /* silent — localStorage remains source of truth if server unavailable */ }
+}
 export function incScans() {
   var t = new Date().toDateString()
   var d = JSON.parse(localStorage.getItem('hs_scans') || '{}')
@@ -397,7 +419,7 @@ export async function submitPrice() {
         user_id: state.currentUser.id,
         user_name: entry.user
       })
-    } catch(e) { console.warn('Community price save error:', e) }
+    } catch(e) { Sentry.captureException(e) }
   }
   document.getElementById('community-price').value = ''
   showToast('✅ Price submitted! Thank you for helping the community.', 'success')

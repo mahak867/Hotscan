@@ -57,7 +57,7 @@ export async function loadAndRenderListings() {
       if (_mpFilter !== 'all') query = query.ilike('rarity', '%'+_mpFilter+'%')
       var res = await query
       if (res.data) items = res.data
-    } catch(e) { console.warn('Listings fetch error:', e) }
+    } catch(e) { Sentry.captureException(e) }
   }
   _mpListings = items
   renderListings()
@@ -238,7 +238,7 @@ export async function submitListing() {
     } else {
       mpMode('buy')
     }
-  } catch(e) { console.error(e); showToast('Could not save listing — try again', 'error') }
+  } catch(e) { Sentry.captureException(e); showToast('Could not save listing — try again', 'error') }
   finally { if (btn && !_listed) { btn.disabled = false; btn.textContent = '📤 List Now' } }
 }
 

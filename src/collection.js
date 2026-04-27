@@ -342,7 +342,7 @@ export async function fullCloudSync(retryCount) {
       return true
     }
   } catch(e) {
-    console.warn('Cloud sync error:', e)
+    Sentry.captureException(e)
   }
   return false
 }
@@ -387,7 +387,7 @@ export async function saveToCloud(item) {
       .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
       .select('id').single()
     if (res.data && res.data.id) return res.data.id
-  } catch(e) { console.warn('Cloud save error:', e) }
+  } catch(e) { Sentry.captureException(e) }
   return null
 }
 

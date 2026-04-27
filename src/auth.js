@@ -293,7 +293,7 @@ export async function initAuth(){
         await loadProfile()
         if(event==='SIGNED_IN'){ closeAuth(); setTimeout(showSuccessCelebration,300) }
         if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
-          window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){})
+          window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){}); if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
         }
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
       } else {
@@ -307,7 +307,7 @@ export async function initAuth(){
       var u=sr.data.session.user
       state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
       await loadProfile()
-      window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){})
+      window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){}); if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
       updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
     }
     // Layer 3: force-refresh expired token — fixes "logged out on reload" in normal tabs
@@ -318,12 +318,12 @@ export async function initAuth(){
           var u=rr.data.session.user
           state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
           await loadProfile()
-          window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){})
+          window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){}); if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
           updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
         }
       }catch(e){}
     }
-  }catch(e){ console.warn('initAuth:',e) }
+  }catch(e){ Sentry.captureException(e) }
   updateHeaderUI()
 }
 
@@ -361,7 +361,7 @@ export async function loadProfile(){
     }
     try{ localStorage.setItem('hs_profile_cache',JSON.stringify({data:state.userProfile,ts:Date.now()})) }catch(e){}
   }catch(e){
-    console.warn('loadProfile:',e)
+    Sentry.captureException(e)
     try{
       var c=JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
       if(c&&c.data&&(Date.now()-c.ts)<7200000) state.userProfile=c.data
@@ -454,7 +454,7 @@ export async function startPayment() {
           await state._sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_payment_id:response.razorpay_payment_id}).eq('id', state.currentUser.id)
           await loadProfile()
         }
-      } catch(e) { console.warn('Pro DB update error:', e) }
+      } catch(e) { Sentry.captureException(e) }
       closeAccountModal(); window.closeProModal(); updateHeaderUI(); window.renderProfilePage()
       setTimeout(function() { showToast('🎉 Welcome to HotScan Pro! Unlimited scans activated.', 'success') }, 300)
     }

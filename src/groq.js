@@ -36,16 +36,16 @@ async function callVision(model, imageData, systemPrompt, userPrompt) {
     var eb = {}; try { eb = JSON.parse(bt) } catch(ex) {}
     var sm = (eb.error && typeof eb.error === 'string') ? eb.error
            : (eb.error && eb.error.message) ? eb.error.message : null
-    if (res.status === 401) throw new Error('Invalid API key — check at console.groq.com')
+    if (res.status === 401) throw new Error('API key issue — tap ⚙️ in the header to check your key')
     if (res.status === 429) {
       var wait = parseInt(res.headers.get('retry-after') || '30', 10)
-      throw new Error('Too many scans right now — wait ' + wait + 's or upgrade to Pro for unlimited access.')
+      throw new Error('AI is busy right now 🔄 — wait ' + wait + 's and try again, or upgrade to Pro for unlimited access')
     }
-    if (res.status === 503) throw new Error(sm || 'AI service temporarily unavailable. Try again.')
+    if (res.status === 503) throw new Error(sm || 'AI service is temporarily down — try again in a moment')
     if (res.status === 400 || res.status === 404) {
       var err = new Error(sm || 'Model not available'); err.modelError = true; throw err
     }
-    throw new Error(sm || 'Vision API error ' + res.status)
+    throw new Error('Something went wrong (error ' + res.status + ') — try again')
   }
   var data = await res.json()
   var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
@@ -58,7 +58,7 @@ export async function groqVision(imageData, systemPrompt, userPrompt) {
     return await callVision(VISION_MODEL, imageData, systemPrompt, userPrompt)
   } catch(e) {
     if (e.modelError) {
-      console.warn('Primary vision model unavailable, falling back to', VISION_FALLBACK)
+      Sentry.addBreadcrumb({message:'Vision model fallback triggered'})
       return await callVision(VISION_FALLBACK, imageData, systemPrompt, userPrompt)
     }
     throw e

@@ -25,7 +25,7 @@ import {
   copyShareText, shareInstagram,
   submitEvent, selectSeries, toggleHunt,
   showProModal, closeProModal, isPro, getTodayScans, incScans, updateScanCounter,
-  checkLimit,
+  checkLimit, syncScanCountFromServer,
   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
   renderPriceHistory, renderAlerts, renderHunt,
   getRefCode, getRefLink, updateRefUI, copyRefLink, shareViaWA,
@@ -76,7 +76,7 @@ Object.assign(window, {
   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
   whatsappSupport,
   ol, showToast,
-  getTodayScans, incScans, updateScanCounter,
+  getTodayScans, incScans, updateScanCounter, syncScanCountFromServer,
   showResult, loadCommunityPrices, startTimer, stopTimer, setStep, resetSteps, saveToHist,
   analyzeMultiPhoto,
 })
@@ -174,7 +174,7 @@ window.addEventListener('load', function () {
         }
       })
     }
-  } catch (e) { console.warn('Supabase init error:', e) }
+  } catch (e) { Sentry.captureException(e) }
 
   // App init
   var kc = document.getElementById('key-card')
@@ -191,6 +191,30 @@ window.addEventListener('load', function () {
   initAuth()
   updateRefUI()
   updateScanCounter()
+  // Sync server-side scan count after short delay (auth needs to initialize first)
+  setTimeout(syncScanCountFromServer, 3000)
+
+  // ── Onboarding — show to first-time users ────────────────────────────
+  if (!localStorage.getItem('hs_onboarded')) {
+    var ob = document.getElementById('hs-onboard')
+    if (ob) ob.style.display = 'flex'
+  }
+
+  // ── Offline detection ────────────────────────────────────────────────
+  function updateOnlineStatus() {
+    var banner = document.getElementById('hs-offline')
+    if (!banner) return
+    if (!navigator.onLine) {
+      banner.style.display = 'block'
+      document.body.style.paddingTop = '40px'
+    } else {
+      banner.style.display = 'none'
+      document.body.style.paddingTop = ''
+    }
+  }
+  window.addEventListener('online',  updateOnlineStatus)
+  window.addEventListener('offline', updateOnlineStatus)
+  updateOnlineStatus()
 
   // Alert check loop
   setTimeout(function () { runAlertCheck(); setInterval(runAlertCheck, 300000) }, 15000)
@@ -201,3 +225,30 @@ window.addEventListener('load', function () {
     if (b && (isPro() || localStorage.getItem('hs_ref_banner_closed'))) b.style.display = 'none'
   }, 2000)
 })
+
+// ── Onboarding steps ──────────────────────────────────────────────────
+var _obStep = 0
+var _obSteps = [
+  { icon:'📷', title:'Scan Any Hot Wheels', body:'Point your camera at any Hot Wheels car — or upload a photo from your gallery. Works on any phone.' },
+  { icon:'₹', title:'Get Live Indian Prices', body:'AI identifies the exact car and shows real Indian market prices — retail, collector, OLX, Instagram swap meets.' },
+  { icon:'📦', title:'Build Your Collection', body:'Add scanned cars to your collection. Track total value, spot Treasure Hunts, and share with other collectors.' },
+]
+window.obNext = function() {
+  _obStep++
+  if (_obStep >= _obSteps.length) { window.obSkip(); return }
+  var s = _obSteps[_obStep]
+  document.getElementById('hs-ob-step').textContent = s.icon
+  document.getElementById('hs-ob-title').textContent = s.title
+  document.getElementById('hs-ob-body').textContent  = s.body
+  document.querySelectorAll('.ob-dot').forEach(function(d, i) {
+    d.classList.toggle('active', i === _obStep)
+  })
+  if (_obStep === _obSteps.length - 1) {
+    document.getElementById('hs-ob-next').textContent = '🚗 Start Scanning!'
+  }
+}
+window.obSkip = function() {
+  localStorage.setItem('hs_onboarded', '1')
+  var ob = document.getElementById('hs-onboard')
+  if (ob) { ob.style.opacity = '0'; ob.style.transition = 'opacity .3s'; setTimeout(function(){ ob.style.display = 'none' }, 300) }
+}
