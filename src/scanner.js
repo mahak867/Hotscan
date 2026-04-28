@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { VISION_MODEL, CODEX_MODEL, HAIKU_MODEL } from './config.js'
-import { groqVision, groqText, groqJSON, parseJSON } from './groq.js'
+import { groqVision, groqJSON, parseJSON } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
 import { addCarToCollection } from './collection.js'
 

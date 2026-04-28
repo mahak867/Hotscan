@@ -120,3 +120,13 @@ export function hsConfirm(title, message, okLabel, icon) {
     window._confirmReject  = function() { overlay.style.display = 'none'; resolve(false) }
   })
 }
+
+// Safe Sentry wrapper — works even if Sentry hasn't loaded yet
+// Import this instead of Sentry directly in any module
+export function captureException(e) {
+  try {
+    if (window.Sentry && window.Sentry.captureException) {
+      window.Sentry.captureException(e)
+    }
+  } catch(_) {}
+}

@@ -50,6 +50,8 @@ Sentry.init({
     return event
   }
 })
+// Expose on window so captureException wrapper in utils.js can access it
+window.Sentry = Sentry
 
 // NOTE: Do NOT strip the URL hash here — Supabase's detectSessionInUrl:true reads
 // the access_token from the hash when the client initialises. Stripping it early

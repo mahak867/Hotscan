@@ -58,7 +58,7 @@ export async function groqVision(imageData, systemPrompt, userPrompt) {
     return await callVision(VISION_MODEL, imageData, systemPrompt, userPrompt)
   } catch(e) {
     if (e.modelError) {
-      Sentry.addBreadcrumb({message:'Vision model fallback triggered'})
+      captureException // breadcrumb: ({message:'Vision model fallback triggered'})
       return await callVision(VISION_FALLBACK, imageData, systemPrompt, userPrompt)
     }
     throw e

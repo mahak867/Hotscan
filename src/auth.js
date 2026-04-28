@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { SUPA_URL, SUPA_KEY, RZP_KEY, DEV_EMAIL } from './config.js'
-import { escHtml, sanitize, showToast } from './utils.js'
+import { escHtml, sanitize, showToast, captureException } from './utils.js'
 
 export var _authMode = 'signin'
 export var _authStep = 'email'
@@ -323,7 +323,7 @@ export async function initAuth(){
         }
       }catch(e){}
     }
-  }catch(e){ Sentry.captureException(e) }
+  }catch(e){ captureException(e) }
   updateHeaderUI()
 }
 
@@ -361,7 +361,7 @@ export async function loadProfile(){
     }
     try{ localStorage.setItem('hs_profile_cache',JSON.stringify({data:state.userProfile,ts:Date.now()})) }catch(e){}
   }catch(e){
-    Sentry.captureException(e)
+    captureException(e)
     try{
       var c=JSON.parse(localStorage.getItem('hs_profile_cache')||'null')
       if(c&&c.data&&(Date.now()-c.ts)<7200000) state.userProfile=c.data
@@ -454,7 +454,7 @@ export async function startPayment() {
           await state._sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_payment_id:response.razorpay_payment_id}).eq('id', state.currentUser.id)
           await loadProfile()
         }
-      } catch(e) { Sentry.captureException(e) }
+      } catch(e) { captureException(e) }
       closeAccountModal(); window.closeProModal(); updateHeaderUI(); window.renderProfilePage()
       setTimeout(function() { showToast('🎉 Welcome to HotScan Pro! Unlimited scans activated.', 'success') }, 300)
     }

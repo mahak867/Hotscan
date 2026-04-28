@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm } from './utils.js'
+import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, captureException } from './utils.js'
 import { groqText, groqJSON } from './groq.js'
 import { HAIKU_MODEL } from './config.js'
 
@@ -57,7 +57,7 @@ export async function loadAndRenderListings() {
       if (_mpFilter !== 'all') query = query.ilike('rarity', '%'+_mpFilter+'%')
       var res = await query
       if (res.data) items = res.data
-    } catch(e) { Sentry.captureException(e) }
+    } catch(e) { captureException(e) }
   }
   _mpListings = items
   renderListings()
@@ -238,7 +238,7 @@ export async function submitListing() {
     } else {
       mpMode('buy')
     }
-  } catch(e) { Sentry.captureException(e); showToast('Could not save listing — try again', 'error') }
+  } catch(e) { captureException(e); showToast('Could not save listing — try again', 'error') }
   finally { if (btn && !_listed) { btn.disabled = false; btn.textContent = '📤 List Now' } }
 }
 

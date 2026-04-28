@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
-import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm } from './utils.js'
+import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
 
 // ── Pro helpers ──
@@ -323,7 +323,7 @@ export function showResult(d) {
   if (d.barcode_note) rows.push(['Barcode Info', d.barcode_note])
   if (d.also_look_for) rows.push(['Also Look For', d.also_look_for])
   document.getElementById('r-dets').innerHTML = rows.filter(function(r) { return r[1] && r[1] !== 'undefined' }).map(function(r) {
-    return '<div class="det"><span class="det-k">' + r[0] + '</span><span class="det-v">' + r[1] + '</span></div>'
+    return '<div class="det"><span class="det-k">' + escHtml(String(r[0])) + '</span><span class="det-v">' + escHtml(String(r[1])) + '</span></div>'
   }).join('')
   if (d.india_insight) { document.getElementById('r-insight-txt').textContent = d.india_insight; document.getElementById('r-insight').style.display = 'block' }
   else document.getElementById('r-insight').style.display = 'none'
@@ -419,7 +419,7 @@ export async function submitPrice() {
         user_id: state.currentUser.id,
         user_name: entry.user
       })
-    } catch(e) { Sentry.captureException(e) }
+    } catch(e) { captureException(e) }
   }
   document.getElementById('community-price').value = ''
   showToast('✅ Price submitted! Thank you for helping the community.', 'success')

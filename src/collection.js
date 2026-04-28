@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { cleanINR, parseINR, escHtml, showToast, rcls } from './utils.js'
+import { cleanINR, parseINR, escHtml, showToast, rcls, captureException } from './utils.js'
 
 export function addToCol() {
   if(!state.lastResult){ showToast('Scan a car first to add to collection', 'error'); return }
@@ -342,7 +342,7 @@ export async function fullCloudSync(retryCount) {
       return true
     }
   } catch(e) {
-    Sentry.captureException(e)
+    captureException(e)
   }
   return false
 }
@@ -387,7 +387,7 @@ export async function saveToCloud(item) {
       .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
       .select('id').single()
     if (res.data && res.data.id) return res.data.id
-  } catch(e) { Sentry.captureException(e) }
+  } catch(e) { captureException(e) }
   return null
 }
 

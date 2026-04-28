@@ -32,7 +32,7 @@ const ALLOWED_ORIGINS = [
 // abuse within a single instance.  Max 10 requests / 60 s per IP.
 const ipMap = new Map()
 const IP_WINDOW_MS  = 60_000
-const IP_MAX_REQS   = 10
+const IP_MAX_REQS   = 25
 
 function isRateLimited(ip) {
   const now  = Date.now()
