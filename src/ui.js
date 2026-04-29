@@ -904,47 +904,6 @@ export async function saveOLXAccount() {
     if (btn) { btn.disabled = false; btn.textContent = 'Link' }
   }
 }
-  if (!olxEl) return
-  var raw = olxEl.value.trim()
-  if (!raw) { showToast('Enter your OLX username or profile URL', 'error'); return }
-  if (!state.currentUser || !state._sb) { showToast('Sign in first', 'error'); return }
-
-  // Extract clean username from URL if pasted
-  var username = raw
-    .replace(/https?:\/\/(www\.)?olx\.in\/profile\//i, '')
-    .replace(/\?.*$/, '')
-    .trim()
-    .replace(/^\/+|\/+$/g, '')
-
-  if (!username) { showToast('Invalid OLX profile URL', 'error'); return }
-
-  // Show verifying state
-  if (olxStatus) olxStatus.innerHTML = '<span style="color:var(--gold)">⏳ Verifying OLX profile…</span>'
-
-  try {
-    await state._sb.from('profiles').update({ olx_username: username }).eq('id', state.currentUser.id)
-    if (!state.userProfile) state.userProfile = {}
-    state.userProfile.olx_username = username
-    try { localStorage.setItem('hs_profile_cache', JSON.stringify({ data: state.userProfile, ts: Date.now() })) } catch(e) {}
-
-    var profileUrl = buildOLXProfileUrl(username)
-    var searchUrl  = 'https://www.olx.in/items/q-hot+wheels?search%5Buser_id%5D=' + encodeURIComponent(username)
-
-    if (olxStatus) {
-      olxStatus.innerHTML = '✅ OLX account linked!'
-        + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
-        + '<a href="' + escHtml(profileUrl) + '" target="_blank" style="background:rgba(45,198,83,.12);border:1px solid rgba(45,198,83,.3);color:#2dc653;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;text-decoration:none">👤 View OLX Profile →</a>'
-        + '<a href="' + escHtml(searchUrl) + '" target="_blank" style="background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.2);color:#4cc9f0;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;text-decoration:none">🔍 Your Hot Wheels Listings →</a>'
-        + '</div>'
-        + '<div style="margin-top:10px;font-size:11px;color:var(--text3)">✨ Your OLX username will now auto-fill when creating sell listings</div>'
-    }
-    olxEl.value = username
-    showToast('OLX account linked ✅ Your listings will auto-fill!', 'success')
-  } catch(e) {
-    if (olxStatus) olxStatus.innerHTML = '<span style="color:#e63946">❌ Could not save — try again</span>'
-    showToast('Could not link OLX account — try again', 'error')
-  }
-}
 
 // ── Price history ──
 export async function renderPriceHistory(name, rarity, currentPriceStr) {
