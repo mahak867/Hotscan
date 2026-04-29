@@ -792,7 +792,7 @@ export async function saveProfilePhone() {
       email: state.currentUser.email,
       whatsapp_phone: phone
     }, { onConflict: 'id' })
-    if (res.error) throw res.error
+    if (res && res.error) { showToast(res.error.message || "Save failed — try again", "error"); return }
     if (!state.userProfile) state.userProfile = {}
     state.userProfile.whatsapp_phone = phone
     try { localStorage.setItem('hs_profile_cache', JSON.stringify({ data: state.userProfile, ts: Date.now() })) } catch(e) {}
@@ -833,7 +833,7 @@ export async function saveProfileUsername() {
       username: username,
       display_name: username
     }, { onConflict: 'id' })
-    if (res.error) throw res.error
+    if (res && res.error) { showToast(res.error.message || "Save failed — try again", "error"); return }
     if (!state.userProfile) state.userProfile = {}
     state.userProfile.username = username
     state.userProfile.display_name = username
@@ -875,7 +875,7 @@ export async function saveOLXAccount() {
       email: state.currentUser.email,
       olx_username: username
     }, { onConflict: 'id' })
-    if (res.error) throw res.error
+    if (res && res.error) { showToast(res.error.message || "Save failed — try again", "error"); return }
 
     if (!state.userProfile) state.userProfile = {}
     state.userProfile.olx_username = username

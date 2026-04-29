@@ -109,3 +109,33 @@ do $$ begin
   create policy "collection_delete" on collection for delete using (auth.uid() = user_id);
 exception when duplicate_object then null;
 end $$;
+
+-- ── 7. listings table (marketplace) — CRITICAL: missing, causes stuck loader
+create table if not exists listings (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete cascade not null,
+  name        text not null,
+  rarity      text,
+  condition   text,
+  price_inr   integer not null,
+  city        text,
+  phone       text,
+  notes       text,
+  image_thumb text,
+  is_active   boolean default true,
+  listed_at   timestamptz default now()
+);
+alter table listings enable row level security;
+do $$ begin
+  create policy "listings_select" on listings for select using (is_active = true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "listings_insert" on listings for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "listings_update" on listings for update using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "listings_delete" on listings for delete using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+create index if not exists idx_listings_active on listings(is_active, listed_at desc);

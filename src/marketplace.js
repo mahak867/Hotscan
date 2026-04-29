@@ -56,7 +56,13 @@ export async function loadAndRenderListings() {
       var query = state._sb.from('listings').select('*').eq('is_active', true).order('listed_at', {ascending: false}).limit(60)
       if (_mpFilter !== 'all') query = query.ilike('rarity', '%'+_mpFilter+'%')
       var res = await query
-      if (res.data) items = res.data
+      if (res.error) {
+        // Table might not exist yet — show empty state not stuck loader
+        console.warn('Listings fetch error:', res.error.message)
+        captureException(new Error('Listings table error: ' + res.error.message))
+      } else if (res.data) {
+        items = res.data
+      }
     } catch(e) { captureException(e) }
   }
   _mpListings = items
