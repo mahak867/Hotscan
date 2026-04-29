@@ -139,3 +139,57 @@ do $$ begin
   create policy "listings_delete" on listings for delete using (auth.uid() = user_id);
 exception when duplicate_object then null; end $$;
 create index if not exists idx_listings_active on listings(is_active, listed_at desc);
+
+-- ── 8. Fix listings table columns to match actual code
+-- Drop and recreate with correct column names (run this if table was just created)
+drop table if exists listings;
+create table listings (
+  id           uuid primary key default gen_random_uuid(),
+  seller_id    uuid references auth.users(id) on delete cascade not null,
+  seller_name  text,
+  seller_phone text,
+  name         text not null,
+  rarity       text,
+  condition    text,
+  price        integer not null,
+  city         text,
+  notes        text,
+  image_thumb  text,
+  is_active    boolean default true,
+  listed_at    timestamptz default now()
+);
+alter table listings enable row level security;
+create policy "listings_select" on listings for select using (is_active = true);
+create policy "listings_insert" on listings for insert with check (auth.uid() = seller_id);
+create policy "listings_update" on listings for update using (auth.uid() = seller_id);
+create policy "listings_delete" on listings for delete using (auth.uid() = seller_id);
+create index if not exists idx_listings_active on listings(is_active, listed_at desc);
+
+-- ── 9. collection table — used heavily but never in migration
+create table if not exists collection (
+  id                  uuid primary key default gen_random_uuid(),
+  user_id             uuid references auth.users(id) on delete cascade not null,
+  name                text not null,
+  series              text,
+  casting_year        text,
+  rarity              text,
+  color               text,
+  tampo               text,
+  wheel_type          text,
+  india_retail_inr    text,
+  india_collector_inr text,
+  us_retail_usd       text,
+  us_collector_usd    text,
+  investment          text,
+  investment_reason   text,
+  fun_fact            text,
+  india_insight       text,
+  image_thumb         text,
+  added_at            timestamptz default now()
+);
+alter table collection enable row level security;
+do $$ begin create policy "collection_select" on collection for select using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "collection_insert" on collection for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "collection_update" on collection for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "collection_delete" on collection for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+create unique index if not exists idx_collection_user_name on collection(user_id, lower(name));

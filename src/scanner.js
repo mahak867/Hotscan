@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { VISION_MODEL, CODEX_MODEL, HAIKU_MODEL } from './config.js'
+import { VISION_MODEL, VISION_FALLBACK, CODEX_MODEL, HAIKU_MODEL } from './config.js'
 import { groqVision, groqJSON, parseJSON } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
 import { addCarToCollection } from './collection.js'
@@ -520,23 +520,33 @@ export async function identifyMultipleCars(imageData) {
   var hdrs2 = state.KEY
     ? {'Authorization':'Bearer '+state.KEY, 'Content-Type':'application/json'}
     : {'Content-Type':'application/json'}
-  var res = await fetch(url2, {
-    method: 'POST',
-    headers: hdrs2,
-    body: JSON.stringify({
-      model: VISION_MODEL,
-      messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
-      temperature: 0.02, max_tokens: 2500
+
+  async function tryModel(model) {
+    var res = await fetch(url2, {
+      method: 'POST', headers: hdrs2,
+      body: JSON.stringify({
+        model: model,
+        messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
+        temperature: 0.02, max_tokens: 2500
+      })
     })
-  })
-  if (!res.ok) {
-    var e = await res.json().catch(function(){return{}})
-    if (res.status === 401) throw new Error('Invalid API key')
-    if (res.status === 429) throw new Error('Rate limit — wait 30 seconds')
-    throw new Error((e.error&&e.error.message)||'Vision error')
+    if (!res.ok) {
+      var e = await res.json().catch(function(){return{}})
+      if (res.status === 401) throw new Error('Invalid API key')
+      if (res.status === 429) throw new Error('AI is busy right now 🔄 — wait 30 seconds and try again')
+      if (res.status === 400 || res.status === 404) { var err = new Error((e.error&&e.error.message)||'Model not available'); err.modelError = true; throw err }
+      throw new Error((e.error&&e.error.message)||'Vision error '+res.status)
+    }
+    var data = await res.json()
+    return parseJSON(data.choices[0].message.content)
   }
-  var data = await res.json()
-  return parseJSON(data.choices[0].message.content)
+
+  try {
+    return await tryModel(VISION_MODEL)
+  } catch(e) {
+    if (e.modelError) return await tryModel(VISION_FALLBACK)
+    throw e
+  }
 }
 
 export async function analyzeMultiPhoto() {
