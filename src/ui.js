@@ -783,14 +783,29 @@ export async function saveProfilePhone() {
   if (!phoneEl) return
   var phone = phoneEl.value.trim().replace(/\D/g, '')
   if (!phone || phone.length !== 10) { showToast('Enter a valid 10-digit WhatsApp number', 'error'); return }
-  if (!state.currentUser || !state._sb) { showToast('Sign in first', 'error'); return }
+  if (!state.currentUser || !state._sb) { showToast('Sign in first to save', 'error'); return }
+  var btn = document.querySelector('[onclick="saveProfilePhone()"]')
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…' }
   try {
-    await state._sb.from('profiles').update({whatsapp_phone: phone}).eq('id', state.currentUser.id)
+    var res = await state._sb.from('profiles').upsert({
+      id: state.currentUser.id,
+      email: state.currentUser.email,
+      whatsapp_phone: phone
+    }, { onConflict: 'id' })
+    if (res.error) throw res.error
     if (!state.userProfile) state.userProfile = {}
     state.userProfile.whatsapp_phone = phone
-    try { localStorage.setItem('hs_profile_cache', JSON.stringify({data: state.userProfile, ts: Date.now()})) } catch(e) {}
+    try { localStorage.setItem('hs_profile_cache', JSON.stringify({ data: state.userProfile, ts: Date.now() })) } catch(e) {}
     showToast('WhatsApp number saved ✅', 'success')
-  } catch(e) { showToast('Could not save — try again', 'error') }
+    // Auto-fill sell form phone
+    var sellPhone = document.getElementById('sl-phone')
+    if (sellPhone && !sellPhone.value) sellPhone.value = phone
+  } catch(e) {
+    captureException(e)
+    showToast('Could not save — ' + (e.message || 'try again'), 'error')
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save' }
+  }
 }
 
 export async function saveProfileUsername() {
@@ -801,33 +816,94 @@ export async function saveProfileUsername() {
   if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
     showToast('Username: 3–30 characters, letters/numbers/underscores only', 'error'); return
   }
-  if (!state.currentUser || !state._sb) { showToast('Sign in first', 'error'); return }
+  if (!state.currentUser || !state._sb) { showToast('Sign in first to save', 'error'); return }
+  var btn = document.querySelector('[onclick="saveProfileUsername()"]')
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…' }
   try {
-    var check = await state._sb.from('profiles').select('id').eq('username', username).neq('id', state.currentUser.id).single()
-    if (check.data) { showToast('That username is already taken', 'error'); return }
-    await state._sb.from('profiles').update({username: username, display_name: username}).eq('id', state.currentUser.id)
+    // Check if username is taken by someone else
+    var check = await state._sb.from('profiles').select('id').eq('username', username).neq('id', state.currentUser.id)
+    if (check.data && check.data.length > 0) {
+      showToast('That username is already taken', 'error')
+      if (btn) { btn.disabled = false; btn.textContent = 'Save' }
+      return
+    }
+    var res = await state._sb.from('profiles').upsert({
+      id: state.currentUser.id,
+      email: state.currentUser.email,
+      username: username,
+      display_name: username
+    }, { onConflict: 'id' })
+    if (res.error) throw res.error
     if (!state.userProfile) state.userProfile = {}
     state.userProfile.username = username
     state.userProfile.display_name = username
     state.currentUser.name = username
-    try { localStorage.setItem('hs_profile_cache', JSON.stringify({data: state.userProfile, ts: Date.now()})) } catch(e) {}
-    window.updateHeaderUI()
+    try { localStorage.setItem('hs_profile_cache', JSON.stringify({ data: state.userProfile, ts: Date.now() })) } catch(e) {}
+    window.updateHeaderUI && window.updateHeaderUI()
     renderProfilePage()
     showToast('Username saved ✅', 'success')
-  } catch(e) { showToast('Could not save username — try again', 'error') }
-}
-
-export function buildOLXProfileUrl(olxUsername) {
-  if (!olxUsername) return 'https://www.olx.in'
-  if (olxUsername.startsWith('http')) return olxUsername
-  // Support both username and full URL formats
-  var clean = olxUsername.replace('https://www.olx.in/profile/', '').replace('https://olx.in/profile/', '').trim()
-  return 'https://www.olx.in/profile/' + encodeURIComponent(clean)
+  } catch(e) {
+    captureException(e)
+    showToast('Could not save username — ' + (e.message || 'try again'), 'error')
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save' }
+  }
 }
 
 export async function saveOLXAccount() {
-  var olxEl    = document.getElementById('prof-olx-username')
+  var olxEl = document.getElementById('prof-olx-username')
   var olxStatus = document.getElementById('prof-olx-status')
+  if (!olxEl) return
+  var raw = olxEl.value.trim()
+  if (!raw) { showToast('Enter your OLX username or profile URL', 'error'); return }
+  if (!state.currentUser || !state._sb) { showToast('Sign in first to save', 'error'); return }
+
+  // Extract clean username from URL or bare username
+  var username = raw
+    .replace(/https?:\/\/(www\.)?olx\.in\/profile\//i, '')
+    .replace(/\?.*$/, '').trim().replace(/^\/+|\/+$/g, '')
+
+  if (!username || username.length < 2) { showToast('Enter a valid OLX username or profile URL', 'error'); return }
+
+  var btn = document.querySelector('[onclick="saveOLXAccount()"]')
+  if (btn) { btn.disabled = true; btn.textContent = 'Linking…' }
+  if (olxStatus) olxStatus.innerHTML = '<span style="color:var(--gold)">⏳ Saving OLX account…</span>'
+
+  try {
+    var res = await state._sb.from('profiles').upsert({
+      id: state.currentUser.id,
+      email: state.currentUser.email,
+      olx_username: username
+    }, { onConflict: 'id' })
+    if (res.error) throw res.error
+
+    if (!state.userProfile) state.userProfile = {}
+    state.userProfile.olx_username = username
+    try { localStorage.setItem('hs_profile_cache', JSON.stringify({ data: state.userProfile, ts: Date.now() })) } catch(e) {}
+    olxEl.value = username
+
+    var profileUrl = 'https://www.olx.in/profile/' + encodeURIComponent(username)
+    var searchUrl  = 'https://www.olx.in/items/q-hot+wheels'
+    var createUrl  = 'https://www.olx.in/post-ad/'
+
+    if (olxStatus) {
+      olxStatus.innerHTML = '<div style="color:#2dc653;font-weight:700;margin-bottom:10px">✅ OLX account linked as <strong>' + escHtml(username) + '</strong></div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        + '<a href="' + escHtml(profileUrl) + '" target="_blank" style="background:rgba(45,198,83,.1);border:1px solid rgba(45,198,83,.25);color:#2dc653;border-radius:10px;padding:10px;font-size:12px;font-weight:600;text-decoration:none;text-align:center;display:block">👤 View Profile</a>'
+        + '<a href="' + escHtml(searchUrl) + '" target="_blank" style="background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);color:#4cc9f0;border-radius:10px;padding:10px;font-size:12px;font-weight:600;text-decoration:none;text-align:center;display:block">🔍 HW Listings</a>'
+        + '<a href="' + escHtml(createUrl) + '" target="_blank" style="background:rgba(230,57,70,.08);border:1px solid rgba(230,57,70,.2);color:#e63946;border-radius:10px;padding:10px;font-size:12px;font-weight:600;text-decoration:none;text-align:center;display:block;grid-column:span 2">📤 Post a Car on OLX →</a>'
+        + '</div>'
+        + '<div style="margin-top:10px;font-size:11px;color:var(--text3)">💡 When you list a car in HotScan Marketplace, use "Post on OLX" above to cross-list — this doubles your reach</div>'
+    }
+    showToast('OLX linked ✅ — auto-fills on every sell listing', 'success')
+  } catch(e) {
+    captureException(e)
+    if (olxStatus) olxStatus.innerHTML = '<span style="color:#e63946">❌ Could not save — ' + escHtml(e.message || 'try again') + '</span>'
+    showToast('Could not link OLX — ' + (e.message || 'try again'), 'error')
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Link' }
+  }
+}
   if (!olxEl) return
   var raw = olxEl.value.trim()
   if (!raw) { showToast('Enter your OLX username or profile URL', 'error'); return }

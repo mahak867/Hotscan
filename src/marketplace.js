@@ -228,6 +228,17 @@ export async function submitListing() {
     var ph = document.getElementById('sl-price-hint'); if (ph) ph.style.display = 'none'
     var nc = document.getElementById('sl-notes-counter'); if (nc) nc.textContent = ''
     showToast('Listed! Buyers can now contact you on WhatsApp 🎉', 'success')
+    // If OLX linked, show cross-post prompt
+    if (state.userProfile && state.userProfile.olx_username) {
+      setTimeout(function() {
+        var olxHint = document.getElementById('sl-olx-hint')
+        if (olxHint) {
+          olxHint.style.display = 'block'
+          olxHint.innerHTML = '🚀 <strong>Cross-post to OLX</strong> for 3× more reach — '
+            + '<a href="https://www.olx.in/post-ad/" target="_blank" style="color:#4cc9f0;font-weight:700">Post on OLX now →</a>'
+        }
+      }, 1200)
+    }
     _mpListings = null
     if (btn) {
       btn.disabled = false
