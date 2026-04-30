@@ -340,10 +340,12 @@ export async function fullCloudSync(retryCount) {
       })
     }
 
-    if (cloudItems.length > 0) {
-      state.collection = cloudItems
-      localStorage.setItem('hs_col', JSON.stringify(state.collection))
-      renderCol()
+    if (cloudItems.length > 0 || localOnly.length > 0) {
+      if (cloudItems.length > 0) {
+        state.collection = cloudItems
+        localStorage.setItem('hs_col', JSON.stringify(state.collection))
+        renderCol()
+      }
       return true
     }
   } catch(e) {

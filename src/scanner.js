@@ -171,8 +171,8 @@ export async function analyzePhoto() {
     }
 
     carData = (multiResult && multiResult.cars && multiResult.cars.length === 1)
-      ? Object.assign({identified: true}, multiResult.cars[0])
-      : await identifyCar(state.img64)
+      ? Object.assign({ identified: true }, multiResult.cars[0])
+      : await identifyCar(state.img64)  // fallback only when multi-car returned 0
 
     window.setStep(1, 'done'); window.setStep(2, 'active')
     document.getElementById('timer-lbl').textContent = 'Fetching Indian prices...'
@@ -663,8 +663,8 @@ export function showMultiResults(cars) {
 
     var body = document.createElement('div'); body.className = 'multi-car-body'
     var detailRows = [['Color',car.color],['Wheels',car.wheel_type],['Condition',car.condition],['US Retail','$'+(car.us_retail_usd||'?')],['US Collector','$'+(car.us_collector_usd||'?')],['Investment',car.investment],['Fun Fact',car.fun_fact]]
-    body.innerHTML = detailRows.filter(function(r){return r[1]&&r[1]!=='undefined'}).map(function(r){return '<div class="det"><span class="det-k">'+r[0]+'</span><span class="det-v">'+r[1]+'</span></div>'}).join('')
-    if (car.india_insight) body.innerHTML += '<div style="background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:9px 11px;margin-top:8px;font-size:12px;color:#ccc;line-height:1.6">'+car.india_insight+'</div>'
+    body.innerHTML = detailRows.filter(function(r){return r[1]&&r[1]!=='undefined'}).map(function(r){return '<div class="det"><span class="det-k">'+escHtml(String(r[0]))+'</span><span class="det-v">'+escHtml(String(r[1]))+'</span></div>'}).join('')
+    if (car.india_insight) body.innerHTML += '<div style="background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:9px 11px;margin-top:8px;font-size:12px;color:#ccc;line-height:1.6">'+escHtml(String(car.india_insight))+'</div>'
 
     var actRow = document.createElement('div'); actRow.style.cssText = 'display:flex;gap:6px;margin-top:8px'
     var addBtn = document.createElement('button'); addBtn.className = 'multi-add-btn'; addBtn.textContent = '➕ Add to Collection'

@@ -1,7 +1,7 @@
 import './style.css'
 import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
-import { SUPA_URL, SUPA_KEY } from './config.js'
+import { SUPA_URL, SUPA_KEY, FREE_SCANS } from './config.js'
 import { ol, showToast } from './utils.js'
 import {
   openAuth, closeAuth, toggleAuthMode, authContinue, signInWithGoogle,
@@ -84,6 +84,7 @@ Object.assign(window, {
 })
 
 // Alias — called directly from HTML button
+window.FREE_SCANS = FREE_SCANS
 window.syncCollectionFromCloud = window.fullCloudSync
 
 // DOMContentLoaded: file input event listeners + mobile dock touch
