@@ -163,7 +163,7 @@ export async function authContinue(){
         showAuthErr(sm)
       } else {
         if(sr.data&&sr.data.user&&usernameVal){
-          state._sb.from('profiles').upsert({id:sr.data.user.id,email:signUpEmail,display_name:displayName,username:usernameVal},{onConflict:'id'}).catch(function(){})
+          ;(async function(){ try{ await state._sb.from('profiles').upsert({id:sr.data.user.id,email:signUpEmail,display_name:displayName,username:usernameVal},{onConflict:'id'}) }catch(e){} })()
         }
         if(!sr.data||!sr.data.session){
           var ef=document.getElementById('auth-email-form')

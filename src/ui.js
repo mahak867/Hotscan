@@ -36,12 +36,16 @@ export function incScans() {
   var d = JSON.parse(localStorage.getItem('hs_scans') || '{}')
   var c = (d.date === t ? (d.count || 0) : 0) + 1
   localStorage.setItem('hs_scans', JSON.stringify({date:t, count:c}))
-  // Log to Supabase scan_logs so landing page counter is real
+  // Log to Supabase scan_logs (Supabase v2 - must await, no .catch())
   if (state._sb) {
-    state._sb.from('scan_logs').insert({
-      user_id: state.currentUser ? state.currentUser.id : null,
-      scanned_at: new Date().toISOString(),
-    }).catch(function() {}) // silent fail — never block the scan
+    ;(async function() {
+      try {
+        await state._sb.from('scan_logs').insert({
+          user_id: state.currentUser ? state.currentUser.id : null,
+          scanned_at: new Date().toISOString(),
+        })
+      } catch(e) {}
+    })()
   }
   return c
 }
@@ -607,7 +611,7 @@ export function submitEvent() {
   localStorage.setItem('hs_events', JSON.stringify(events))
   // Also try Supabase if available
   if (state._sb && state.currentUser) {
-    state._sb.from('events').insert({ name: name, location: loc, date: date, submitted_by: state.currentUser.id }).catch(function(){})
+    ;(async function(){ try{ await state._sb.from('events').insert({name:name,location:loc,date:date,submitted_by:state.currentUser.id}) }catch(e){} })()
   }
   // Email fallback always fires
   var body = 'Event: ' + name + '\nLocation: ' + loc + '\nDate: ' + date + '\nSubmitted by: ' + (state.currentUser ? state.currentUser.email : 'Guest')
