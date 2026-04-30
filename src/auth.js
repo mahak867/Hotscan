@@ -344,11 +344,14 @@ export async function loadProfile(){
         var meta = sess && sess.data && sess.data.session && sess.data.session.user && sess.data.session.user.user_metadata
         if(meta && meta.username) metaUsername = meta.username
       }catch(e2){}
-      await state._sb.from('profiles').upsert({id:state.currentUser.id,email:state.currentUser.email,
-        display_name:metaUsername||state.currentUser.name||state.currentUser.email.split('@')[0],
-        username:metaUsername||null,
-        is_pro:state.currentUser.email===DEV_EMAIL,is_developer:state.currentUser.email===DEV_EMAIL
-      },{onConflict:'id'})
+      await state._sb.from('profiles').upsert({
+        id: state.currentUser.id,
+        email: state.currentUser.email,
+        display_name: metaUsername || state.currentUser.name || state.currentUser.email.split('@')[0],
+        username: metaUsername || null,
+        is_pro: state.currentUser.email === DEV_EMAIL,
+        is_developer: state.currentUser.email === DEV_EMAIL
+      }, { onConflict: 'id', ignoreDuplicates: true }) // ignoreDuplicates:true = only insert, never overwrite existing
       var q2=await state._sb.from('profiles').select('*').eq('id',state.currentUser.id).single()
       state.userProfile=q2.data||{id:state.currentUser.id,email:state.currentUser.email,is_pro:false,is_developer:false}
     }
