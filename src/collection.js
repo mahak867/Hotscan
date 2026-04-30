@@ -385,14 +385,25 @@ export async function saveToCloud(item) {
       added_at: item.added
     }
     var hasCloudId = item.id && typeof item.id === 'string' && item.id.includes('-')
-    if (hasCloudId) payload.id = item.id
-    // Use correct conflict target: id for existing cloud rows, user_id+name for new
-    var conflictCol = hasCloudId ? 'id' : 'user_id,name'
-    var res = await state._sb.from('collection')
-      .upsert(payload, { onConflict: conflictCol })
-      .select('id').single()
-    if (res.data && res.data.id) return res.data.id
-    if (res.error) captureException(new Error('saveToCloud: ' + res.error.message))
+    if (hasCloudId) {
+      // Update existing cloud row
+      payload.id = item.id
+      var upd = await state._sb.from('collection').upsert(payload, { onConflict: 'id' }).select('id').single()
+      if (upd.data && upd.data.id) return upd.data.id
+      if (upd.error) captureException(new Error('saveToCloud update: ' + upd.error.message))
+    } else {
+      // New item — check if name already exists first, then insert
+      var existing = await state._sb.from('collection')
+        .select('id').eq('user_id', state.currentUser.id)
+        .ilike('name', item.name).limit(1)
+      if (existing.data && existing.data.length > 0) {
+        // Already in cloud — return existing id
+        return existing.data[0].id
+      }
+      var ins = await state._sb.from('collection').insert(payload).select('id').single()
+      if (ins.data && ins.data.id) return ins.data.id
+      if (ins.error) captureException(new Error('saveToCloud insert: ' + ins.error.message))
+    }
   } catch(e) { captureException(e) }
   return null
 }

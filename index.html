@@ -594,7 +594,7 @@
           <div style="font-size:10px;color:var(--text3);margin-top:5px">Saved once — auto-fills when you list a car for sale</div>
         </div>
         <button onclick="exportVal()" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">📄 Export Valuation Certificate</button>
-        <button id="sync-col-btn" onclick="(async function(btn){btn.disabled=true;btn.textContent='⏳ Syncing...';try{var ok=await syncCollectionFromCloud();renderProfilePage();window.showToast(ok?'✅ Collection synced from cloud!':'⚠️ No cloud data found — scan some cars first','success')}catch(e){window.showToast('Sync failed — try again','error')}finally{btn.disabled=false;btn.textContent='☁️ Sync Collection from Cloud'}})(this)" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left;width:100%">☁️ Sync Collection from Cloud</button>
+        <button id="sync-col-btn" onclick="window.doCloudSync(this)" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left;width:100%">☁️ Sync Collection from Cloud</button>
         <button onclick="signOutUser()" style="background:#1a0808;border:1px solid #4a1a1a;color:#ff8080;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">🚪 Sign Out</button>
       </div>
     </div>

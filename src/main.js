@@ -87,6 +87,19 @@ Object.assign(window, {
 window.FREE_SCANS = FREE_SCANS
 window.syncCollectionFromCloud = window.fullCloudSync
 
+window.doCloudSync = async function(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing...' }
+  try {
+    var ok = await window.fullCloudSync()
+    window.renderProfilePage()
+    window.showToast(ok ? '✅ Collection synced!' : '⚠️ Nothing to sync yet — scan some cars first', ok ? 'success' : 'error')
+  } catch(e) {
+    window.showToast('Sync failed — try again', 'error')
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '☁️ Sync Collection from Cloud' }
+  }
+}
+
 // DOMContentLoaded: file input event listeners + mobile dock touch
 document.addEventListener('DOMContentLoaded', function () {
   // Mobile dock: tap dock background to expand, tap outside to collapse
