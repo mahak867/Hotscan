@@ -253,6 +253,11 @@ export async function fullCloudSync(retryCount) {
       .order('added_at', { ascending: false })
 
     var cloudItems = []
+    if (res.error) {
+      // RLS or table missing — log and fall through (don't overwrite local data)
+      captureException(new Error('fullCloudSync fetch error: ' + res.error.message))
+      return false
+    }
     if (res.data && res.data.length > 0) {
       cloudItems = res.data.map(function(d) {
         return {
@@ -357,8 +362,6 @@ export async function saveToCloud(item) {
   try {
     var thumb = item.image || null
     if (thumb && thumb.length > 8000) thumb = null
-    // Use upsert so re-syncing never creates duplicates
-    // If item already has a cloud UUID, update it; otherwise insert fresh
     var payload = {
       user_id: state.currentUser.id,
       name: item.name,
@@ -379,14 +382,15 @@ export async function saveToCloud(item) {
       image_thumb: thumb,
       added_at: item.added
     }
-    // If it already has a UUID id, include it so upsert updates the right row
-    if (item.id && typeof item.id === 'string' && item.id.includes('-')) {
-      payload.id = item.id
-    }
+    var hasCloudId = item.id && typeof item.id === 'string' && item.id.includes('-')
+    if (hasCloudId) payload.id = item.id
+    // Use correct conflict target: id for existing cloud rows, user_id+name for new
+    var conflictCol = hasCloudId ? 'id' : 'user_id,name'
     var res = await state._sb.from('collection')
-      .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
+      .upsert(payload, { onConflict: conflictCol })
       .select('id').single()
     if (res.data && res.data.id) return res.data.id
+    if (res.error) captureException(new Error('saveToCloud: ' + res.error.message))
   } catch(e) { captureException(e) }
   return null
 }
