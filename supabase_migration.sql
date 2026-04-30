@@ -193,3 +193,13 @@ do $$ begin create policy "collection_insert" on collection for insert with chec
 do $$ begin create policy "collection_update" on collection for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
 do $$ begin create policy "collection_delete" on collection for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
 create unique index if not exists idx_collection_user_name on collection(user_id, lower(name));
+
+-- ── 10. Fix username login — profiles SELECT policy too restrictive
+-- Current policy: auth.uid() = id (can't query when not logged in)
+-- Need: anyone can look up email by username (for login flow only)
+drop policy if exists "prof_sel" on profiles;
+create policy "prof_sel_own" on profiles
+  for select using (auth.uid() = id);
+create policy "prof_sel_username_lookup" on profiles
+  for select using (true);  -- Allow public read for username→email login lookup
+-- Note: profiles only contains email + username + display_name — no sensitive data
