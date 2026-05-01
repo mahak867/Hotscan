@@ -88,13 +88,25 @@ window.FREE_SCANS = FREE_SCANS
 window.syncCollectionFromCloud = window.fullCloudSync
 
 window.doCloudSync = async function(btn) {
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing...' }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing…' }
   try {
-    var ok = await window.fullCloudSync()
+    var timeoutP = new Promise(function(_, rej) {
+      setTimeout(function() { rej(new Error('timeout')) }, 10000)
+    })
+    var ok = await Promise.race([window.fullCloudSync(), timeoutP])
     window.renderProfilePage()
-    window.showToast(ok ? '✅ Collection synced!' : '⚠️ Nothing to sync yet — scan some cars first', ok ? 'success' : 'error')
+    window.showToast(
+      ok ? '✅ Collection synced from cloud!' : '⚠️ No cloud data yet — scan a car first',
+      ok ? 'success' : 'error'
+    )
   } catch(e) {
-    window.showToast('Sync failed — try again', 'error')
+    if (e.message === 'timeout') {
+      window.showToast('Sync timed out — check your connection and try again', 'error')
+    } else if (e.message && e.message.includes('relation') && e.message.includes('does not exist')) {
+      window.showToast('Database not set up — contact support', 'error')
+    } else {
+      window.showToast('Sync failed — ' + (e.message || 'try again'), 'error')
+    }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '☁️ Sync Collection from Cloud' }
   }

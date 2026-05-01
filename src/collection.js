@@ -237,13 +237,13 @@ export function addCarToCollection(car, thumb) {
 }
 
 export async function fullCloudSync(retryCount) {
-  // Retry up to 3 times if Supabase client not yet initialized
   if (!state._sb || !state.currentUser) {
     if ((retryCount || 0) < 3) {
-      await new Promise(function(r){ setTimeout(r, 800) })
+      await new Promise(function(r){ setTimeout(r, 600) })
       return fullCloudSync((retryCount || 0) + 1)
     }
-    return false
+    // After 3 retries (1.8s), throw so caller can show proper error
+    throw new Error('Not signed in or connection not ready — sign in and try again')
   }
   try {
     // 1. Fetch cloud items
