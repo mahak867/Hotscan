@@ -21,9 +21,9 @@ export function addToCol() {
   }
   state.collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
-  if (state._sb && state.currentUser) saveToCloud(item).then(function(cloudId) {
-    if (cloudId) { item.id = cloudId; localStorage.setItem('hs_col', JSON.stringify(state.collection)) }
-  })
+  if (state._sb && state.currentUser) {
+    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col', JSON.stringify(state.collection)) } }catch(e){} })()
+  }
   renderCol(); window.goPage('collection')
 }
 
@@ -229,9 +229,9 @@ export function addCarToCollection(car, thumb) {
   }
   state.collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
-  if (state._sb && state.currentUser) saveToCloud(item).then(function(cloudId) {
-    if (cloudId) { item.id = cloudId; localStorage.setItem('hs_col', JSON.stringify(state.collection)) }
-  })
+  if (state._sb && state.currentUser) {
+    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col', JSON.stringify(state.collection)) } }catch(e){} })()
+  }
   renderCol()
   return item
 }

@@ -203,3 +203,7 @@ create policy "prof_sel_own" on profiles
 create policy "prof_sel_username_lookup" on profiles
   for select using (true);  -- Allow public read for username→email login lookup
 -- Note: profiles only contains email + username + display_name — no sensitive data
+
+-- ── SAFE VERSION — wraps all policies in do $$ begin...exception blocks
+do $$ begin drop policy if exists "prof_sel_public" on profiles; exception when others then null; end $$;
+do $$ begin create policy "prof_sel_public" on profiles for select using (true); exception when duplicate_object then null; end $$;

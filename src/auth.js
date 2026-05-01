@@ -293,7 +293,8 @@ export async function initAuth(){
         await loadProfile()
         if(event==='SIGNED_IN'){ closeAuth(); setTimeout(showSuccessCelebration,300) }
         if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
-          window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){}); if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
+          ;(async function(){ try{ await window.fullCloudSync(); window.renderCol() }catch(e){} })()
+          if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
         }
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
       } else {
@@ -307,7 +308,8 @@ export async function initAuth(){
       var u=sr.data.session.user
       state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
       await loadProfile()
-      window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){}); if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
+      ;(async function(){ try{ await window.fullCloudSync(); window.renderCol() }catch(e){} })()
+      if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
       updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
     }
     // Layer 3: force-refresh expired token — fixes "logged out on reload" in normal tabs
@@ -318,7 +320,8 @@ export async function initAuth(){
           var u=rr.data.session.user
           state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
           await loadProfile()
-          window.fullCloudSync().then(function(){window.renderCol()}).catch(function(){}); if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
+          ;(async function(){ try{ await window.fullCloudSync(); window.renderCol() }catch(e){} })()
+          if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
           updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
         }
       }catch(e){}
