@@ -281,7 +281,10 @@ export function showSuccessCelebration(){
   animate()
 }
 
+var _authInitialized = false
 export async function initAuth(){
+  if (_authInitialized) return  // Prevent double-init lock contention
+  _authInitialized = true
   if(!state._sb){ updateHeaderUI(); return }
   var am=document.getElementById('auth-modal'); if(am) am.classList.remove('open')
   document.body.style.overflow=''
@@ -303,29 +306,20 @@ export async function initAuth(){
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
       }
     })
-    var sr=await state._sb.auth.getSession()
-    if(sr.data&&sr.data.session&&sr.data.session.user&&!state.currentUser){
-      var u=sr.data.session.user
-      state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
+    // Wait 100ms after subscribing before calling getSession
+    // Prevents lock contention: onAuthStateChange fires INITIAL_SESSION simultaneously
+    await new Promise(function(r){ setTimeout(r, 100) })
+    var sr = await state._sb.auth.getSession()
+    if(sr.data && sr.data.session && sr.data.session.user && !state.currentUser){
+      var u = sr.data.session.user
+      state.currentUser = {id:u.id, email:u.email||'', name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
       await loadProfile()
       ;(async function(){ try{ await window.fullCloudSync(); window.renderCol() }catch(e){} })()
-      if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
+      if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 2000)
       updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
     }
-    // Layer 3: force-refresh expired token — fixes "logged out on reload" in normal tabs
-    if(!state.currentUser){
-      try{
-        var rr=await state._sb.auth.refreshSession()
-        if(rr.data&&rr.data.session&&rr.data.session.user){
-          var u=rr.data.session.user
-          state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
-          await loadProfile()
-          ;(async function(){ try{ await window.fullCloudSync(); window.renderCol() }catch(e){} })()
-          if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
-          updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
-        }
-      }catch(e){}
-    }
+    // Note: removed refreshSession() — it fought getSession() for the same lock.
+    // onAuthStateChange with INITIAL_SESSION event handles expired token refresh automatically.
   }catch(e){ captureException(e) }
   updateHeaderUI()
 }

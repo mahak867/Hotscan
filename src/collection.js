@@ -242,20 +242,26 @@ export async function fullCloudSync(retryCount) {
       await new Promise(function(r){ setTimeout(r, 600) })
       return fullCloudSync((retryCount || 0) + 1)
     }
-    // After 3 retries (1.8s), throw so caller can show proper error
-    throw new Error('Not signed in or connection not ready — sign in and try again')
+    throw new Error('Not signed in — sign out and back in, then try again')
   }
   try {
-    // 1. Fetch cloud items
-    var res = await state._sb.from('collection')
+    // Wrap query in 8s timeout — missing table can cause Supabase to hang
+    var queryPromise = state._sb.from('collection')
       .select('*')
       .eq('user_id', state.currentUser.id)
       .order('added_at', { ascending: false })
+    var timeoutPromise = new Promise(function(_, rej) {
+      setTimeout(function() { rej(new Error('DB_TIMEOUT')) }, 8000)
+    })
+    var res = await Promise.race([queryPromise, timeoutPromise])
 
     var cloudItems = []
     if (res.error) {
-      // RLS or table missing — log and fall through (don't overwrite local data)
-      captureException(new Error('fullCloudSync fetch error: ' + res.error.message))
+      var errMsg = res.error.message || ''
+      if (errMsg.includes('does not exist') || errMsg.includes('relation')) {
+        throw new Error('Database tables not set up — run SQL migration in Supabase')
+      }
+      captureException(new Error('fullCloudSync fetch error: ' + errMsg))
       return false
     }
     if (res.data && res.data.length > 0) {
