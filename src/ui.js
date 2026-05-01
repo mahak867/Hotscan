@@ -1058,11 +1058,11 @@ export async function updateRefUI() {
     localStorage.setItem('hs_scans', JSON.stringify(s))
     // Log to Supabase
     if (state._sb) {
-      state._sb.from('referrals').insert({
+      ;(async function(){ try{ await state._sb.from('referrals').insert({
         referrer_code: ref,
         referred_user_id: state.currentUser ? state.currentUser.id : null,
         created_at: new Date().toISOString()
-      }).catch(function() {})
+      }) }catch(e){} })()
     }
     setTimeout(function() { showToast('🎁 Welcome! You got 10 bonus scans from your referral link.', 'success') }, 1500)
   }
