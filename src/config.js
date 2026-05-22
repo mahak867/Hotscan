@@ -1,10 +1,12 @@
-// Keys — safe fallbacks for browser ES module usage without Vite build
-// import.meta.env is Vite-only; guard it so raw browser loads don't crash
+// Keys — loaded from Vite env vars (set in Vercel dashboard, never hardcoded here).
+// Supabase anon key: safe to be public by design (RLS enforces access).
+// Razorpay key: must NEVER be hardcoded — set VITE_RZP_KEY in Vercel env vars.
+// DEV_EMAIL: set via VITE_DEV_EMAIL env var — not in source.
 var _env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
-export var SUPA_URL  = _env.VITE_SUPA_URL  || 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
-export var SUPA_KEY  = _env.VITE_SUPA_KEY  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdHhydnZwYnJua2x6cHhqdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjA5NjcsImV4cCI6MjA5MDMzNjk2N30.LC0dkwyx8Pt20LKWU7rOR29RO5nwiSOFkTdDT2DfOf0'
-export var RZP_KEY   = _env.VITE_RZP_KEY   || 'rzp_live_SX0GLL6DXzycgo'
-export var DEV_EMAIL = 'mahakfahad07@gmail.com'
+export var SUPA_URL  = _env.VITE_SUPA_URL  || ''
+export var SUPA_KEY  = _env.VITE_SUPA_KEY  || ''
+export var RZP_KEY   = _env.VITE_RZP_KEY   || ''
+export var DEV_EMAIL = _env.VITE_DEV_EMAIL  || ''
 export var WA_COMMUNITY = 'https://chat.whatsapp.com/GCEONvdK5Vx1luFVcVD8QH'
 export var WA_SUPPORT   = '918089558314'
 export var FREE_SCANS = 5

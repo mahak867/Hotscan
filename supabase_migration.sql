@@ -207,3 +207,79 @@ create policy "prof_sel_username_lookup" on profiles
 -- ── SAFE VERSION — wraps all policies in do $$ begin...exception blocks
 do $$ begin drop policy if exists "prof_sel_public" on profiles; exception when others then null; end $$;
 do $$ begin create policy "prof_sel_public" on profiles for select using (true); exception when duplicate_object then null; end $$;
+
+
+-- ════════════════════════════════════════════════════════════════════
+-- SECURITY HARDENING PATCH — run after all previous migrations
+-- Fixes: open insert policies, profile data exposure, is_pro bypass
+-- ════════════════════════════════════════════════════════════════════
+
+-- ── 1. scan_logs: lock down insert to authenticated users only ──────
+-- Old policy: with check (true) — anyone (anon) could insert fake rows
+-- with any user_id, poisoning scan analytics.
+drop policy if exists "scan_logs_insert" on scan_logs;
+create policy "scan_logs_insert" on scan_logs
+  for insert with check (auth.uid() = user_id OR user_id IS NULL);
+
+-- ── 2. referrals: prevent fake referral injection ──────────────────
+-- Old policy: with check (true) — anyone could create referrals pointing
+-- to any referrer_code + referred_user_id, gaming the referral system.
+drop policy if exists "referrals_insert" on referrals;
+create policy "referrals_insert" on referrals
+  for insert with check (auth.uid() = referred_user_id);
+
+-- ── 3. profiles: restrict SELECT to own row only ───────────────────
+-- Old policy: using (true) — entire profiles table (phone, display_name,
+-- OLX username) was readable by any anon visitor or any signed-in user.
+-- Username lookup for login uses auth.users directly, not profiles.
+drop policy if exists "prof_sel_public" on profiles;
+drop policy if exists "prof_sel_username_lookup" on profiles;
+drop policy if exists "prof_sel_own" on profiles;
+drop policy if exists "profiles_select" on profiles;
+create policy "profiles_select_own" on profiles
+  for select using (auth.uid() = id);
+
+-- ── 4. profiles UPDATE: block client from self-granting is_pro ─────
+-- Old policy allowed any logged-in user to PATCH their own is_pro=true
+-- using the anon key from the browser console. is_pro is now immutable
+-- by the client — only the webhook (service role key) can set it.
+-- The WITH CHECK ensures the submitted row cannot change is_pro or
+-- is_developer from their current server-side values.
+drop policy if exists "profiles_update" on profiles;
+create policy "profiles_update_safe" on profiles
+  for update
+  using (auth.uid() = id)
+  with check (
+    auth.uid() = id
+    AND is_pro       = (SELECT is_pro       FROM profiles WHERE id = auth.uid())
+    AND is_developer = (SELECT is_developer FROM profiles WHERE id = auth.uid())
+  );
+
+-- ── 5. listings: stop exposing seller phone to all visitors ────────
+-- Old policy: using (is_active = true) returned ALL columns including
+-- seller_phone to every anonymous visitor. Phone is now only returned
+-- to the seller themselves; buyers see a masked row without the number.
+-- The contact-seller flow calls a separate RPC that validates the buyer.
+drop policy if exists "listings_select" on listings;
+
+-- Sellers can see all their own listings (inc. phone)
+create policy "listings_select_own" on listings
+  for select using (auth.uid() = seller_id);
+
+-- Public can see active listings but NOT seller_phone
+-- (Supabase doesn't support column-level select policies — use a view instead)
+create or replace view public_listings as
+  select
+    id, seller_name, name, rarity, condition,
+    price, city, notes, image_thumb, is_active, listed_at
+  from listings
+  where is_active = true;
+
+-- Grant anon read on the view only
+grant select on public_listings to anon, authenticated;
+
+-- ── 6. community_prices: require auth to submit prices ─────────────
+-- Old policy allowed anon price submissions, enabling spam.
+drop policy if exists "community_prices_insert" on community_prices;
+create policy "community_prices_insert" on community_prices
+  for insert with check (auth.uid() IS NOT NULL);

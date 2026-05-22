@@ -39,14 +39,20 @@ import {
 } from './scanner.js'
 
 // ── Sentry error monitoring ────────────────────────────────────────────
+var _hostname = window.location.hostname
+var _sentryEnv = _hostname === 'hotscan.in' ? 'production'
+               : _hostname.includes('vercel.app') ? 'preview'
+               : 'development'
 Sentry.init({
   dsn: 'https://d30983e80b41aa7d1074e677160ffe4d@o4511283952353280.ingest.us.sentry.io/4511283969851392',
-  environment: window.location.hostname === 'hotscan.in' ? 'production' : 'development',
+  environment: _sentryEnv,
   release: 'hotscan@5.0.0',
   integrations: [Sentry.browserTracingIntegration()],
-  tracesSampleRate: 0.1,
+  tracesSampleRate: _sentryEnv === 'production' ? 0.1 : 1.0,
   beforeSend: function(event) {
-    if (window.location.hostname.includes('localhost') || window.location.hostname.includes('vercel.app')) return null
+    // Only drop errors in local dev — keep preview (vercel.app) errors so staging
+    // bugs are visible in Sentry under the 'preview' environment filter.
+    if (_hostname.includes('localhost') || _hostname === '127.0.0.1') return null
     return event
   }
 })
@@ -86,6 +92,17 @@ Object.assign(window, {
 // Alias — called directly from HTML button
 window.FREE_SCANS = FREE_SCANS
 window.syncCollectionFromCloud = window.fullCloudSync
+
+// Fix: expose `currentUser` as a live getter on window.
+// index.html line 50 has onclick="currentUser?openAccountModal():openAuth()"
+// which reads bare `currentUser` from the global scope. Without this, it throws
+// ReferenceError on every unauthenticated page load (confirmed in Sentry, May 2026).
+// state.currentUser is null until initAuth() resolves, so the getter safely returns
+// null for logged-out users and the real user object for logged-in ones.
+Object.defineProperty(window, 'currentUser', {
+  get() { return state.currentUser },
+  configurable: true,
+})
 
 window.doCloudSync = async function(btn) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing…' }

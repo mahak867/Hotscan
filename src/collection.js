@@ -1,6 +1,11 @@
 import { state } from './state.js'
 import { cleanINR, parseINR, escHtml, showToast, rcls, captureException } from './utils.js'
 
+// Prevents concurrent fullCloudSync() calls racing against Supabase.
+// Both onAuthStateChange(INITIAL_SESSION) and getSession() fire on page load,
+// which caused two simultaneous queries — the second would hit DB_TIMEOUT.
+var _syncInFlight = false
+
 export function addToCol() {
   if(!state.lastResult){ showToast('Scan a car first to add to collection', 'error'); return }
   var item = {
@@ -237,23 +242,48 @@ export function addCarToCollection(car, thumb) {
 }
 
 export async function fullCloudSync(retryCount) {
+  // Lock: if a sync is already running, bail out immediately.
+  // onAuthStateChange(INITIAL_SESSION) and getSession() both fire on page load
+  // nearly simultaneously — letting both proceed causes concurrent Supabase
+  // queries that starve each other, producing DB_TIMEOUT errors.
+  if (_syncInFlight) return false
+  _syncInFlight = true
+  try {
+    return await _doFullCloudSync(retryCount)
+  } finally {
+    _syncInFlight = false
+  }
+}
+
+// Wraps any Supabase query promise in a hard timeout.
+// Avoids duplicate new Promise(timeout) boilerplate and ensures
+// ALL queries (including the re-fetch after uploading local items) are guarded.
+function _timedQuery(queryPromise, ms) {
+  return Promise.race([
+    queryPromise,
+    new Promise(function(_, rej) {
+      setTimeout(function() { rej(new Error('DB_TIMEOUT')) }, ms || 8000)
+    })
+  ])
+}
+
+async function _doFullCloudSync(retryCount) {
   if (!state._sb || !state.currentUser) {
     if ((retryCount || 0) < 3) {
       await new Promise(function(r){ setTimeout(r, 600) })
-      return fullCloudSync((retryCount || 0) + 1)
+      return _doFullCloudSync((retryCount || 0) + 1)
     }
     throw new Error('Not signed in — sign out and back in, then try again')
   }
   try {
-    // Wrap query in 8s timeout — missing table can cause Supabase to hang
-    var queryPromise = state._sb.from('collection')
-      .select('*')
-      .eq('user_id', state.currentUser.id)
-      .order('added_at', { ascending: false })
-    var timeoutPromise = new Promise(function(_, rej) {
-      setTimeout(function() { rej(new Error('DB_TIMEOUT')) }, 8000)
-    })
-    var res = await Promise.race([queryPromise, timeoutPromise])
+    // Initial fetch — guarded by _timedQuery
+    var res = await _timedQuery(
+      state._sb.from('collection')
+        .select('*')
+        .eq('user_id', state.currentUser.id)
+        .order('added_at', { ascending: false }),
+      8000
+    )
 
     var cloudItems = []
     if (res.error) {
@@ -308,12 +338,15 @@ export async function fullCloudSync(retryCount) {
       if (c.image && c.name) localImageMap[(c.name || '').toLowerCase()] = c.image
     })
 
-    // Re-fetch after uploading local items
+    // Re-fetch after uploading local items — also timeout-guarded
     if (localOnly.length > 0) {
-      var res2 = await state._sb.from('collection')
-        .select('*')
-        .eq('user_id', state.currentUser.id)
-        .order('added_at', { ascending: false })
+      var res2 = await _timedQuery(
+        state._sb.from('collection')
+          .select('*')
+          .eq('user_id', state.currentUser.id)
+          .order('added_at', { ascending: false }),
+        8000
+      )
       if (res2.data) {
         cloudItems = res2.data.map(function(d) {
           var nameKey = (d.name || '').toLowerCase()

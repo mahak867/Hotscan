@@ -448,15 +448,26 @@ export async function startPayment() {
     notes: {user_id: state.currentUser.id},
     theme: {color: '#e63946'},
     handler: async function(response) {
-      localStorage.setItem('hs_pro', 'true')
-      try {
-        if (state._sb) {
-          await state._sb.from('profiles').update({is_pro:true, pro_since:new Date().toISOString(), razorpay_payment_id:response.razorpay_payment_id}).eq('id', state.currentUser.id)
-          await loadProfile()
-        }
-      } catch(e) { captureException(e) }
+      // Pro status is granted server-side via the Razorpay webhook (/api/razorpay-webhook).
+      // The webhook verifies the HMAC signature and uses the Supabase service role key
+      // to update is_pro — the client NEVER writes is_pro directly, preventing bypass.
+      // We poll the profile for up to 10 seconds to pick up the webhook update.
       closeAccountModal(); window.closeProModal(); updateHeaderUI(); window.renderProfilePage()
-      setTimeout(function() { showToast('🎉 Welcome to HotScan Pro! Unlimited scans activated.', 'success') }, 300)
+      showToast('⏳ Activating Pro — please wait…', 'success')
+      var attempts = 0
+      var poll = setInterval(async function() {
+        attempts++
+        await loadProfile()
+        if ((state.userProfile && state.userProfile.is_pro) || attempts >= 10) {
+          clearInterval(poll)
+          updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
+          if (state.userProfile && state.userProfile.is_pro) {
+            setTimeout(function() { showToast('🎉 Welcome to HotScan Pro! Unlimited scans activated.', 'success') }, 100)
+          } else {
+            showToast('Payment received — Pro will activate within 60 seconds. Refresh if needed.', 'success')
+          }
+        }
+      }, 1000)
     }
   }
   var rzp = new window.Razorpay(options)

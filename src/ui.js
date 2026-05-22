@@ -50,12 +50,11 @@ export function incScans() {
   return c
 }
 export function isPro() {
-  // Always trust server-verified profile first
-  if (state.userProfile && (state.userProfile.is_pro || state.userProfile.is_developer)) return true
-  // localStorage is only a cache — only valid if user is logged in
-  // (prevents localStorage.setItem('hs_pro','true') exploit when not logged in)
+  // Source of truth: server-verified profile loaded from Supabase after auth.
+  // localStorage('hs_pro') is NOT trusted — it was removed as a bypass vector.
+  // Anyone can setItem('hs_pro','true') in DevTools; server profile cannot be faked.
   if (!state.currentUser) return false
-  return localStorage.getItem('hs_pro') === 'true'
+  return !!(state.userProfile && (state.userProfile.is_pro || state.userProfile.is_developer))
 }
 export function checkLimit() {
   if (isPro()) return true

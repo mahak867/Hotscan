@@ -1,7 +1,7 @@
 // HotScan India — Service Worker v5.0
 // Provides offline support (cache-first for static assets) and deal-alert notifications.
 
-const CACHE = 'hotscan-v6'
+const CACHE = 'hotscan-v7'
 const PRECACHE = [
   '/',
   '/index.html',

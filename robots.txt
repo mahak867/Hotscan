@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /src/
 
 Sitemap: https://hotscan.in/sitemap.xml

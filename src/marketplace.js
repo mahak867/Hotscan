@@ -28,7 +28,7 @@ export function mpMode(tab) {
     if (olxHint) {
       if (state.userProfile && state.userProfile.olx_username) {
         var olxUrl = 'https://www.olx.in/profile/' + encodeURIComponent(state.userProfile.olx_username)
-        olxHint.innerHTML = '🔗 Cross-post to <a href="' + olxUrl + '" target="_blank" style="color:#4cc9f0;font-weight:700">your OLX profile</a> after listing here for 3× more visibility'
+        olxHint.innerHTML = '🔗 Cross-post to <a href="' + olxUrl + '" target="_blank" rel="noopener noreferrer" style="color:#4cc9f0;font-weight:700">your OLX profile</a> after listing here for 3× more visibility'
         olxHint.style.display = 'block'
       } else {
         olxHint.innerHTML = '💡 <a onclick="goPage(\'profile\')" style="color:#4cc9f0;cursor:pointer">Link your OLX account</a> to cross-post listings automatically'
@@ -53,7 +53,7 @@ export async function loadAndRenderListings() {
   var items = []
   if (state._sb) {
     try {
-      var query = state._sb.from('listings').select('*').eq('is_active', true).order('listed_at', {ascending: false}).limit(60)
+      var query = state._sb.from('public_listings').select('*').order('listed_at',{ascending:false}).limit(60)
       if (_mpFilter !== 'all') query = query.ilike('rarity', '%'+_mpFilter+'%')
       var res = await query
       if (res.error) {
