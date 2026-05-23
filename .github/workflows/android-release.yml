@@ -1,0 +1,48 @@
+name: Android Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build & Sign APK/AAB
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_SUPA_URL: ${{ secrets.VITE_SUPA_URL }}
+          VITE_SUPA_KEY: ${{ secrets.VITE_SUPA_KEY }}
+          VITE_RZP_KEY: ${{ secrets.VITE_RZP_KEY }}
+          VITE_DEV_EMAIL: ${{ secrets.VITE_DEV_EMAIL }}
+      - run: npx cap sync android
+      - run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/hotscan-release.keystore
+      - run: ./gradlew bundleRelease assembleRelease
+        working-directory: android
+        env:
+          KEYSTORE_PATH: app/hotscan-release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hotscan-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hotscan-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
