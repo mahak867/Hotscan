@@ -14,3 +14,9 @@ ios/App/Pods/
 ios/App/App.xcworkspace/xcuserdata/
 ios/DerivedData/
 hotscan-release.keystore
+*.patch
+hotscan-release.keystore
+playwright-report/
+test-results/
+.vscode/
+.idea/

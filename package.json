@@ -1,6 +1,6 @@
 {
   "name": "hotscan-india",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "India's first AI-powered Hot Wheels scanner",
   "type": "module",
   "private": true,
@@ -13,15 +13,15 @@
     "cap:ios": "npm run cap:sync && npx cap open ios"
   },
   "devDependencies": {
-    "@capacitor/android": "7.2.0",
-    "@capacitor/cli": "7.6.2",
-    "@capacitor/core": "7.2.0",
-    "@capacitor/ios": "7.2.0",
+    "@capacitor/android": "8.3.4",
+    "@capacitor/cli": "8.3.4",
+    "@capacitor/core": "8.3.4",
+    "@capacitor/ios": "8.3.4",
     "@playwright/test": "^1.60.0",
     "typescript": "^6.0.3",
     "vite": "^6.4.2"
   },
   "dependencies": {
-    "@sentry/browser": "^10.50.0"
+    "@sentry/browser": "^10.53.1"
   }
 }
