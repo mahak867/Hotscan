@@ -1164,26 +1164,6 @@ export function shareCollection() {
   else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function() { showToast('Copied! Paste to WhatsApp or Instagram.', 'success') }) }
 }
 
-export function updateStreak() {
-  var today = new Date().toDateString()
-  var yesterday = new Date(Date.now()-86400000).toDateString()
-  var streak = JSON.parse(localStorage.getItem('hs_streak')||'{"count":0,"last":""}')
-  if (streak.last !== today) {
-    streak = streak.last === yesterday ? {count:streak.count+1,last:today} : {count:1,last:today}
-    localStorage.setItem('hs_streak', JSON.stringify(streak))
-  }
-  var el = document.getElementById('hdr-streak')
-  if (el && streak.count >= 2) { el.textContent = '🔥 '+streak.count+' day streak'; el.style.display='inline-flex' }
-  else if (el) el.style.display='none'
-  return streak.count
-}
 
-export function shareCollection() {
-  var total = state.collection.length
-  if (!total) { showToast('Add some cars first!','error'); return }
-  var val = 0; state.collection.forEach(function(car){val+=parseINR(car.india_collector_inr)})
-  var sth = state.collection.filter(function(c){return(c.rarity||'').toLowerCase().includes('super treasure')}).length
-  var txt = ['🚗 My HotScan India Collection','','📦 '+total+' cars · ₹'+val.toLocaleString('en-IN')+' total value',sth>0?'⭐ '+sth+' Super Treasure Hunt'+(sth>1?'s':''):'','','📷 hotscan.in'].filter(Boolean).join('\n')
-  if (navigator.share) navigator.share({title:'My HotScan Collection',text:txt}).catch(function(){})
-  else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){showToast('Copied! Paste to WhatsApp.','success')})
-}
+
+
