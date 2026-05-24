@@ -116,13 +116,13 @@ export async function authContinue(){
     if(_authMode==='signin'){
       var signInEmail = rawInput
       if(!rawInput.includes('@')){
-        var lu = await state._sb.from('profiles').select('email').eq('username', rawInput).single()
+        var lu = await state._sb.rpc('get_email_by_username', { p_username: rawInput })
         if(lu.error || !lu.data || !lu.data.email){
           clearTimeout(_to); setAuthLoading(false)
           showAuthErr('No account found for that username. Try your email instead.')
           return
         }
-        signInEmail = lu.data.email
+        signInEmail = lu.data
       }
       var r=await state._sb.auth.signInWithPassword({email:signInEmail,password:pass})
       clearTimeout(_to)
