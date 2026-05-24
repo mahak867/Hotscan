@@ -1294,3 +1294,7 @@ input, select, textarea { font-size:16px !important; }
 .skeleton-line{ height:12px; border-radius:6px; }
 .skeleton-line.sm{ width:60%; }
 .skeleton-line.xs{ width:35%; }
+@media(min-width:768px){
+  .page{ max-width:780px !important; padding:20px 28px 40px !important; }
+  #page-scan .key-card{ max-width:640px; margin:0 auto; }
+}
