@@ -271,7 +271,7 @@
 <!-- ═══ COLLECTION PAGE ═══ -->
 <div class="page" id="page-collection">
   <div class="page-hdr"><div class="page-title">Collection</div><button class="btn-red" onclick="goPage('scan')" style="padding:7px 12px;font-size:12px">+ Add</button></div>
-  <div class="val-card">
+  <div style="position:relative;margin-bottom:10px"><input id="col-search" type="search" placeholder="🔍  Search your collection…" oninput="searchCol(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;font-size:14px;color:#fff;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"></div><div class="val-card">
     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
     <!-- #7 — micro sparkline: monthly additions, rendered by JS -->
