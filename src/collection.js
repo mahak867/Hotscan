@@ -117,30 +117,59 @@ export function renderCol() {
     'uncommon': '#2dc653',
     'common': '#444'
   }
-  items.forEach(function(c) {
-    var div = document.createElement('div'); div.className = 'col-item'
-    // #8 — rarity dot
-    var dot = document.createElement('div'); dot.className = 'col-dot'
+  var maxVal = Math.max.apply(null, items.map(function(x){return parseINR(x.india_collector_inr)})) || 1
+  var spotlightRarities = ['super treasure hunt','treasure hunt','error car','vintage']
+  var spotlights = items.filter(function(x){return spotlightRarities.indexOf((x.rarity||'').toLowerCase())!==-1})
+  var regular = items.filter(function(x){return spotlightRarities.indexOf((x.rarity||'').toLowerCase())===-1})
+  var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
+
+  function makeCard(c, isSpotlight) {
     var rv = (c.rarity||'common').toLowerCase()
-    dot.style.background = dotColors[rv] || '#444'
-    var thumb = document.createElement('div'); thumb.className = 'col-thumb'
-    if (c.image) { var img = document.createElement('img'); img.src = c.image; img.alt = ''; thumb.appendChild(img) } else thumb.textContent = '🚗'
-    var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
-    var name = document.createElement('div'); name.className = 'col-name'; name.textContent = c.name||'Unknown'
-    var meta = document.createElement('div'); meta.className = 'col-meta'; meta.textContent = c.series||''
-    var bottom = document.createElement('div'); bottom.style.cssText = 'display:flex;gap:5px;align-items:center'
-    var rar = document.createElement('span'); rar.className = 'rar ' + rcls(c.rarity); rar.style.cssText = 'font-size:11px;padding:3px 8px'
-    var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
+    var bc = dotColors[rv] || '#444'
+    var glow = rv.includes('super treasure')?'rgba(255,214,10,.18)':rv.includes('treasure')?'rgba(255,150,0,.14)':rv.includes('error')||rv.includes('vintage')?'rgba(76,201,240,.12)':'transparent'
     var colRarity = c.rarity || 'Common'
-    rar.textContent = (rarIcons[colRarity] ? rarIcons[colRarity] + ' ' : '') + colRarity
-    var price = document.createElement('span'); price.className = 'col-price'; price.textContent = c.india_collector_inr ? '₹'+cleanINR(c.india_collector_inr) : ''
-    bottom.appendChild(rar); bottom.appendChild(price)
-    info.appendChild(name); info.appendChild(meta); info.appendChild(bottom)
-    var del = document.createElement('button'); del.className = 'col-del'; del.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;margin-left:auto;flex-shrink:0'; del.textContent = '🗑'
-    del.onclick = (function(id) { return function() { delFromCol(id) } })(c.id)
-    div.appendChild(dot); div.appendChild(thumb); div.appendChild(info); div.appendChild(del)
-    list.appendChild(div)
-  })
+    var icon = rarIcons[colRarity] || ''
+    var priceVal = parseINR(c.india_collector_inr)
+    var pct = Math.round((priceVal/maxVal)*100)
+    var thumbHtml = c.image ? '<img src="'+c.image+'" style="width:100%;height:100%;object-fit:cover" alt="">' : (icon||'🚗')
+    var div = document.createElement('div')
+
+    if (isSpotlight) {
+      div.style.cssText = 'background:var(--surface);border-radius:16px;padding:14px;margin-bottom:10px;border:1px solid '+bc+';box-shadow:0 0 24px '+glow+',0 4px 16px rgba(0,0,0,.4);position:relative;overflow:hidden;grid-column:1/-1'
+      div.innerHTML = '<div style="position:absolute;top:0;left:0;width:3px;height:100%;background:'+bc+'"></div>'+
+        '<div style="display:flex;align-items:center;gap:12px">'+
+          '<div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;border:1px solid '+bc+'">'+thumbHtml+'</div>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div style="font-size:10px;font-weight:800;color:'+bc+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">'+icon+' '+colRarity+'</div>'+
+            '<div style="font-size:15px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.name||'Unknown')+'</div>'+
+            '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+escHtml(c.series||'')+(c.color?' · '+escHtml(c.color):'')+'</div>'+
+            '<div style="font-size:17px;font-weight:800;color:'+bc+';margin-top:6px">₹'+cleanINR(c.india_collector_inr)+'</div>'+
+          '</div>'+
+          '<button onclick="delFromCol(''+c.id+'')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;flex-shrink:0">🗑</button>'+
+        '</div>'
+    } else {
+      div.style.cssText = 'background:var(--surface);border-radius:14px;padding:11px;border:1px solid var(--border);border-left:3px solid '+bc+';transition:transform .15s,box-shadow .15s'
+      div.onmouseenter=function(){this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.5)'}
+      div.onmouseleave=function(){this.style.transform='';this.style.boxShadow=''}
+      var valBar = pct>0?'<div style="height:3px;background:var(--surface3);border-radius:2px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+bc+';border-radius:2px"></div></div>':''
+      div.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px">'+
+        '<div style="width:50px;height:50px;border-radius:10px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+thumbHtml+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.name||'Unknown')+'</div>'+
+          '<div style="font-size:11px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.series||'')+'</div>'+
+          '<div style="display:flex;align-items:center;margin-top:4px;gap:6px">'+
+            '<span style="font-size:10px;font-weight:700;color:'+bc+'">'+icon+' '+colRarity+'</span>'+
+            (c.india_collector_inr?'<span style="font-size:12px;font-weight:800;margin-left:auto">₹'+cleanINR(c.india_collector_inr)+'</span>':'')+
+          '</div>'+valBar+
+        '</div>'+
+        '<button onclick="delFromCol(''+c.id+'')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;flex-shrink:0;opacity:0;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0">🗑</button>'+
+      '</div>'
+    }
+    return div
+  }
+
+  spotlights.forEach(function(c){list.appendChild(makeCard(c,true))})
+  regular.forEach(function(c){list.appendChild(makeCard(c,false))})
 }
 
 export function exportVal() {
