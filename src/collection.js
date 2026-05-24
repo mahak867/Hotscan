@@ -456,3 +456,5 @@ export function searchCol(query) {
   state.searchQuery = (query || '').toLowerCase().trim()
   renderCol()
 }
+
+
