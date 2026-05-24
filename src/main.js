@@ -9,8 +9,8 @@ import {
   updateHeaderUI, startPayment, loadProfile, initAuth
 } from './auth.js'
 import {
-  addToCol, delFromCol, sCol, fCol, renderCol, exportVal,
-  addCarToCollection, fullCloudSync
+  addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
+  addCarToCollection, fullCloudSync, searchCol
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
@@ -29,7 +29,7 @@ import {
   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
   renderPriceHistory, renderAlerts, renderHunt,
   getRefCode, getRefLink, updateRefUI, copyRefLink, shareViaWA,
-  runAlertCheck, handleUpgrade, whatsappSupport,
+  runAlertCheck, handleUpgrade, whatsappSupport, updateStreak, shareCollection,
   startTimer, stopTimer, setStep, resetSteps, runAnalyze, showResult, loadCommunityPrices,
   saveToHist
 } from './ui.js'

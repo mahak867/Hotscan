@@ -451,3 +451,8 @@ export async function deleteFromCloud(id) {
   if (!state.currentUser || !state._sb) return
   try { await state._sb.from('collection').delete().eq('id', id).eq('user_id', state.currentUser.id) } catch(e) {}
 }
+
+export function searchCol(query) {
+  state.searchQuery = (query || '').toLowerCase().trim()
+  renderCol()
+}
