@@ -297,3 +297,17 @@ window.obSkip = function() {
   var ob = document.getElementById('hs-onboard')
   if (ob) { ob.style.opacity = '0'; ob.style.transition = 'opacity .3s'; setTimeout(function(){ ob.style.display = 'none' }, 300) }
 }
+document.addEventListener('keydown', function(e) {
+  var tag = (e.target.tagName || '').toLowerCase()
+  if (tag === 'input' || tag === 'textarea' || e.metaKey || e.ctrlKey || e.altKey) return
+  var map = { s:'scan', c:'collection', m:'marketplace', t:'market', p:'profile' }
+  var page = map[e.key.toLowerCase()]
+  if (page) { e.preventDefault(); window.goPage(page) }
+})
+window.showSkeleton = function(containerId, count) {
+  var el = document.getElementById(containerId)
+  if (!el) return
+  el.innerHTML = Array(count || 3).fill(0).map(function() {
+    return '<div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line sm"></div><div class="skeleton skeleton-line xs"></div></div></div>'
+  }).join('')
+}
