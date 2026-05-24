@@ -305,7 +305,7 @@
       <div class="val-tile"><div class="val-tile-n" id="v-sth">0</div><div class="val-tile-l">TH / STH</div></div>
       <div class="val-tile"><div class="val-tile-n" id="v-avg">₹0</div><div class="val-tile-l">Avg Value</div></div>
     </div>
-    <button class="btn-gold" style="margin-top:12px" onclick="exportVal()">📄 Export Valuation Certificate</button>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn-gold" style="flex:1" onclick="exportVal()">📄 Export Certificate</button><button onclick="shareCollection()" style="flex:1;background:var(--surface3);color:#fff;border:1px solid var(--border2);border-radius:11px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">📤 Share</button></div>
   </div>
   <div class="chips" id="sc"><button class="chip active" onclick="sCol('date',this)">Latest</button><button class="chip" onclick="sCol('value',this)">Highest Value</button><button class="chip" onclick="sCol('rarity',this)">By Rarity</button><button class="chip" onclick="sCol('name',this)">A-Z</button></div>
   <div class="chips" id="fc2"><button class="chip active" onclick="fCol('all',this)">All</button><button class="chip" onclick="fCol('Common',this)">Common</button><button class="chip" onclick="fCol('Uncommon',this)">Uncommon</button><button class="chip" onclick="fCol('Rare',this)">Rare</button><button class="chip" onclick="fCol('Treasure',this)">TH</button><button class="chip" onclick="fCol('Super',this)">STH</button></div>
