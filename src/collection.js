@@ -145,7 +145,7 @@ export function renderCol() {
             '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+escHtml(c.series||'')+(c.color?' · '+escHtml(c.color):'')+'</div>'+
             '<div style="font-size:17px;font-weight:800;color:'+bc+';margin-top:6px">₹'+cleanINR(c.india_collector_inr)+'</div>'+
           '</div>'+
-          '<button onclick="delFromCol(''+c.id+'')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;flex-shrink:0">🗑</button>'+
+          '<button onclick="delFromCol(\'+c.id+\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;flex-shrink:0">🗑</button>'+
         '</div>'
     } else {
       div.style.cssText = 'background:var(--surface);border-radius:14px;padding:11px;border:1px solid var(--border);border-left:3px solid '+bc+';transition:transform .15s,box-shadow .15s'
@@ -162,7 +162,7 @@ export function renderCol() {
             (c.india_collector_inr?'<span style="font-size:12px;font-weight:800;margin-left:auto">₹'+cleanINR(c.india_collector_inr)+'</span>':'')+
           '</div>'+valBar+
         '</div>'+
-        '<button onclick="delFromCol(''+c.id+'')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;flex-shrink:0;opacity:0;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0">🗑</button>'+
+        '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;flex-shrink:0;opacity:0;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0">🗑</button>'+
       '</div>'
     }
     return div
@@ -170,6 +170,10 @@ export function renderCol() {
 
   spotlights.forEach(function(c){list.appendChild(makeCard(c,true))})
   regular.forEach(function(c){list.appendChild(makeCard(c,false))})
+  list.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-delid]')
+    if (btn) delFromCol(btn.dataset.delid)
+  }, {once: true})
 }
 
 export function exportVal() {
