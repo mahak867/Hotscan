@@ -222,6 +222,11 @@
     <div class="deal-tip" id="deal-tip"></div>
   </div>
   <!-- Scan result -->
+  <div id="scan-feedback" style="display:none;align-items:center;justify-content:center;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;margin:8px 0">
+    <span style="font-size:12px;color:var(--text2)">Was this scan accurate?</span>
+    <button onclick="submitScanFeedback(true)" style="background:rgba(45,198,83,.15);border:1px solid rgba(45,198,83,.3);color:#2dc653;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">&#128077; Yes</button>
+    <button onclick="submitScanFeedback(false)" style="background:rgba(230,57,70,.12);border:1px solid rgba(230,57,70,.25);color:var(--red);border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">&#128078; No</button>
+  </div>
   <div class="result" id="result">
     <div class="r-hero">
       <div class="r-thumb" id="r-thumb">🚗</div>

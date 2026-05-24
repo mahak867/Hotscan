@@ -311,3 +311,19 @@ window.showSkeleton = function(containerId, count) {
     return '<div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line sm"></div><div class="skeleton skeleton-line xs"></div></div></div>'
   }).join('')
 }
+
+window.submitScanFeedback = async function(accurate) {
+  var fb = document.getElementById('scan-feedback')
+  if (fb) fb.style.display = 'none'
+  showToast(accurate ? '👍 Thanks!' : '👎 Noted — we will improve.', 'success')
+  if (!state._sb || !state.currentUser) return
+  try {
+    await state._sb.from('scan_feedback').insert({
+      user_id: state.currentUser.id,
+      car_name: (state.lastResult && state.lastResult.name) || 'Unknown',
+      accurate: accurate,
+      model: 'llama-4-scout',
+      created_at: new Date().toISOString()
+    })
+  } catch(e) {}
+}

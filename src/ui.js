@@ -162,7 +162,7 @@ export async function handleFile(file, mode) {
       document.getElementById('fake-preview-img').src = raw
       document.getElementById('fake-preview-wrap').style.display = 'block'
       document.getElementById('fake-scan-ph').style.display = 'none'
-      state.fakeImg64 = await compress(raw, 512)
+      state.fakeImg64 = await compress(raw, 1024)
       document.getElementById('analyze-btn').style.display = 'block'
       document.getElementById('analyze-btn').classList.add('sticky-btn')
       document.getElementById('analyze-btn').textContent = '🕵️ Check If Fake'
@@ -171,7 +171,7 @@ export async function handleFile(file, mode) {
       document.getElementById('preview-wrap').style.display = 'block'
       document.getElementById('scan-ph').style.display = 'none'
       document.getElementById('scan-area').classList.add('has-img')
-      state.img64 = await compress(raw, 512)
+      state.img64 = await compress(raw, 1024)
       state.imgThumb = await compressThumb(raw)
       document.getElementById('analyze-btn').style.display = 'block'
       document.getElementById('analyze-btn').classList.add('sticky-btn')
@@ -200,7 +200,7 @@ export async function handleMultiFiles(files) {
     var raw = await new Promise(function(resolve) {
       var rd = new FileReader(); rd.onload = function(e){resolve(e.target.result)}; rd.readAsDataURL(file)
     })
-    var compressed = await compress(raw, 512)
+    var compressed = await compress(raw, 1024)
     var thumb = await compressThumb(raw)
     state.multiImages.push({img64: compressed, thumb: thumb})
     var thumbEl = document.createElement('div')
