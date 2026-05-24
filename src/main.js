@@ -10,7 +10,7 @@ import {
 } from './auth.js'
 import {
   addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
-  addCarToCollection, fullCloudSync, searchCol
+  addCarToCollection, fullCloudSync
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
