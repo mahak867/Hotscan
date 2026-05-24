@@ -57,6 +57,22 @@
     <div class="app-user-inner">Sign In</div>
   </div>
 </div>
+<aside class="hs-sidebar" id="hs-sidebar">
+  <div class="hs-sidebar-label">Scan</div>
+  <button class="hs-sidebar-item active" id="sb-scan" onclick="goPage('scan')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Scanner<span class="hs-kbd">S</span></button>
+  <div class="hs-sidebar-divider"></div>
+  <div class="hs-sidebar-label">My Collection</div>
+  <button class="hs-sidebar-item" id="sb-collection" onclick="goPage('collection')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Collection<span class="hs-kbd">C</span></button>
+  <button class="hs-sidebar-item" id="sb-market" onclick="goPage('market')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Trends<span class="hs-kbd">T</span></button>
+  <div class="hs-sidebar-divider"></div>
+  <div class="hs-sidebar-label">Community</div>
+  <button class="hs-sidebar-item" id="sb-marketplace" onclick="goPage('marketplace')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Marketplace<span class="hs-kbd">M</span></button>
+  <div class="hs-sidebar-divider"></div>
+  <div class="hs-sidebar-label">Account</div>
+  <button class="hs-sidebar-item" id="sb-profile" onclick="goPage('profile')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile<span class="hs-kbd">P</span></button>
+  <button class="hs-sidebar-item" id="sb-more" onclick="goPage('more')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>More</button>
+</aside>
+<div class="hs-content" id="hs-content">
 <div class="nav">
   <div class="nav-dock">
     <div class="nav-item nav-scan-btn active" id="nav-scan" data-tip="Scan" onclick="goPage('scan')">
@@ -832,7 +848,6 @@
 </style>
 
 <script type="module" src="/src/main.js"></script>
-</div></body>
 <div id="hs-confirm-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);align-items:center;justify-content:center" onclick="if(event.target===this)window._confirmReject&&window._confirmReject()">
   <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8)">
     <div id="hs-confirm-icon" style="font-size:36px;margin-bottom:12px">⚠️</div>
@@ -844,5 +859,5 @@
     </div>
   </div>
 </div>
-</div></body>
+</div></div></body>
 </html>
