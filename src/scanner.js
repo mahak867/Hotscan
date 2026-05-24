@@ -232,6 +232,25 @@ export async function analyzeDeal() {
   document.getElementById('err-box').style.display = 'none'
   document.getElementById('deal-result').style.display = 'none'
   window.startTimer('Checking deal...')
+
+  var communityPriceContext = ''
+  if (state._sb) {
+    try {
+      var cpRes = await state._sb.from('community_prices')
+        .select('price_inr, platform, created_at')
+        .ilike('car_name', '%' + carName.split(' ').slice(0,3).join('%') + '%')
+        .order('created_at', { ascending: false })
+        .limit(8)
+      if (cpRes.data && cpRes.data.length) {
+        var prices = cpRes.data.map(function(r) { return r.price_inr }).filter(Boolean)
+        var avg = Math.round(prices.reduce(function(a,b){return a+b},0) / prices.length)
+        var mn = Math.min.apply(null, prices)
+        var mx = Math.max.apply(null, prices)
+        communityPriceContext = 'REAL DATA from HotScan India community (' + prices.length + ' transactions): avg ₹' + avg + ', range ₹' + mn + '-₹' + mx + '. Weight this heavily.'
+      }
+    } catch(e) {}
+  }
+
   var prompt = [
     'You are an India Hot Wheels deal checker. Give realistic, honest advice.',
     '⚠️ RULES: Only use real Indian market price knowledge. Do not inflate or deflate prices.',
@@ -239,6 +258,8 @@ export async function analyzeDeal() {
     '  Treasure Hunt = ₹500-2500. Super Treasure Hunt = ₹4000-15000.',
     '  If the car name is vague or you are unsure, say so in verdict_reason.',
     '',
+    communityPriceContext,
+    communityPriceContext,
     'Question: Is ₹' + asking + ' a good price for "' + carName + '" in India?',
     '',
     'Return ONLY valid JSON with these EXACT keys:',
