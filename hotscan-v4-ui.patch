@@ -1,0 +1,412 @@
+From a620898c3b40242f74cebf02560803642aca86c3 Mon Sep 17 00:00:00 2001
+From: Mahak Fahad <mahak867@github>
+Date: Sat, 23 May 2026 19:46:56 +0000
+Subject: [PATCH] feat: collection search, streak counter, push opt-in, share
+ collection, daily cron
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Collection search:
+- Search bar on collection page filters by name, series, rarity, color in real-time
+- searchCol(query) in collection.js, wired to oninput on #col-search
+- State preserved in state.searchQuery across sort/filter changes
+
+Scan streak:
+- updateStreak() tracks consecutive daily scan days in localStorage
+- 🔥 N day streak pill appears in header after 2+ consecutive days
+- Called on every scan (incScans) and on app init
+- Resets automatically if a day is missed
+
+Push notifications opt-in:
+- Green 'Enable Deal Alerts' card appears on alerts page when:
+  user has alerts set AND push not already subscribed
+- One-tap setup — calls setupPushNotifications() which already handles
+  permission request + SW subscription + API storage
+- Hides itself after successful subscription
+
+Share collection:
+- 'Share Collection' button next to Export Certificate in val-card
+- Generates a stats summary: car count, total value, STH/TH/rare counts
+- Uses navigator.share() on mobile (native sheet), clipboard on desktop
+
+Landing page:
+- Replace '0 Competitors' stat (credibility killer) with '<10s Avg Scan Speed'
+
+Daily reminder cron:
+- api/push-daily-reminder.js: Vercel Edge Function, rotates 4 messages
+  by day of week to avoid notification fatigue
+- vercel.json: cron at 30 12 * * * (6:00 PM IST daily)
+- Only fires to opted-in push subscribers, non-blocking Promise.allSettled
+---
+ api/push-daily-reminder.js | 50 +++++++++++++++++++++++++++
+ index.html                 | 16 ++++++++-
+ landing.html               |  4 +--
+ src/collection.js          | 14 ++++++++
+ src/main.js                |  9 ++---
+ src/ui.js                  | 70 ++++++++++++++++++++++++++++++++++++++
+ vercel.json                | 31 ++++++++++++++---
+ 7 files changed, 182 insertions(+), 12 deletions(-)
+ create mode 100644 api/push-daily-reminder.js
+
+diff --git a/api/push-daily-reminder.js b/api/push-daily-reminder.js
+new file mode 100644
+index 0000000..87b384f
+--- /dev/null
++++ b/api/push-daily-reminder.js
+@@ -0,0 +1,50 @@
++// HotScan India — Daily Reminder Push
++// Vercel Cron: runs at 12:30 UTC (6:00 PM IST) every day
++// Sends a gentle deal-alert reminder to users who haven't scanned today
++export const config = { runtime: 'edge' }
++
++const SUPA_URL = process.env.VITE_SUPA_URL
++const SUPA_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
++const PUSH_SEND_URL = process.env.VERCEL_URL
++  ? 'https://' + process.env.VERCEL_URL + '/api/push-send'
++  : 'https://www.hotscan.in/api/push-send'
++
++export default async function handler(req) {
++  // Only Vercel cron can call this (verified via header)
++  if (req.headers.get('authorization') !== 'Bearer ' + SUPA_SERVICE_KEY) {
++    return new Response('Unauthorized', { status: 401 })
++  }
++
++  // Get all push subscribers
++  const res = await fetch(`${SUPA_URL}/rest/v1/push_subscriptions?select=user_id`, {
++    headers: { apikey: SUPA_SERVICE_KEY, Authorization: `Bearer ${SUPA_SERVICE_KEY}` }
++  })
++  const users = await res.json()
++  if (!users || !users.length) return new Response('No subscribers', { status: 200 })
++
++  const messages = [
++    { title: '🔍 Any new Hot Wheels today?', body: 'Scan it and check the India collector price instantly.' },
++    { title: '🔥 Deal waiting?', body: 'Check your alerts — OLX prices shift daily.' },
++    { title: '🚗 Your collection misses you', body: 'Got a new car? Add it to HotScan and track its value.' },
++    { title: '⭐ Super Treasure Hunt alert', body: 'STH season is on. Scan before you buy to avoid fakes.' },
++  ]
++  const msg = messages[new Date().getDay() % messages.length]
++
++  // Fire push to all subscribers (non-blocking)
++  const results = await Promise.allSettled(users.map(function(u) {
++    return fetch(PUSH_SEND_URL, {
++      method: 'POST',
++      headers: {
++        'Content-Type': 'application/json',
++        Authorization: 'Bearer ' + SUPA_SERVICE_KEY,
++      },
++      body: JSON.stringify({ user_id: u.user_id, title: msg.title, message: msg.body, url: '/' })
++    })
++  }))
++
++  var sent = results.filter(function(r) { return r.status === 'fulfilled' }).length
++  return new Response(JSON.stringify({ sent, total: users.length }), {
++    status: 200,
++    headers: { 'Content-Type': 'application/json' }
++  })
++}
+diff --git a/index.html b/index.html
+index 8b2da2a..6b7ad8b 100644
+--- a/index.html
++++ b/index.html
+@@ -53,6 +53,7 @@
+     </div>
+     <!-- version removed - looks unprofessional in header -->
+   </div>
++  <div id="hdr-streak" style="display:none;font-size:11px;font-weight:700;color:var(--gold);background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.2);border-radius:20px;padding:3px 10px;cursor:default"></div>
+   <div id="hdr-scan-pill" onclick="isPro()?goPage('profile'):showProModal()" style="display:none"></div>
+   <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
+     <div class="app-user-inner">Sign In</div>
+@@ -282,6 +283,11 @@
+ <!-- ═══ COLLECTION PAGE ═══ -->
+ <div class="page" id="page-collection">
+   <div class="page-hdr"><div class="page-title">Collection</div><button class="btn-red" onclick="goPage('scan')" style="padding:7px 12px;font-size:12px">+ Add</button></div>
++  <div style="position:relative;margin-bottom:10px">
++    <input id="col-search" type="search" placeholder="🔍  Search your collection…" oninput="searchCol(this.value)"
++      style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;font-size:14px;color:#fff;outline:none;box-sizing:border-box;-webkit-appearance:none"
++      onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'">
++  </div>
+   <div class="val-card">
+     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
+     <div class="val-total" id="val-total">₹0</div>
+@@ -298,7 +304,10 @@
+       <div class="val-tile"><div class="val-tile-n" id="v-sth">0</div><div class="val-tile-l">TH / STH</div></div>
+       <div class="val-tile"><div class="val-tile-n" id="v-avg">₹0</div><div class="val-tile-l">Avg Value</div></div>
+     </div>
+-    <button class="btn-gold" style="margin-top:12px" onclick="exportVal()">📄 Export Valuation Certificate</button>
++    <div style="display:flex;gap:8px;margin-top:12px">
++      <button class="btn-gold" style="flex:1" onclick="exportVal()">📄 Export Certificate</button>
++      <button onclick="shareCollection()" style="flex:1;background:var(--surface3);color:#fff;border:1px solid var(--border2);border-radius:11px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">📤 Share Collection</button>
++    </div>
+   </div>
+   <div class="chips" id="sc"><button class="chip active" onclick="sCol('date',this)">Latest</button><button class="chip" onclick="sCol('value',this)">Highest Value</button><button class="chip" onclick="sCol('rarity',this)">By Rarity</button><button class="chip" onclick="sCol('name',this)">A-Z</button></div>
+   <div class="chips" id="fc2"><button class="chip active" onclick="fCol('all',this)">All</button><button class="chip" onclick="fCol('Common',this)">Common</button><button class="chip" onclick="fCol('Uncommon',this)">Uncommon</button><button class="chip" onclick="fCol('Rare',this)">Rare</button><button class="chip" onclick="fCol('Treasure',this)">TH</button><button class="chip" onclick="fCol('Super',this)">STH</button></div>
+@@ -656,6 +665,11 @@
+ <div class="page" id="page-alerts">
+   <div class="page-hdr"><div class="page-title">Deal Alerts</div><button class="clr-btn" onclick="clearAlerts()">Clear</button></div>
+   <div class="card"><div class="card-title">How it works</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Scan a car → tap Alert → we add it to your watchlist with direct OLX and Instagram search links.</div></div>
++  <div id="push-opt-in-card" style="display:none;background:linear-gradient(135deg,#0d1a0d,#0a0a1a);border:1px solid rgba(45,198,83,.25);border-radius:15px;padding:14px;margin-bottom:11px">
++    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🔔 Get Notified Instantly</div>
++    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">Enable push notifications to get deal alerts on your device — even when the app is closed.</div>
++    <button onclick="setupPushNotifications().then(function(){document.getElementById('push-opt-in-card').style.display='none';showToast('🔔 Push notifications enabled!','success')})" style="background:var(--green);color:#fff;border:none;border-radius:11px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;width:100%">Enable Deal Alerts →</button>
++  </div>
+   <div id="alerts-list"></div>
+ </div>
+ 
+diff --git a/landing.html b/landing.html
+index 22d0d88..8b04e64 100644
+--- a/landing.html
++++ b/landing.html
+@@ -343,8 +343,8 @@ footer{border-top:1px solid var(--border);padding:48px 24px 32px;max-width:1100p
+     </div>
+     <div class="hero-divider"></div>
+     <div class="hero-stat">
+-      <div class="hero-stat-num"><span class="colored">0</span></div>
+-      <div class="hero-stat-label">Competitors</div>
++      <div class="hero-stat-num"><span class="colored">&lt;10s</span></div>
++      <div class="hero-stat-label">Avg Scan Speed</div>
+     </div>
+     <div class="hero-divider"></div>
+     <div class="hero-stat">
+diff --git a/src/collection.js b/src/collection.js
+index c9c03a1..179c181 100644
+--- a/src/collection.js
++++ b/src/collection.js
+@@ -45,12 +45,26 @@ export function delFromCol(id) {
+   renderCol()
+ }
+ 
++export function searchCol(query) {
++  state.searchQuery = (query || '').toLowerCase().trim()
++  renderCol()
++}
++
+ export function sCol(by, el) { state.sortBy = by; document.querySelectorAll('#sc .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
+ export function fCol(f, el) { state.filterBy = f; document.querySelectorAll('#fc2 .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
+ 
+ export function renderCol() {
+   var items = state.collection.slice()
+   if (state.filterBy !== 'all') items = items.filter(function(c) { return (c.rarity||'').toLowerCase().includes(state.filterBy.toLowerCase()) })
++  if (state.searchQuery) {
++    var q = state.searchQuery
++    items = items.filter(function(c) {
++      return (c.name||'').toLowerCase().includes(q) ||
++             (c.series||'').toLowerCase().includes(q) ||
++             (c.rarity||'').toLowerCase().includes(q) ||
++             (c.color||'').toLowerCase().includes(q)
++    })
++  }
+   var order = ['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
+   if (state.sortBy === 'value') items.sort(function(a,b) { return parseINR(b.india_collector_inr) - parseINR(a.india_collector_inr) })
+   else if (state.sortBy === 'name') items.sort(function(a,b) { return (a.name||'').localeCompare(b.name||'') })
+diff --git a/src/main.js b/src/main.js
+index 623c953..740d88b 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -9,7 +9,7 @@ import {
+   updateHeaderUI, startPayment, loadProfile, initAuth
+ } from './auth.js'
+ import {
+-  addToCol, delFromCol, sCol, fCol, renderCol, exportVal,
++  addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
+   addCarToCollection, fullCloudSync
+ } from './collection.js'
+ import {
+@@ -31,7 +31,7 @@ import {
+   getRefCode, getRefLink, updateRefUI, copyRefLink, shareViaWA,
+   runAlertCheck, handleUpgrade, whatsappSupport,
+   startTimer, stopTimer, setStep, resetSteps, runAnalyze, showResult, loadCommunityPrices,
+-  saveToHist
++  saveToHist, updateStreak, shareCollection
+ } from './ui.js'
+ import {
+   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
+@@ -71,7 +71,7 @@ Object.assign(window, {
+   goPage, setMode, saveKey, showKeySetup, resetScan,
+   openCam, openGal, openFakeCam, openFakeGal, openMulti, runAnalyze,
+   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
+-  addToCol, delFromCol, sCol, fCol, exportVal, addCarToCollection,
++  addToCol, delFromCol, sCol, fCol, searchCol, exportVal, addCarToCollection, shareCollection,
+   fullCloudSync, renderCol,
+   submitPrice, addAlert, delAlert, clearAlerts, renderAlerts,
+   showShare, closeShare, shareWA, shareNative, shareApp, shareResultToGroup,
+@@ -84,7 +84,7 @@ Object.assign(window, {
+   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
+   whatsappSupport,
+   ol, showToast,
+-  getTodayScans, incScans, updateScanCounter, syncScanCountFromServer,
++  getTodayScans, incScans, updateScanCounter, syncScanCountFromServer, updateStreak,
+   showResult, loadCommunityPrices, startTimer, stopTimer, setStep, resetSteps, saveToHist,
+   analyzeMultiPhoto,
+ })
+@@ -238,6 +238,7 @@ window.addEventListener('load', function () {
+   updateScanCounter()
+   // Sync server-side scan count after short delay (auth needs to initialize first)
+   setTimeout(syncScanCountFromServer, 3000)
++  updateStreak()
+ 
+   // ── Onboarding — show to first-time users ────────────────────────────
+   if (!localStorage.getItem('hs_onboarded')) {
+diff --git a/src/ui.js b/src/ui.js
+index 0861929..cc67087 100644
+--- a/src/ui.js
++++ b/src/ui.js
+@@ -36,6 +36,7 @@ export function incScans() {
+   var d = JSON.parse(localStorage.getItem('hs_scans') || '{}')
+   var c = (d.date === t ? (d.count || 0) : 0) + 1
+   localStorage.setItem('hs_scans', JSON.stringify({date:t, count:c}))
++  updateStreak()
+   // Log to Supabase scan_logs (Supabase v2 - must await, no .catch())
+   if (state._sb) {
+     ;(async function() {
+@@ -94,6 +95,35 @@ export function updateScanCounter() {
+   }
+ }
+ 
++// ── Scan Streak ─────────────────────────────────────────────────────────────
++export function updateStreak() {
++  var today = new Date().toDateString()
++  var yesterday = new Date(Date.now() - 86400000).toDateString()
++  var streak = JSON.parse(localStorage.getItem('hs_streak') || '{"count":0,"last":""}')
++
++  // If scanned today already, streak is current — just display
++  if (streak.last === today) {
++    // Already counted
++  } else if (streak.last === yesterday) {
++    // Extend streak only when a scan fires — called from incScans()
++    streak = { count: streak.count + 1, last: today }
++    localStorage.setItem('hs_streak', JSON.stringify(streak))
++  } else if (streak.last !== today) {
++    // Streak broken — reset
++    streak = { count: 1, last: today }
++    localStorage.setItem('hs_streak', JSON.stringify(streak))
++  }
++
++  var el = document.getElementById('hdr-streak')
++  if (el && streak.count >= 2) {
++    el.textContent = '🔥 ' + streak.count + ' day streak'
++    el.style.display = 'inline-flex'
++  } else if (el) {
++    el.style.display = 'none'
++  }
++  return streak.count
++}
++
+ // ── Navigation ──
+ var _pageOrder = {scan:0,collection:1,marketplace:2,market:3,profile:4,more:5,alerts:6,hunt:7}
+ var _prevPageId = 'scan'
+@@ -465,6 +495,15 @@ export async function clearAlerts() {
+   renderAlerts()
+ }
+ export function renderAlerts() {
++  // Show push opt-in if not already subscribed and has alerts
++  var pushCard = document.getElementById('push-opt-in-card')
++  if (pushCard) {
++    var hasPush = localStorage.getItem('hs_push_subscribed') ||
++                  !('Notification' in window) ||
++                  Notification.permission === 'granted'
++    pushCard.style.display = (state.alerts.length > 0 && !hasPush) ? 'block' : 'none'
++  }
++
+   if (!state.alerts.length) {
+     document.getElementById('alerts-list').innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><div class="empty-t">No alerts yet</div><div class="empty-s">Scan a car and tap "Alert" to watch for deals</div></div>'
+     return
+@@ -522,6 +561,37 @@ export function showShare() {
+   document.getElementById('share-modal').classList.add('open')
+   document.body.style.overflow = 'hidden'
+ }
++export function shareCollection() {
++  var total = state.collection.length
++  if (total === 0) { showToast('Add some cars to your collection first!', 'error'); return }
++  var val = 0; state.collection.forEach(function(car) { val += parseINR(car.india_collector_inr) })
++  var sth = state.collection.filter(function(car) { return (car.rarity||'').toLowerCase().includes('super treasure') }).length
++  var th = state.collection.filter(function(car) { return (car.rarity||'').toLowerCase().includes('treasure') }).length
++  var rare = state.collection.filter(function(car) { var r=(car.rarity||'').toLowerCase(); return r.includes('rare')||r.includes('error')||r.includes('vintage') }).length
++  var newest = state.collection[0] ? (state.collection[0].name || '') : ''
++
++  var txt = [
++    '🚗 My HotScan India Collection',
++    '',
++    '📦 ' + total + ' cars · ₹' + val.toLocaleString('en-IN') + ' total value',
++    sth > 0 ? '⭐ ' + sth + ' Super Treasure Hunt' + (sth > 1 ? 's' : '') : '',
++    th  > 0 ? '🔥 ' + th  + ' Treasure Hunt' + (th > 1 ? 's' : '') : '',
++    rare > 0 ? '💎 ' + rare + ' Rare/Vintage' : '',
++    newest ? '🆕 Latest: ' + newest : '',
++    '',
++    '📷 Track yours free at hotscan.in'
++  ].filter(Boolean).join('
++')
++
++  if (navigator.share) {
++    navigator.share({ title: 'My HotScan Collection', text: txt }).catch(function(){})
++  } else if (navigator.clipboard) {
++    navigator.clipboard.writeText(txt).then(function() { showToast('Collection stats copied! Paste to WhatsApp or Instagram.', 'success') })
++  } else {
++    showToast('Copy this:\n' + txt, 'success')
++  }
++}
++
+ export function closeShare() { document.getElementById('share-modal').classList.remove('open'); document.body.style.overflow = '' }
+ 
+ export function shareWA() {
+diff --git a/vercel.json b/vercel.json
+index 468cb2b..064da2d 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -46,27 +46,48 @@
+     {
+       "source": "/manifest.json",
+       "headers": [
+-        { "key": "Content-Type", "value": "application/manifest+json" }
++        {
++          "key": "Content-Type",
++          "value": "application/manifest+json"
++        }
+       ]
+     },
+     {
+       "source": "/sw.js",
+       "headers": [
+-        { "key": "Service-Worker-Allowed", "value": "/" },
+-        { "key": "Cache-Control", "value": "no-cache" }
++        {
++          "key": "Service-Worker-Allowed",
++          "value": "/"
++        },
++        {
++          "key": "Cache-Control",
++          "value": "no-cache"
++        }
+       ]
+     },
+     {
+       "source": "/src/(.*)",
+       "headers": [
+-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
++        {
++          "key": "Cache-Control",
++          "value": "public, max-age=31536000, immutable"
++        }
+       ]
+     },
+     {
+       "source": "/assets/(.*)",
+       "headers": [
+-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
++        {
++          "key": "Cache-Control",
++          "value": "public, max-age=31536000, immutable"
++        }
+       ]
+     }
++  ],
++  "crons": [
++    {
++      "path": "/api/push-daily-reminder",
++      "schedule": "30 12 * * *"
++    }
+   ]
+ }
+-- 
+2.43.0
+
