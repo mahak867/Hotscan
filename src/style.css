@@ -1298,4 +1298,4 @@ input, select, textarea { font-size:16px !important; }
   .page{ max-width:780px !important; padding:20px 28px 40px !important; }
   #page-scan .key-card{ max-width:640px; margin:0 auto; }
 }
-.hs-sidebar{display:none}
+.hs-sidebar{display:none}@media(min-width:768px){.hs-sidebar{display:flex}}
