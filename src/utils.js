@@ -130,3 +130,62 @@ export function captureException(e) {
     }
   } catch(_) {}
 }
+
+// Achievement tracking system
+export function checkAndEarnAchievements(result) {
+  if (!result || !window.state) return
+  var earned = []
+  var ach = window.state.achievements || []
+  
+  // First Scan
+  if (ach.indexOf('first_scan') === -1) {
+    ach.push('first_scan')
+    earned.push({id: 'first_scan', label: '🔍 First Scan', desc: 'Scanned your first car'})
+  }
+  
+  // 10 Cars
+  if (window.state.collection.length >= 10 && ach.indexOf('10_cars') === -1) {
+    ach.push('10_cars')
+    earned.push({id: '10_cars', label: '🏎️ Collection Starter', desc: 'Collected 10 cars'})
+  }
+  
+  // 50 Cars
+  if (window.state.collection.length >= 50 && ach.indexOf('50_cars') === -1) {
+    ach.push('50_cars')
+    earned.push({id: '50_cars', label: '🏁 Serious Collector', desc: 'Collected 50 cars'})
+  }
+  
+  // Treasure Hunt
+  if (result.rarity && result.rarity.toLowerCase().includes('treasure') && ach.indexOf('found_th') === -1) {
+    ach.push('found_th')
+    earned.push({id: 'found_th', label: '🔥 Treasure Hunter', desc: 'Found a Treasure Hunt'})
+  }
+  
+  // Super Treasure Hunt
+  if (result.rarity && result.rarity.toLowerCase().includes('super treasure') && ach.indexOf('found_sth') === -1) {
+    ach.push('found_sth')
+    earned.push({id: 'found_sth', label: '⭐ Super Find', desc: 'Found a Super Treasure Hunt'})
+  }
+  
+  // High Value Find (₹5000+)
+  var val = parseINR(result.india_collector_inr || '0')
+  if (val >= 5000 && ach.indexOf('high_value') === -1) {
+    ach.push('high_value')
+    earned.push({id: 'high_value', label: '💎 High Roller', desc: 'Found a car worth ₹5000+'})
+  }
+  
+  // Save achievements
+  window.state.achievements = ach
+  localStorage.setItem('hs_ach', JSON.stringify(ach))
+  
+  // Show notifications for newly earned achievements
+  if (earned.length > 0) {
+    earned.forEach(function(a, i) {
+      setTimeout(function() {
+        showToast('🏆 ' + a.label + ' — ' + a.desc, 'success', 3000)
+      }, i * 500)
+    })
+  }
+  
+  return earned
+}

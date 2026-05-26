@@ -2,7 +2,7 @@ import './style.css'
 import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
 import { SUPA_URL, SUPA_KEY, FREE_SCANS } from './config.js'
-import { ol, showToast } from './utils.js'
+import { ol, showToast, checkAndEarnAchievements } from './utils.js'
 import {
   openAuth, closeAuth, toggleAuthMode, authContinue, signInWithGoogle,
   sendPasswordReset, openAccountModal, closeAccountModal, signOutUser,
@@ -10,7 +10,7 @@ import {
 } from './auth.js'
 import {
   addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
-  addCarToCollection, fullCloudSync
+  addCarToCollection, fullCloudSync, editColItem, saveColEdit, closeColEdit
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
@@ -31,7 +31,7 @@ import {
   getRefCode, getRefLink, updateRefUI, copyRefLink, shareViaWA,
   runAlertCheck, handleUpgrade, whatsappSupport, updateStreak, shareCollection,
   startTimer, stopTimer, setStep, resetSteps, runAnalyze, showResult, loadCommunityPrices,
-  saveToHist
+  saveToHist, clearScanHistory, exportCollectionCSV, resetAchievements
 } from './ui.js'
 import {
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
@@ -128,6 +128,17 @@ window.doCloudSync = async function(btn) {
     if (btn) { btn.disabled = false; btn.textContent = '☁️ Sync Collection from Cloud' }
   }
 }
+
+// Expose collection editing functions to window
+window.editColItem = editColItem
+window.saveColEdit = saveColEdit
+window.closeColEdit = closeColEdit
+window._checkAchievements = checkAndEarnAchievements
+
+// Expose utility functions to window
+window.clearScanHistory = clearScanHistory
+window.exportCollectionCSV = exportCollectionCSV
+window.resetAchievements = resetAchievements
 
 // DOMContentLoaded: file input event listeners + mobile dock touch
 document.addEventListener('DOMContentLoaded', function () {

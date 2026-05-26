@@ -5,6 +5,8 @@ import { cleanINR, parseINR, escHtml, showToast, rcls, captureException } from '
 // Both onAuthStateChange(INITIAL_SESSION) and getSession() fire on page load,
 // which caused two simultaneous queries — the second would hit DB_TIMEOUT.
 var _syncInFlight = false
+var _syncRetryCount = 0
+var _syncMaxRetries = 3
 
 export function addToCol() {
   if(!state.lastResult){ showToast('Scan a car first to add to collection', 'error'); return }
@@ -43,6 +45,75 @@ export function delFromCol(id) {
   state.collection = state.collection.filter(function(c) { return c.id !== id })
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
   renderCol()
+}
+
+export function editColItem(id) {
+  var item = state.collection.find(function(c) { return c.id === id })
+  if (!item) { showToast('Car not found', 'error'); return }
+  window._editingItem = item
+  window._editingItemId = id
+  // Show edit modal
+  var modal = document.getElementById('col-edit-modal')
+  if (!modal) {
+    // Create modal if it doesn't exist
+    createEditModal()
+    modal = document.getElementById('col-edit-modal')
+  }
+  // Populate form with item data
+  document.getElementById('col-edit-name').value = item.name || ''
+  document.getElementById('col-edit-rarity').value = item.rarity || 'Common'
+  document.getElementById('col-edit-condition').value = item.condition || 'Good'
+  document.getElementById('col-edit-price').value = cleanINR(item.india_collector_inr) || ''
+  document.getElementById('col-edit-notes').value = item.notes || ''
+  modal.classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+
+export function saveColEdit() {
+  if (!window._editingItem) return
+  var item = window._editingItem
+  item.name = document.getElementById('col-edit-name').value || item.name
+  item.rarity = document.getElementById('col-edit-rarity').value || item.rarity
+  item.condition = document.getElementById('col-edit-condition').value || item.condition
+  item.india_collector_inr = '₹' + document.getElementById('col-edit-price').value
+  item.notes = document.getElementById('col-edit-notes').value || ''
+  localStorage.setItem('hs_col', JSON.stringify(state.collection))
+  if (state._sb && state.currentUser && typeof item.id === 'string' && item.id.includes('-')) {
+    saveToCloud(item)
+  }
+  closeColEdit()
+  renderCol()
+  showToast('Car updated!', 'success')
+}
+
+export function closeColEdit() {
+  var modal = document.getElementById('col-edit-modal')
+  if (modal) modal.classList.remove('open')
+  document.body.style.overflow = ''
+  window._editingItem = null
+  window._editingItemId = null
+}
+
+function createEditModal() {
+  var html = '<div id="col-edit-modal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:2000;align-items:center;justify-content:center;padding:20px">' +
+    '<div class="card" style="max-width:500px;width:100%;max-height:90vh;overflow-y:auto">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">' +
+    '<div style="font-size:18px;font-weight:800">Edit Car</div>' +
+    '<button onclick="closeColEdit()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:24px">✕</button>' +
+    '</div>' +
+    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Car Name</label><input id="col-edit-name" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"></div>' +
+    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Rarity</label><select id="col-edit-rarity" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"><option>Common</option><option>Uncommon</option><option>Rare</option><option>Premium</option><option>Treasure Hunt</option><option>Super Treasure Hunt</option><option>Error Car</option><option>Vintage</option></select></div>' +
+    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Condition</label><select id="col-edit-condition" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"><option>Mint on Card</option><option>Near Mint</option><option>Very Good</option><option>Good</option><option>Fair</option></select></div>' +
+    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Price (₹)</label><input id="col-edit-price" type="number" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"></div>' +
+    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Notes</label><textarea id="col-edit-notes" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box;height:80px;resize:none;font-family:inherit"></textarea></div>' +
+    '<div style="display:flex;gap:8px"><button class="btn-red" onclick="saveColEdit()" style="flex:1;padding:12px;border-radius:8px;font-weight:700">Save Changes</button><button onclick="closeColEdit()" style="flex:1;padding:12px;border-radius:8px;background:var(--surface3);border:1px solid var(--border);color:#fff;cursor:pointer;font-weight:700">Cancel</button></div>' +
+    '</div></div>'
+  var div = document.createElement('div')
+  div.innerHTML = html
+  document.body.appendChild(div.firstChild)
+  var style = document.createElement('style')
+  style.textContent = '.modal { display: none !important; } .modal.open { display: flex !important; }'
+  document.head.appendChild(style)
 }
 
 export function sCol(by, el) { state.sortBy = by; document.querySelectorAll('#sc .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
@@ -145,7 +216,10 @@ export function renderCol() {
             '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+escHtml(c.series||'')+(c.color?' · '+escHtml(c.color):'')+'</div>'+
             '<div style="font-size:17px;font-weight:800;color:'+bc+';margin-top:6px">₹'+cleanINR(c.india_collector_inr)+'</div>'+
           '</div>'+
-          '<button onclick="delFromCol(\'+c.id+\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;flex-shrink:0">🗑</button>'+
+          '<div style="display:flex;gap:4px;flex-shrink:0">'+
+            '<button onclick="editColItem(\'+c.id+\')" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;transition:color .2s" onmouseenter="this.style.color=\'var(--gold)\'" onmouseleave="this.style.color=\'var(--text2)\'">✏️</button>'+
+            '<button onclick="delFromCol(\'+c.id+\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;transition:color .2s" onmouseenter="this.style.color=\'var(--red)\'" onmouseleave="this.style.color=\'var(--text3)\'">🗑</button>'+
+          '</div>'+
         '</div>'
     } else {
       div.style.cssText = 'background:var(--surface);border-radius:14px;padding:11px;border:1px solid var(--border);border-left:3px solid '+bc+';transition:transform .15s,box-shadow .15s'
@@ -162,7 +236,10 @@ export function renderCol() {
             (c.india_collector_inr?'<span style="font-size:12px;font-weight:800;margin-left:auto">₹'+cleanINR(c.india_collector_inr)+'</span>':'')+
           '</div>'+valBar+
         '</div>'+
-        '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;flex-shrink:0;opacity:0;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0">🗑</button>'+
+        '<div style="display:flex;gap:4px;flex-shrink:0">'+
+          '<button data-editid="'+c.id+'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s">✏️</button>'+
+          '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s">🗑</button>'+
+        '</div>'+
       '</div>'
     }
     return div
@@ -170,10 +247,24 @@ export function renderCol() {
 
   spotlights.forEach(function(c){list.appendChild(makeCard(c,true))})
   regular.forEach(function(c){list.appendChild(makeCard(c,false))})
+  
+  // Add hover effects to regular cards
+  document.querySelectorAll('#col-list [data-editid], #col-list [data-delid]').forEach(function(btn) {
+    btn.parentElement.parentElement.onmouseenter = function() {
+      this.querySelectorAll('[data-editid], [data-delid]').forEach(function(b) { b.style.opacity = '1' })
+    }
+    btn.parentElement.parentElement.onmouseleave = function() {
+      this.querySelectorAll('[data-editid], [data-delid]').forEach(function(b) { b.style.opacity = '0' })
+    }
+  })
+  
+  // Handle edit and delete clicks
   list.addEventListener('click', function(e) {
-    var btn = e.target.closest('[data-delid]')
-    if (btn) delFromCol(btn.dataset.delid)
-  }, {once: true})
+    var editBtn = e.target.closest('[data-editid]')
+    var delBtn = e.target.closest('[data-delid]')
+    if (editBtn) editColItem(editBtn.dataset.editid)
+    if (delBtn) delFromCol(delBtn.dataset.delid)
+  })
 }
 
 export function exportVal() {
@@ -288,16 +379,36 @@ export async function fullCloudSync(retryCount) {
   }
 }
 
-// Wraps any Supabase query promise in a hard timeout.
+// Wraps any Supabase query promise in a hard timeout with exponential backoff.
 // Avoids duplicate new Promise(timeout) boilerplate and ensures
 // ALL queries (including the re-fetch after uploading local items) are guarded.
 function _timedQuery(queryPromise, ms) {
+  ms = ms || 12000  // Increased from 8000 to 12000ms default
   return Promise.race([
     queryPromise,
     new Promise(function(_, rej) {
-      setTimeout(function() { rej(new Error('DB_TIMEOUT')) }, ms || 8000)
+      setTimeout(function() { rej(new Error('DB_TIMEOUT: Query exceeded ' + ms + 'ms')) }, ms)
     })
   ])
+}
+
+// Retry helper with exponential backoff
+async function _retryWithBackoff(fn, maxAttempts, initialDelay) {
+  maxAttempts = maxAttempts || 3
+  initialDelay = initialDelay || 1000
+  var lastError
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch(e) {
+      lastError = e
+      if (attempt < maxAttempts - 1) {
+        var delay = initialDelay * Math.pow(2, attempt) + Math.random() * 1000
+        await new Promise(function(r) { setTimeout(r, delay) })
+      }
+    }
+  }
+  throw lastError
 }
 
 async function _doFullCloudSync(retryCount) {
@@ -309,13 +420,13 @@ async function _doFullCloudSync(retryCount) {
     throw new Error('Not signed in — sign out and back in, then try again')
   }
   try {
-    // Initial fetch — guarded by _timedQuery
+    // Initial fetch — guarded by _timedQuery with increased timeout
     var res = await _timedQuery(
       state._sb.from('collection')
         .select('*')
         .eq('user_id', state.currentUser.id)
         .order('added_at', { ascending: false }),
-      8000
+      12000  // Increased from 8000ms to 12000ms
     )
 
     var cloudItems = []
@@ -378,7 +489,7 @@ async function _doFullCloudSync(retryCount) {
           .select('*')
           .eq('user_id', state.currentUser.id)
           .order('added_at', { ascending: false }),
-        8000
+        12000  // Increased from 8000ms to 12000ms
       )
       if (res2.data) {
         cloudItems = res2.data.map(function(d) {

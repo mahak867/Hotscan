@@ -78,6 +78,14 @@ async function identifyCar(imageData) {
   if (d.confidence && d.confidence < 40) {
     throw new Error('Image too unclear to identify (confidence ' + d.confidence + '%). Try: brighter light · less blur · closer shot.')
   }
+  // Add warning flag for low-medium confidence
+  if (d.confidence && d.confidence < 70) {
+    d._lowConfidence = true
+  }
+  // Validate rarity assessment
+  if (!d.rarity_reason && (d.rarity === 'Treasure Hunt' || d.rarity === 'Super Treasure Hunt' || d.rarity === 'Error Car')) {
+    d._needsVerification = true
+  }
   return d
 }
 

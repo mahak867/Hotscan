@@ -280,6 +280,10 @@ export function showResult(d) {
   if (state.imgThumb) document.getElementById('r-thumb').innerHTML = '<img src="' + state.imgThumb + '" alt="">'
   document.getElementById('r-name').textContent = d.name || 'Unknown'
   document.getElementById('r-series').textContent = d.series || ''
+  
+  // Check and earn achievements
+  window._checkAchievements && window._checkAchievements(d)
+  
   // #1 — color-coded confidence bar: red <50%, gold 50-79%, green ≥80%
   var conf = d.confidence || 75
   var confFill = document.getElementById('r-conf')
@@ -295,6 +299,30 @@ export function showResult(d) {
     ab.className = 'auth-badge ' + (d.is_authentic ? 'auth-y' : 'auth-n')
     ab.textContent = d.is_authentic ? '✓ Authentic' : '⚠️ Possibly Fake'
   } else ab.style.display = 'none'
+  
+  // Show low confidence warning
+  var lcw = document.getElementById('r-low-conf-warning')
+  if (d._lowConfidence) {
+    if (!lcw) {
+      var warn = document.createElement('div')
+      warn.id = 'r-low-conf-warning'
+      warn.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);border-radius:8px;margin-top:12px;font-size:12px;color:var(--gold)'
+      warn.innerHTML = '⚠️ <span><strong>Low confidence:</strong> This identification might be uncertain. Please verify the car details match your photo.</span>'
+      document.getElementById('r-dets').parentElement.insertBefore(warn, document.getElementById('r-dets'))
+    }
+  } else if (lcw) lcw.remove()
+  
+  // Show verification needed for rare rarities without clear evidence
+  var vnw = document.getElementById('r-verify-warning')
+  if (d._needsVerification) {
+    if (!vnw) {
+      var verify = document.createElement('div')
+      verify.id = 'r-verify-warning'
+      verify.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.3);border-radius:8px;margin-top:12px;font-size:12px;color:var(--red)'
+      verify.innerHTML = '🔍 <span><strong>Please verify:</strong> This appears to be ' + (d.rarity || 'rare') + '. Check for the distinguishing features before confirming.</span>'
+      document.getElementById('r-dets').parentElement.insertBefore(verify, document.getElementById('r-dets'))
+    }
+  } else if (vnw) vnw.remove()
   document.getElementById('p1').textContent = d.india_retail_inr ? '₹' + d.india_retail_inr : '—'
   document.getElementById('p2').textContent = d.india_collector_inr ? '₹' + cleanINR(d.india_collector_inr) : '—'
   document.getElementById('p3').textContent = d.us_retail_usd ? '$' + d.us_retail_usd : '—'
@@ -1258,6 +1286,53 @@ export async function shareCollection() {
       showToast('Image saved! Share to Instagram or WhatsApp Stories.','success')
     },'image/png')
   }, 50)
+}
+
+// Utility: Clear scan history
+export async function clearScanHistory() {
+  var ok = await hsConfirm('Clear Scan History', 'This will delete all your previous scans. This cannot be undone.', 'Clear', '🗑️')
+  if (!ok) return
+  state.scanHistory = []
+  localStorage.setItem('hs_hist', JSON.stringify([]))
+  showToast('Scan history cleared', 'success')
+}
+
+// Utility: Export collection as CSV
+export function exportCollectionCSV() {
+  if (state.collection.length === 0) { showToast('Collection is empty', 'error'); return }
+  var headers = ['Name','Series','Rarity','Color','Condition','Retail (₹)','Collector (₹)','US Retail ($)','US Collector ($)','Added Date']
+  var rows = state.collection.map(function(c) {
+    return [
+      c.name||'',
+      c.series||'',
+      c.rarity||'',
+      c.color||'',
+      c.condition||'',
+      cleanINR(c.india_retail_inr)||'',
+      cleanINR(c.india_collector_inr)||'',
+      c.us_retail_usd||'',
+      c.us_collector_usd||'',
+      c.added||''
+    ]
+  })
+  var csv = [headers].concat(rows).map(function(r) {
+    return r.map(function(v) { return '"' + String(v).replace(/"/g,'""') + '"' }).join(',')
+  }).join('\n')
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'})
+  var link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = 'hotscan-collection-' + new Date().toISOString().split('T')[0] + '.csv'
+  link.click()
+  showToast('Collection exported as CSV', 'success')
+}
+
+// Utility: Reset achievements
+export async function resetAchievements() {
+  var ok = await hsConfirm('Reset Achievements', 'This will clear all earned badges. You can earn them again by completing actions.', 'Reset', '🔄')
+  if (!ok) return
+  state.achievements = []
+  localStorage.setItem('hs_ach', JSON.stringify([]))
+  showToast('Achievements reset', 'success')
 }
 
 

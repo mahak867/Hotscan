@@ -7,6 +7,7 @@ export const state = {
   collection: JSON.parse(localStorage.getItem('hs_col') || '[]'),
   scanHistory: JSON.parse(localStorage.getItem('hs_hist') || '[]'),
   alerts: JSON.parse(localStorage.getItem('hs_alerts') || '[]'),
+  achievements: JSON.parse(localStorage.getItem('hs_ach') || '[]'),
   sortBy: 'date',
   filterBy: 'all',
   currentMode: 'photo',
