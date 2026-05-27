@@ -259,12 +259,7 @@ export function renderCol() {
   })
   
   // Handle edit and delete clicks
-  list.addEventListener('click', function(e) {
-    var editBtn = e.target.closest('[data-editid]')
-    var delBtn = e.target.closest('[data-delid]')
-    if (editBtn) editColItem(editBtn.dataset.editid)
-    if (delBtn) delFromCol(delBtn.dataset.delid)
-  })
+  var oh=list._ch;if(oh)list.removeEventListener('click',oh);list._ch=function(e){var eb=e.target.closest('[data-editid]'),db=e.target.closest('[data-delid]');if(eb){e.stopPropagation();editColItem(eb.dataset.editid)}if(db){e.stopPropagation();delFromCol(db.dataset.delid)}};list.addEventListener('click',list._ch)
 }
 
 export function exportVal() {
