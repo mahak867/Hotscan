@@ -130,6 +130,7 @@ window.doCloudSync = async function(btn) {
 }
 
 // Expose collection editing functions to window
+window.delFromCol = delFromCol
 window.editColItem = editColItem
 window.saveColEdit = saveColEdit
 window.closeColEdit = closeColEdit
