@@ -75,8 +75,14 @@ async function identifyCar(imageData) {
     }
     throw new Error('Could not identify. Try: white surface · bright light · side view · include card')
   }
-  if (d.confidence && d.confidence < 40) {
-    throw new Error('Image too unclear to identify (confidence ' + d.confidence + '%). Try: brighter light · less blur · closer shot.')
+  if (!d.name || d.name.toLowerCase().indexOf('unknown') > -1 || d.name.toLowerCase().indexOf('generic') > -1) {
+    throw new Error('Could not identify this car. Try: white background, bright light, close-up side view')
+  }
+  if (d.confidence && d.confidence < 50) {
+    throw new Error('Image too unclear (' + d.confidence + '% confidence). Try: brighter light, less blur, closer shot')
+  }
+  if (d.confidence && d.confidence < 75) {
+    d._lowConfidence = true
   }
   // Add warning flag for low-medium confidence
   if (d.confidence && d.confidence < 70) {

@@ -7,9 +7,9 @@ var _mpFilter = 'all'
 var _mpListings = null
 
 export function mpMode(tab) {
-  ['buy','sell','olx'].forEach(function(t) {
-    document.getElementById('mp-tab-'+t).classList.toggle('active', t===tab)
-    document.getElementById('mp-'+t).style.display = t===tab ? 'block' : 'none'
+  ['buy','sell'].forEach(function(t) {
+    var te=document.getElementById('mp-tab-'+t); if(te) te.classList.toggle('active', t===tab)
+    var pe=document.getElementById('mp-'+t); if(pe) pe.style.display = t===tab ? 'block' : 'none'
   })
   if (tab === 'buy') loadAndRenderListings()
   if (tab === 'sell') {
