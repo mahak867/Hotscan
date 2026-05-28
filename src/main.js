@@ -81,6 +81,7 @@ Object.assign(window, {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
   quickSell, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected,
   copyRefLink, shareViaWA,
+  shareCollection, updateStreak,
   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
   whatsappSupport,
   ol, showToast,
@@ -130,6 +131,7 @@ window.doCloudSync = async function(btn) {
 }
 
 // Expose collection editing functions to window
+window.delFromCol = delFromCol
 window.delFromCol = delFromCol
 window.editColItem = editColItem
 window.saveColEdit = saveColEdit

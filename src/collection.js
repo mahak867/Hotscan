@@ -95,25 +95,35 @@ export function closeColEdit() {
 }
 
 function createEditModal() {
-  var html = '<div id="col-edit-modal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:2000;align-items:center;justify-content:center;padding:20px">' +
-    '<div class="card" style="max-width:500px;width:100%;max-height:90vh;overflow-y:auto">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">' +
-    '<div style="font-size:18px;font-weight:800">Edit Car</div>' +
-    '<button onclick="closeColEdit()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:24px">✕</button>' +
-    '</div>' +
-    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Car Name</label><input id="col-edit-name" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"></div>' +
-    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Rarity</label><select id="col-edit-rarity" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"><option>Common</option><option>Uncommon</option><option>Rare</option><option>Premium</option><option>Treasure Hunt</option><option>Super Treasure Hunt</option><option>Error Car</option><option>Vintage</option></select></div>' +
-    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Condition</label><select id="col-edit-condition" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"><option>Mint on Card</option><option>Near Mint</option><option>Very Good</option><option>Good</option><option>Fair</option></select></div>' +
-    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Price (₹)</label><input id="col-edit-price" type="number" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box"></div>' +
-    '<div style="margin-bottom:15px"><label style="display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:700">Notes</label><textarea id="col-edit-notes" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:#fff;box-sizing:border-box;height:80px;resize:none;font-family:inherit"></textarea></div>' +
-    '<div style="display:flex;gap:8px"><button class="btn-red" onclick="saveColEdit()" style="flex:1;padding:12px;border-radius:8px;font-weight:700">Save Changes</button><button onclick="closeColEdit()" style="flex:1;padding:12px;border-radius:8px;background:var(--surface3);border:1px solid var(--border);color:#fff;cursor:pointer;font-weight:700">Cancel</button></div>' +
-    '</div></div>'
-  var div = document.createElement('div')
-  div.innerHTML = html
-  document.body.appendChild(div.firstChild)
-  var style = document.createElement('style')
-  style.textContent = '.modal { display: none !important; } .modal.open { display: flex !important; }'
-  document.head.appendChild(style)
+  var el = document.createElement('div')
+  el.id = 'col-edit-modal'
+  el.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box'
+  var rarOpts = ['Common','Uncommon','Rare','Premium','Treasure Hunt','Super Treasure Hunt','Error Car','Vintage'].map(function(o){return '<option>'+o+'</option>'}).join('')
+  var condOpts = ['Mint on Card','Near Mint','Very Good','Good','Fair'].map(function(o){return '<option>'+o+'</option>'}).join('')
+  var S = 'width:100%;padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:#fff;box-sizing:border-box;font-size:14px;margin-bottom:12px'
+  var L = 'display:block;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;font-weight:700;text-transform:uppercase'
+  el.innerHTML =
+    '<div style="background:#131320;border-radius:18px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;padding:22px;box-sizing:border-box;border:1px solid rgba(255,255,255,.1)">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">' +
+        '<div style="font-size:17px;font-weight:800">✏️ Edit Car</div>' +
+        '<button id="cem-x" style="background:rgba(255,255,255,.1);border:none;color:#fff;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:8px">✕</button>' +
+      '</div>' +
+      '<label style="'+L+'">Car Name</label><input id="col-edit-name" type="text" placeholder="e.g. Bone Shaker" style="'+S+'">' +
+      '<label style="'+L+'">Rarity</label><select id="col-edit-rarity" style="'+S+'">'+rarOpts+'</select>' +
+      '<label style="'+L+'">Condition</label><select id="col-edit-condition" style="'+S+'">'+condOpts+'</select>' +
+      '<label style="'+L+'">Collector Price (₹)</label><input id="col-edit-price" type="number" placeholder="e.g. 350" style="'+S+'">' +
+      '<label style="'+L+'">Notes</label>' +
+      '<textarea id="col-edit-notes" style="'+S+';height:70px;resize:none;font-family:inherit;margin-bottom:16px"></textarea>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button id="cem-save" style="flex:1;padding:13px;background:#e63946;border:none;color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Save Changes</button>' +
+        '<button id="cem-cancel" style="flex:1;padding:13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>' +
+      '</div>' +
+    '</div>'
+  document.body.appendChild(el)
+  document.getElementById('cem-save').addEventListener('click', saveColEdit)
+  document.getElementById('cem-cancel').addEventListener('click', closeColEdit)
+  document.getElementById('cem-x').addEventListener('click', closeColEdit)
+  el.addEventListener('click', function(e) { if (e.target === el) closeColEdit() })
 }
 
 export function sCol(by, el) { state.sortBy = by; document.querySelectorAll('#sc .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
