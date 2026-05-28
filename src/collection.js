@@ -65,7 +65,7 @@ export function editColItem(id) {
   document.getElementById('col-edit-condition').value = item.condition || 'Good'
   document.getElementById('col-edit-price').value = cleanINR(item.india_collector_inr) || ''
   document.getElementById('col-edit-notes').value = item.notes || ''
-  modal.classList.add('open')
+  modal.style.display = 'flex'
   document.body.style.overflow = 'hidden'
 }
 
@@ -88,7 +88,7 @@ export function saveColEdit() {
 
 export function closeColEdit() {
   var modal = document.getElementById('col-edit-modal')
-  if (modal) modal.classList.remove('open')
+  if (modal) modal.style.display = 'none'
   document.body.style.overflow = ''
   window._editingItem = null
   window._editingItemId = null
