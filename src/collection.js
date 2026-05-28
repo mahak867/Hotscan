@@ -42,7 +42,7 @@ export function delFromCol(id) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
     if (cloudId) deleteFromCloud(cloudId)
   }
-  state.collection = state.collection.filter(function(c) { return c.id !== id })
+  state.collection = state.collection.filter(function(c) { return String(c.id) !== id })
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
   renderCol()
 }
