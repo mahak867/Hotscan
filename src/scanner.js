@@ -96,52 +96,48 @@ async function identifyCar(imageData) {
 }
 
 async function searchPrices(carName, rarity, castingYear) {
+  // Real-Time 3-Source Pricing: web search + community + AI synthesis
+  try {
+    var ctrl = new AbortController()
+    var t = setTimeout(function(){ ctrl.abort() }, 20000)
+    var res = await fetch('/api/prices', {
+      method: 'POST', signal: ctrl.signal,
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({carName:carName, rarity:rarity, castingYear:castingYear})
+    })
+    clearTimeout(t)
+    if (res && res.ok) {
+      var d = await res.json()
+      if (d && d.india_collector_inr) {
+        var R = function(v){ return v?(String(v).startsWith('₹')?v:'₹'+v):v }
+        return {
+          india_retail_inr: R(d.india_retail_inr), india_collector_inr: R(d.india_collector_inr),
+          us_retail_usd: d.us_retail_usd, us_collector_usd: d.us_collector_usd,
+          price_trend: d.price_trend||'Stable', price_trend_reason: d.price_trend_reason||'',
+          india_insight: d.india_insight||'', sell_platforms: d.sell_platforms||['OLX India','Instagram','Maido'],
+          buy_tip: d.buy_tip||'', data_quality: d.data_quality||'Live',
+          community_avg_inr: d.community_avg_inr||null, community_count: d.community_count||0
+        }
+      }
+    }
+  } catch(e) { console.warn('Pricing API unavailable, using fallback:', e.message) }
+  return await _fallbackPrices(carName, rarity, castingYear)
+}
+
+async function _fallbackPrices(carName, rarity, castingYear) {
   var rp = {
-    'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},
-    'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},
-    'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},
-    'Premium':{r:'450-800',c:'700-1500',ur:'4.99',uc:'8-20'},
-    'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},
-    'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},
-    'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},
-    'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}
+    'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},
+    'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},'Premium':{r:'450-800',c:'700-1500',ur:'4.99',uc:'8-20'},
+    'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},
+    'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}
   }
-  var p = rp[rarity] || rp['Common']
-  var prompt = [
-    'You are an India Hot Wheels price analyst. Your job is to give REALISTIC, CONSERVATIVE pricing for Indian collectors.',
-    '⚠️ STRICT RULES:',
-    '1. You MUST stay within or close to the stated price bands. Do NOT inflate prices.',
-    '2. Do NOT invent sale data. Only comment on market trends you are confident about.',
-    '3. India retail = what stores like Hamleys / Flipkart charge. India collector = OLX / Instagram resale.',
-    '4. If you are unsure about trend, use "Stable".',
-    '',
-    'Car: "' + carName + '"',
-    'Rarity: ' + rarity,
-    'Casting Year: ' + castingYear,
-    'REQUIRED price bands (stay within these ranges):',
-    '  India retail: ₹' + p.r,
-    '  India collector: ₹' + p.c,
-    '  US retail: $' + p.ur,
-    '  US collector: $' + p.uc,
-    '',
-    'Factors to consider:',
-    '- JDM cars (Skyline, Supra, RX-7) and US muscle have higher demand in India',
-    '- Most mainline cars never reach Indian stores — OLX prices reflect import costs',
-    '- Be specific about which Indian collector communities want this car and why',
-    '',
-    'Return ONLY valid JSON with numbers strictly inside the bands above:',
-    '{"india_retail_inr":"' + p.r + '",',
-    '"india_collector_inr":"' + p.c + '",',
-    '"us_retail_usd":"' + p.ur + '",',
-    '"us_collector_usd":"' + p.uc + '",',
-    '"price_trend":"Rising|Stable|Falling",',
-    '"price_trend_reason":"specific reason — or Stable if uncertain",',
-    '"india_insight":"2-3 sentences about Indian demand for this exact model based on known collector interest",',
-    '"sell_platforms":["OLX","Instagram collector groups","Maido"],',
-    '"buy_tip":"best way to find this car in India at good price"}'
-  ].join('\n')
+  var p = rp[rarity]||rp['Common']
+  var n=(carName||'').toLowerCase()
+  var hi=['skyline','supra','rx-7','nsx','camaro','mustang','charger','ferrari','lamborghini','porsche','bone shaker','twin mill','deora','beach bomb','corvette'].some(function(k){return n.includes(k)})
+  var prompt='India Hot Wheels price analyst for "'+carName+'" ('+rarity+')\nBands: India retail ₹'+p.r+' | Collector ₹'+p.c+' | US $'+p.ur+'/'+p.uc+'\nHigh India demand: '+hi+'\nReturn ONLY JSON: {"india_retail_inr":"'+p.r+'","india_collector_inr":"'+p.c+'","us_retail_usd":"'+p.ur+'","us_collector_usd":"'+p.uc+'","price_trend":"Stable","price_trend_reason":"Based on rarity and India collector demand","india_insight":"Indian collectors seek this through OLX and Instagram groups.","sell_platforms":["OLX India","Instagram #hotwheelsindia","Maido"],"buy_tip":"Check OLX India and local collector groups","data_quality":"Estimated"}'
   try { return await groqJSON(prompt, CODEX_MODEL) } catch(e) { return null }
 }
+
 
 export async function analyzePhoto() {
   if (!state.img64) return
