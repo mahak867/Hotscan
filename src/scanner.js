@@ -5,6 +5,38 @@ import { groqVision, groqJSON, parseJSON } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
 import { addCarToCollection } from './collection.js'
 
+// Override rarity for known Premium castings the AI misclassifies
+function applyKnownPremiumOverrides(d) {
+  var n = d.name.toLowerCase();
+  var premiumCastings = [
+    'mclaren','bugatti','ferrari','porsche','lamborghini',
+    'formula 1','f1 team','koenigsegg','pagani','aston martin',
+    'maserati','nascar','mercedes amg','red bull racing',
+    'alpine f1','haas f1','williams f1','alfa romeo f1'
+  ];
+  var isPremium = premiumCastings.some(function(k){ return n.includes(k); });
+  if (isPremium && (d.rarity === 'Common' || d.rarity === 'Uncommon')) {
+    d.rarity = 'Premium';
+    d.rarity_reason = 'Known Premium casting — always Premium line regardless of packaging';
+    d.india_retail_inr = d.india_retail_inr === '150-200' || d.india_retail_inr === '200-350' || d.india_retail_inr === '500-1400' ? '800-1500' : d.india_retail_inr;
+    d.india_collector_inr = d.india_collector_inr === '200-400' || d.india_collector_inr === '300-600' ? '1500-3500' : d.india_collector_inr;
+    d.us_retail_usd = '4.99';
+    d.series = d.series === 'Unknown' ? inferSeries(n) : d.series;
+  }
+  return d;
+}
+
+function inferSeries(n) {
+  if (n.includes('mclaren') || n.includes('formula 1') || n.includes('f1')) return 'Hot Wheels Premium Formula 1 2025';
+  if (n.includes('bugatti')) return 'Hot Wheels Boulevard';
+  if (n.includes('ferrari') || n.includes('porsche') || n.includes('lamborghini')) return 'Hot Wheels Car Culture';
+  if (n.includes('koenigsegg') || n.includes('pagani')) return 'Hot Wheels Car Culture Exotic Envy';
+  if (n.includes('aston martin') || n.includes('maserati')) return 'Hot Wheels Car Culture';
+  return 'Hot Wheels Premium';
+}
+
+
+
 async function identifyCar(imageData) {
   var sys = [
     '🔍 HotScan AI — precise Hot Wheels identifier. VISUAL EVIDENCE ONLY. Never guess or hallucinate.',
@@ -176,7 +208,7 @@ export async function analyzePhoto() {
       window.setStep(1, 'done'); window.setStep(2, 'active')
       document.getElementById('timer-lbl').textContent = 'Found ' + multiResult.cars.length + ' cars — fetching prices...'
       var pricePromises = multiResult.cars.map(function(car) {
-        return searchPrices(car.name, car.rarity, car.casting_year)
+        applyKnownPremiumOverrides(car); return searchPrices(car.name, car.rarity, car.casting_year)
       })
       var prices = await Promise.all(pricePromises)
       var allCars = multiResult.cars.map(function(car, i) {
