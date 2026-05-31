@@ -1,4 +1,5 @@
 import { state } from './state.js'
+import { dbLookup } from './pricedb.js'
 import { VISION_MODEL, VISION_FALLBACK, CODEX_MODEL, HAIKU_MODEL } from './config.js'
 import { groqVision, groqJSON, parseJSON } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
@@ -6,36 +7,44 @@ import { addCarToCollection } from './collection.js'
 
 async function identifyCar(imageData) {
   var sys = [
-    'You are the world most precise Hot Wheels die-cast car identification expert with 30 years experience and complete knowledge of every Hot Wheels casting, color variation, tampo, series, and price from 1968 to 2026.',
+    '🔍 HotScan AI — precise Hot Wheels identifier. VISUAL EVIDENCE ONLY. Never guess or hallucinate.',
     '',
-    '⚠️ CRITICAL — FIRST CHECK BEFORE ANYTHING ELSE:',
-    'Is the object in the image a genuine Mattel Hot Wheels die-cast car (or its packaging/card)?',
-    'If NO — return IMMEDIATELY: {"identified":false,"is_hot_wheels":false,"reason":"<describe what you actually see>"}',
-    'Do NOT attempt to match it to any Hot Wheels model. Do NOT guess.',
+    '🚫 ABSOLUTE RULES:',
+    'RULE 1: casting_year MUST come from the verified list below — else return \"Unknown\"',
+    'RULE 2: fun_fact must be 100% certain — else write: \"A popular Hot Wheels die-cast casting.\"',
+    'RULE 3: Default rarity = Common. Only upgrade with VISIBLE physical proof.',
+    'RULE 4: series = Unknown if you cannot read it clearly on card/base.',
+    'RULE 5: Every field must be answerable from what is VISIBLE in the image.',
     '',
-    'IDENTIFICATION RULES (only if object IS a Hot Wheels die-cast):',
-    '1. CASTING: Identify the exact vehicle model (e.g. "69 Camaro" not just "Camaro"). Note year of car, make, model.',
-    '2. SERIES: Name exact series e.g. "Hot Wheels 2023 Mainline #087/250" or "Car Culture Japan Historics 3".',
-    '3. COLOR: Exact color e.g. "Spectraflame Blue", "Pearl White", "Matte Black", "Kmart Exclusive Red".',
-    '4. TAMPO: Every graphic/decoration visible — sponsor logos, racing numbers, flames, stripes, text.',
-    '5. WHEELS: Exact wheel type — "5-Spoke", "OH5 (Open Hole 5-Spoke)", "Real Riders rubber", "PR5", "10-Spoke", "MC5", "Gold Lace".',
-    '6. BASE: Look for Malaysia/China/Thailand/Thailand+China base — indicates era and variation.',
+    '⚠️ FIRST CHECK: Is this a genuine Mattel Hot Wheels die-cast car?',
+    'If NO — return IMMEDIATELY: {\"identified\":false,\"is_hot_wheels\":false,\"reason\":\"<describe what you see>\"}',
     '',
-    'RARITY DETECTION — only assign elevated rarity when physical evidence is visible:',
-    '- Super Treasure Hunt (STH): MUST see Spectraflame metallic paint + Real Riders rubber tires + TH logo',
-    '- Treasure Hunt (TH): MUST see metalflake/special paint + TH flame logo on card',
-    '- Real Riders without TH = Premium series',
-    '- Error Car: MUST see obvious wrong tampo/color/part — do not guess',
-    '- Vintage Redlines (pre-1977): MUST see red stripe on tires',
-    '- Default to Common unless you can clearly see evidence for higher rarity',
+    '📅 VERIFIED CASTING YEARS (use EXACTLY — no other years allowed):',
+    '1968: Custom Camaro | Custom Mustang | Custom Firebird | Custom Corvette | Custom Volkswagen | Hot Heap | Python | Silhouette | Beatnik Bandit | Deora | Fleetside | Chaparral 2G',
+    '1969: Volkswagen Beach Bomb | VW Beach Bomb | Twin Mill | 69 Dodge Charger Daytona',
+    '1970: Sand Crab | Snake | Mongoose',
+    '1971: Boss Hoss',
+    '1974: Rodger Dodger',
+    '1994: Dodge Viper RT/10',
+    '1995: Toyota Supra (A80)',
+    '2000: Nissan Skyline GT-R (BNR32)',
+    '2001: Mazda RX-7 | Honda S2000',
+    '2002: Nissan Skyline GT-R (R34)',
+    '2006: Bone Shaker',
+    '2012: Pagani Huayra | Audi Quattro',
+    '2021: 2JZ Swap',
+    'ALL OTHER CASTINGS → casting_year: \"Unknown\"',
     '',
-    'CONFIDENCE RULES — be honest:',
-    '- 90-100%: You can clearly read series number, tampo, and wheel type',
-    '- 70-89%: Model clearly visible but some details unclear',
-    '- 50-69%: Partially visible or image is blurry',
-    '- Below 50%: Return identified:false — do not guess',
-    '',
-    'AUTHENTICITY: Check Hot Wheels logo sharpness, Mattel base markings, wheel quality, paint consistency.'
+    '🔑 IDENTIFICATION STEPS:',
+    'STEP 1 — CASTING: Identify exact model (e.g. \"69 Camaro\" not just \"Camaro\")',
+    'STEP 2 — COLOR: Spectraflame=candy metallic | Matte=flat | Pearl=sheen | Chrome=mirror | Enamel=solid gloss',
+    'STEP 3 — WHEELS: Real Riders=rubber tires with visible tread | 5-Spoke | OH5 | PR5 | MC5 | 10-Spoke',
+    'STEP 4 — RARITY (visible proof required):',
+    '  STH = Spectraflame paint + Real Riders rubber + TH logo ALL visible',
+    '  TH = metalflake/special paint + TH flame logo on card visible',
+    '  Vintage = red stripe on tire wall visible (pre-1977)',
+    '  Default = Common unless VISIBLE evidence says otherwise',
+    'STEP 5 — CONFIDENCE: 90-100% all clear | 70-89% most clear | 50-69% blurry | <50% return identified:false'
   ].join('\n')
 
   var usr = [
@@ -84,10 +93,6 @@ async function identifyCar(imageData) {
   if (d.confidence && d.confidence < 75) {
     d._lowConfidence = true
   }
-  // Add warning flag for low-medium confidence
-  if (d.confidence && d.confidence < 70) {
-    d._lowConfidence = true
-  }
   // Validate rarity assessment
   if (!d.rarity_reason && (d.rarity === 'Treasure Hunt' || d.rarity === 'Super Treasure Hunt' || d.rarity === 'Error Car')) {
     d._needsVerification = true
@@ -96,6 +101,10 @@ async function identifyCar(imageData) {
 }
 
 async function searchPrices(carName, rarity, castingYear) {
+  // Stage 1: Built-in DB — instant, no API quota used
+  var dbHit = dbLookup(carName)
+  if (dbHit) return dbHit
+  // Stage 2: Real-time API
   // Real-Time 3-Source Pricing: web search + community + AI synthesis
   try {
     var ctrl = new AbortController()
@@ -135,7 +144,7 @@ async function _fallbackPrices(carName, rarity, castingYear) {
   var n=(carName||'').toLowerCase()
   var hi=['skyline','supra','rx-7','nsx','camaro','mustang','charger','ferrari','lamborghini','porsche','bone shaker','twin mill','deora','beach bomb','corvette'].some(function(k){return n.includes(k)})
   var prompt='India Hot Wheels price analyst for "'+carName+'" ('+rarity+')\nBands: India retail ₹'+p.r+' | Collector ₹'+p.c+' | US $'+p.ur+'/'+p.uc+'\nHigh India demand: '+hi+'\nReturn ONLY JSON: {"india_retail_inr":"'+p.r+'","india_collector_inr":"'+p.c+'","us_retail_usd":"'+p.ur+'","us_collector_usd":"'+p.uc+'","price_trend":"Stable","price_trend_reason":"Based on rarity and India collector demand","india_insight":"Indian collectors seek this through OLX and Instagram groups.","sell_platforms":["OLX India","Instagram #hotwheelsindia","Maido"],"buy_tip":"Check OLX India and local collector groups","data_quality":"Estimated"}'
-  try { return await groqJSON(prompt, CODEX_MODEL) } catch(e) { return null }
+  try { return await groqJSON(prompt, HAIKU_MODEL) } catch(e) { return null }
 }
 
 
@@ -268,7 +277,6 @@ export async function analyzeDeal() {
     '  Treasure Hunt = ₹500-2500. Super Treasure Hunt = ₹4000-15000.',
     '  If the car name is vague or you are unsure, say so in verdict_reason.',
     '',
-    communityPriceContext,
     communityPriceContext,
     'Question: Is ₹' + asking + ' a good price for "' + carName + '" in India?',
     '',
@@ -646,6 +654,10 @@ export async function analyzeMultiPhoto() {
 }
 
 export function showMultiResults(cars) {
+  if (!cars || cars.length === 0) {
+    window.showToast('No Hot Wheels cars identified in these images', 'error')
+    return
+  }
   var resultEl = document.getElementById('result')
   resultEl.style.display = 'block'
   resultEl.innerHTML = ''

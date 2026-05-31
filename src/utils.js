@@ -76,7 +76,9 @@ export function showToast(msg, type, duration){
     'z-index:9000','max-width:80%','text-align:center',
     'box-shadow:0 4px 20px rgba(0,0,0,.5)',
     'transition:all .3s cubic-bezier(.4,0,.2,1)',
-    'pointer-events:none','white-space:nowrap',
+    'pointer-events:none','white-space:normal',
+    'word-break:break-word',
+    'max-width:88vw',
   ].join(';')
   document.body.appendChild(toast)
   requestAnimationFrame(function(){

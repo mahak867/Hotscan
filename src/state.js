@@ -10,6 +10,7 @@ export const state = {
   achievements: JSON.parse(localStorage.getItem('hs_ach') || '[]'),
   sortBy: 'date',
   filterBy: 'all',
+  searchQuery: '',
   currentMode: 'photo',
   currentSeries: 'mainline',
   timerInt: null,

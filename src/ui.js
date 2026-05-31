@@ -54,7 +54,9 @@ export function isPro() {
   // localStorage('hs_pro') is NOT trusted — it was removed as a bypass vector.
   // Anyone can setItem('hs_pro','true') in DevTools; server profile cannot be faked.
   if (!state.currentUser) return false
-  return !!(state.userProfile && (state.userProfile.is_pro || state.userProfile.is_developer))
+  // Brief race window: currentUser loaded but profile fetch not yet complete
+  if (!state.userProfile) return state._profileLoading === true ? true : false
+  return !!(state.userProfile.is_pro || state.userProfile.is_developer)
 }
 export function checkLimit() {
   if (isPro()) return true
@@ -195,6 +197,7 @@ export async function handleMultiFiles(files) {
   document.getElementById('scan-ph').style.display = 'none'
   document.getElementById('scan-area').classList.add('has-img')
 
+  if (files.length > 5) { showToast('Only first 5 images used — ' + (files.length - 5) + ' dropped', 'info') }
   for (var i = 0; i < Math.min(files.length, 5); i++) {
     var file = files[i]
     var raw = await new Promise(function(resolve) {
@@ -310,7 +313,9 @@ export function showResult(d) {
       warn.innerHTML = '⚠️ <span><strong>Low confidence:</strong> This identification might be uncertain. Please verify the car details match your photo.</span>'
       document.getElementById('r-dets').parentElement.insertBefore(warn, document.getElementById('r-dets'))
     }
-  } else if (lcw) lcw.remove()
+  } else {
+    if (lcw) lcw.remove()
+  }
   
   // Show verification needed for rare rarities without clear evidence
   var vnw = document.getElementById('r-verify-warning')
@@ -322,12 +327,21 @@ export function showResult(d) {
       verify.innerHTML = '🔍 <span><strong>Please verify:</strong> This appears to be ' + (d.rarity || 'rare') + '. Check for the distinguishing features before confirming.</span>'
       document.getElementById('r-dets').parentElement.insertBefore(verify, document.getElementById('r-dets'))
     }
-  } else if (vnw) vnw.remove()
-  document.getElementById('p1').textContent = d.india_retail_inr ? '₹' + d.india_retail_inr : '—'
+  } else {
+    if (vnw) vnw.remove()
+  }
+  document.getElementById('p1').textContent = d.india_retail_inr ? '₹' + cleanINR(d.india_retail_inr) : '—'
   document.getElementById('p2').textContent = d.india_collector_inr ? '₹' + cleanINR(d.india_collector_inr) : '—'
   document.getElementById('p3').textContent = d.us_retail_usd ? '$' + d.us_retail_usd : '—'
   document.getElementById('p4').textContent = d.us_collector_usd ? '$' + d.us_collector_usd : '—'
-  document.getElementById('live-upd').textContent = 'Updated just now'
+  var _dqEl = document.getElementById('live-upd')
+  if (!d.data_quality || d.data_quality === 'Estimated') {
+    _dqEl.textContent = '⚠️ Estimated — verify on OLX'
+    _dqEl.style.color = 'var(--gold)'
+  } else {
+    _dqEl.textContent = 'Updated just now · ' + d.data_quality
+    _dqEl.style.color = ''
+  }
   // #4 — pop animation on price tiles
   document.querySelectorAll('.ptile').forEach(function(tile, i) {
     tile.classList.remove('pop')
@@ -384,6 +398,7 @@ export function showResult(d) {
   loadCommunityPrices(d.name)
   document.getElementById('result').style.display = 'block'
   document.getElementById('analyze-btn').style.display = 'none'
+  var _sfb = document.getElementById('scan-feedback'); if (_sfb) _sfb.style.display = 'flex'
   setTimeout(function() { document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'}) }, 100)
 }
 
@@ -396,7 +411,7 @@ export async function loadCommunityPrices(carName) {
     try {
       var res = await state._sb.from('community_prices')
         .select('price_inr, platform, user_name, created_at')
-        .eq('car_name', carName)
+        .ilike('car_name', carName)
         .order('created_at', { ascending: false })
         .limit(5)
       if (res.data && res.data.length) {
@@ -428,7 +443,7 @@ export async function submitPrice() {
   if (!state.lastResult) return
   var price = document.getElementById('community-price').value
   var platform = document.getElementById('community-platform').value
-  if (!price) { showToast('Enter the price you paid', 'error'); return }
+  if (!price || parseInt(price) < 50) { showToast('Enter a realistic price (minimum ₹50)', 'error'); return }
   var entry = {
     car: state.lastResult.name,
     price: parseInt(price),

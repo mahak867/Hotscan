@@ -223,7 +223,7 @@
     <div class="deal-tip" id="deal-tip"></div>
   </div>
   <!-- Scan result -->
-  <div id="scan-feedback" style="display:none;align-items:center;justify-content:center;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;margin:8px 0">
+  <div id="scan-feedback" style="display:none;align-items:center;justify-content:center;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;margin:8px 0" data-flex="1">
     <span style="font-size:12px;color:var(--text2)">Was this scan accurate?</span>
     <button onclick="submitScanFeedback(true)" style="background:rgba(45,198,83,.15);border:1px solid rgba(45,198,83,.3);color:#2dc653;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">&#128077; Yes</button>
     <button onclick="submitScanFeedback(false)" style="background:rgba(230,57,70,.12);border:1px solid rgba(230,57,70,.25);color:var(--red);border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">&#128078; No</button>
@@ -495,7 +495,8 @@
     <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Join active Indian Hot Wheels collector groups on WhatsApp:</div>
     <div style="display:flex;flex-direction:column;gap:7px">
       <div class="more-item" style="padding:10px;border-radius:10px" onclick="shareApp()"><div style="font-size:18px">💬</div><div><div style="font-size:12px;font-weight:600">Share HotScan to WhatsApp Group</div><div style="font-size:10px;color:var(--text3)">Invite your collector friends</div></div><div class="more-arr">›</div></div>
-      <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindia/')"><div style="font-size:18px">📸</div><div><div style="font-size:12px;font-weight:600">#HotWheelsIndia on Instagram</div><div style="font-size:10px;color:var(--text3)">35,000+ collectors</div></div><div class="more-arr">›</div></div><div><div style="font-size:12px;font-weight:600">OLX Hot Wheels India</div><div style="font-size:10px;color:var(--text3)">Live buy/sell listings</div></div><div class="more-arr">›</div></div>
+      <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.instagram.com/explore/tags/hotwheelsindia/')"><div style="font-size:18px">📸</div><div><div style="font-size:12px;font-weight:600">#HotWheelsIndia on Instagram</div><div style="font-size:10px;color:var(--text3)">35,000+ collectors</div></div><div class="more-arr">›</div></div>
+        <div class="more-item" style="padding:10px;border-radius:10px" onclick="ol('https://www.olx.in/items/q-hot-wheels')"><div style="font-size:18px">🛒</div><div><div style="font-size:12px;font-weight:600">OLX Hot Wheels India</div><div style="font-size:10px;color:var(--text3)">Live buy/sell listings</div></div><div class="more-arr">›</div></div>
     </div>
   </div>
 
@@ -675,7 +676,7 @@
 </div>
 
 <!-- Auth Modal — Clean Custom UI over Clerk -->
-<div class="auth-modal" id="auth-modal">
+<div class="auth-modal" id="auth-modal" onclick="if(event.target===this)closeAuth()">
   <div class="auth-sheet">
     <!-- Close -->
     <button class="auth-close" onclick="closeAuth()">✕</button>

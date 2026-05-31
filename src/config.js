@@ -15,7 +15,7 @@ export var FREE_SCANS = 5
 export var HAIKU_MODEL  = 'llama-3.1-8b-instant'
 export var CODEX_MODEL  = 'llama-3.3-70b-versatile'
 export var VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
-export var VISION_FALLBACK = 'llama-3.2-11b-vision-preview'
+export var VISION_FALLBACK = 'llama-3.2-11b-vision-instruct'
 
 export var HUNT_DATA = {
   mainline:[

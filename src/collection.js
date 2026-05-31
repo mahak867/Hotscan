@@ -7,6 +7,8 @@ import { cleanINR, parseINR, escHtml, showToast, rcls, captureException } from '
 var _syncInFlight = false
 var _syncRetryCount = 0
 var _syncMaxRetries = 3
+var _editingItem = null
+var _editingItemId = null
 
 export function addToCol() {
   if(!state.lastResult){ showToast('Scan a car first to add to collection', 'error'); return }
@@ -35,23 +37,26 @@ export function addToCol() {
 }
 
 export function delFromCol(id) {
-  // Find the item first to get its cloud UUID (if it has one)
-  var item = state.collection.find(function(c) { return c.id === id })
-  // Only delete from cloud if it has a real UUID (not a local numeric id)
+  id = String(id)
+  var item = state.collection.find(function(c) { return String(c.id) === id })
+  if (!item) { showToast('Car not found', 'error'); return }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
     if (cloudId) deleteFromCloud(cloudId)
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== id })
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
+  showToast('🗑 Car removed', 'success')
   renderCol()
 }
 
 export function editColItem(id) {
-  var item = state.collection.find(function(c) { return c.id === id })
+  if (document.getElementById('col-edit-modal')) return // prevent double-open
+  id = String(id)
+  var item = state.collection.find(function(c) { return String(c.id) === id })
   if (!item) { showToast('Car not found', 'error'); return }
-  window._editingItem = item
-  window._editingItemId = id
+  _editingItem = item
+  _editingItemId = id
   // Show edit modal
   var modal = document.getElementById('col-edit-modal')
   if (!modal) {
@@ -70,8 +75,8 @@ export function editColItem(id) {
 }
 
 export function saveColEdit() {
-  if (!window._editingItem) return
-  var item = window._editingItem
+  if (!_editingItem) return
+  var item = _editingItem
   item.name = document.getElementById('col-edit-name').value || item.name
   item.rarity = document.getElementById('col-edit-rarity').value || item.rarity
   item.condition = document.getElementById('col-edit-condition').value || item.condition
@@ -90,8 +95,8 @@ export function closeColEdit() {
   var modal = document.getElementById('col-edit-modal')
   if (modal) modal.style.display = 'none'
   document.body.style.overflow = ''
-  window._editingItem = null
-  window._editingItemId = null
+  _editingItem = null
+  _editingItemId = null
 }
 
 function createEditModal() {
@@ -131,6 +136,12 @@ export function fCol(f, el) { state.filterBy = f; document.querySelectorAll('#fc
 
 export function renderCol() {
   var items = state.collection.slice()
+  if (state.searchQuery && state.searchQuery.trim()) {
+    var q = state.searchQuery.toLowerCase()
+    items = items.filter(function(c) {
+      return (c.name||'').toLowerCase().includes(q) || (c.series||'').toLowerCase().includes(q) || (c.rarity||'').toLowerCase().includes(q)
+    })
+  }
   if (state.filterBy !== 'all') items = items.filter(function(c) { return (c.rarity||'').toLowerCase().includes(state.filterBy.toLowerCase()) })
   var order = ['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
   if (state.sortBy === 'value') items.sort(function(a,b) { return parseINR(b.india_collector_inr) - parseINR(a.india_collector_inr) })
@@ -388,7 +399,7 @@ export async function fullCloudSync(retryCount) {
 // Avoids duplicate new Promise(timeout) boilerplate and ensures
 // ALL queries (including the re-fetch after uploading local items) are guarded.
 function _timedQuery(queryPromise, ms) {
-  ms = ms || 12000  // Increased from 8000 to 12000ms default
+  ms = ms || 6000
   return Promise.race([
     queryPromise,
     new Promise(function(_, rej) {
@@ -428,10 +439,10 @@ async function _doFullCloudSync(retryCount) {
     // Initial fetch — guarded by _timedQuery with increased timeout
     var res = await _timedQuery(
       state._sb.from('collection')
-        .select('*')
+        .select('id,name,series,casting_year,rarity,color,tampo,wheel_type,india_retail_inr,india_collector_inr,us_retail_usd,us_collector_usd,investment,investment_reason,fun_fact,india_insight,image_thumb,added_at')
         .eq('user_id', state.currentUser.id)
         .order('added_at', { ascending: false }),
-      12000  // Increased from 8000ms to 12000ms
+      6000
     )
 
     var cloudItems = []
@@ -491,10 +502,10 @@ async function _doFullCloudSync(retryCount) {
     if (localOnly.length > 0) {
       var res2 = await _timedQuery(
         state._sb.from('collection')
-          .select('*')
+          .select('id,name,series,casting_year,rarity,color,tampo,wheel_type,india_retail_inr,india_collector_inr,us_retail_usd,us_collector_usd,investment,investment_reason,fun_fact,india_insight,image_thumb,added_at')
           .eq('user_id', state.currentUser.id)
           .order('added_at', { ascending: false }),
-        12000  // Increased from 8000ms to 12000ms
+        6000
       )
       if (res2.data) {
         cloudItems = res2.data.map(function(d) {
@@ -583,7 +594,9 @@ export async function saveToCloud(item) {
       // New item — check if name already exists first, then insert
       var existing = await state._sb.from('collection')
         .select('id').eq('user_id', state.currentUser.id)
-        .ilike('name', item.name).limit(1)
+        .ilike('name', item.name)
+        .eq('series', item.series || '')
+        .limit(1)
       if (existing.data && existing.data.length > 0) {
         // Already in cloud — return existing id
         return existing.data[0].id

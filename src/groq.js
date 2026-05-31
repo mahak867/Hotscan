@@ -96,6 +96,7 @@ export async function groqText(prompt, model) {
     if (res.status === 429) {
       // Try fallback model on rate limit
       if (chosenModel !== HAIKU_MODEL) {
+        await new Promise(function(r) { setTimeout(r, 500) })
         return groqText(prompt, HAIKU_MODEL)
       }
       var wait = parseInt(res.headers.get('retry-after') || '30', 10)

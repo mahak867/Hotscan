@@ -26,6 +26,7 @@ const ALLOWED_ORIGINS = [
   'https://www.hotscan.in',
   'https://hotscan-theta.vercel.app',
 ]
+function isAllowedOrigin(o) { return !o ? false : ALLOWED_ORIGINS.includes(o) || o.endsWith('.vercel.app') }
 
 // ── Per-IP rate limiter (in-memory, resets per Edge instance) ────────────────
 // Each Edge invocation is stateless, but this is good enough to blunt burst
@@ -36,6 +37,10 @@ const IP_MAX_REQS   = 25
 
 function isRateLimited(ip) {
   const now  = Date.now()
+  // Evict stale entries to prevent memory leak
+  if (ipMap.size > 500) {
+    for (const [k, v] of ipMap) { if (now - v.start > IP_WINDOW_MS * 2) ipMap.delete(k) }
+  }
   const rec  = ipMap.get(ip) || { count: 0, start: now }
   if (now - rec.start > IP_WINDOW_MS) {
     ipMap.set(ip, { count: 1, start: now })
@@ -65,7 +70,7 @@ let rrIndex = 0
 // ── Main handler ─────────────────────────────────────────────────────────────
 export default async function handler(req) {
   const origin    = req.headers.get('origin') || ''
-  const corsOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  const corsOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0]
 
   const cors = {
     'Access-Control-Allow-Origin':  corsOrigin,

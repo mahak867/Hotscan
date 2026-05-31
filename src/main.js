@@ -1,6 +1,7 @@
 import './style.css'
 import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
+import { VISION_MODEL } from './config.js'
 import { SUPA_URL, SUPA_KEY, FREE_SCANS } from './config.js'
 import { ol, showToast, checkAndEarnAchievements } from './utils.js'
 import {
@@ -131,7 +132,6 @@ window.doCloudSync = async function(btn) {
 }
 
 // Expose collection editing functions to window
-window.delFromCol = delFromCol
 window.delFromCol = delFromCol
 window.editColItem = editColItem
 window.saveColEdit = saveColEdit
@@ -276,7 +276,8 @@ window.addEventListener('load', function () {
   updateOnlineStatus()
 
   // Alert check loop
-  setTimeout(function () { runAlertCheck(); setInterval(runAlertCheck, 300000) }, 15000)
+  var _alertInterval = null
+  setTimeout(function () { runAlertCheck(); if (!_alertInterval) { _alertInterval = setInterval(runAlertCheck, 300000) } }, 15000)
 
   // Hide ref banner if Pro or closed
   setTimeout(function () {
@@ -336,7 +337,7 @@ window.submitScanFeedback = async function(accurate) {
       user_id: state.currentUser.id,
       car_name: (state.lastResult && state.lastResult.name) || 'Unknown',
       accurate: accurate,
-      model: 'llama-4-scout',
+      model: VISION_MODEL,
       created_at: new Date().toISOString()
     })
   } catch(e) {}
