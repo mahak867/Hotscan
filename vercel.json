@@ -1,5 +1,5 @@
 {
-  "_comment": "v2", "rewrites": [
+  "rewrites": [
     {
       "source": "/((?!src/|api/|sw\\.js$|manifest\\.json$|icon-|logo\\.|og-image|robots|landing|privacy|terms|sign-in|reset-password).*)",
       "destination": "/index.html"
