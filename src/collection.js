@@ -31,10 +31,9 @@ export function addToCol() {
   var isDupe = state.collection.some(function(x){ return x.name && item.name && x.name.toLowerCase()===item.name.toLowerCase() && x.color===item.color })
   if (isDupe) { showToast(item.name + " is already in your collection!", "error"); return }
   state.collection.unshift(item)
-  localStorage.setItem('hs_col', JSON.stringify(state.collection))
   renderCol()
   if (state._sb && state.currentUser) {
-    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col', JSON.stringify(state.collection)) } }catch(e){} })()
+    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; } }catch(e){} })()
   }
   renderCol(); window.goPage('collection')
 }
@@ -53,7 +52,6 @@ export function delFromCol(id) {
     if (cloudId) deleteFromCloud(cloudId)
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
-  localStorage.setItem('hs_col', JSON.stringify(state.collection))
   showToast('🗑 Car removed', 'success')
   renderCol()
 }
@@ -90,7 +88,6 @@ export function saveColEdit() {
   item.condition = document.getElementById('col-edit-condition').value || item.condition
   item.india_collector_inr = '₹' + document.getElementById('col-edit-price').value
   item.notes = document.getElementById('col-edit-notes').value || ''
-  localStorage.setItem('hs_col', JSON.stringify(state.collection))
   if (state._sb && state.currentUser && typeof item.id === 'string' && item.id.includes('-')) {
     saveToCloud(item)
   }
@@ -380,9 +377,8 @@ export function addCarToCollection(car, thumb) {
     added: new Date().toISOString()
   }
   state.collection.unshift(item)
-  localStorage.setItem('hs_col', JSON.stringify(state.collection))
   if (state._sb && state.currentUser) {
-    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col', JSON.stringify(state.collection)) } }catch(e){} })()
+    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; } }catch(e){} })()
   }
   renderCol()
   return item
@@ -549,7 +545,6 @@ async function _doFullCloudSync(retryCount) {
     if (cloudItems.length > 0 || localOnly.length > 0) {
       if (cloudItems.length > 0) {
         state.collection = cloudItems
-        localStorage.setItem('hs_col', JSON.stringify(state.collection))
         renderCol()
       }
       return true
