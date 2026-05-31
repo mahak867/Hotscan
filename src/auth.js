@@ -296,7 +296,7 @@ export async function initAuth(){
         await loadProfile()
         if(event==='SIGNED_IN'){ closeAuth(); setTimeout(showSuccessCelebration,300) }
         if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
-          ;(async function(){ try{ await window.fullCloudSync(); window.renderCol() }catch(e){} })()
+          ;(async function(){ try{ var _sok = await window.fullCloudSync(); window.renderCol(); if(_sok && event==='SIGNED_IN') window.showToast('Collection synced ✅', 'success') }catch(e){} })()
           if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
         }
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
@@ -418,6 +418,9 @@ export async function signOutUser(){
   state.userProfile = null
   localStorage.removeItem('hs_pro')
   localStorage.removeItem('hs_profile_cache')
+  localStorage.removeItem('hs_col')
+  state.collection = []
+  if(window.renderCol) window.renderCol()
   try { localStorage.removeItem('hs_auth_v2') } catch(e) {}
   closeAccountModal()
   window.closeProModal()

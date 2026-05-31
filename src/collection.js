@@ -406,7 +406,7 @@ export async function fullCloudSync(retryCount) {
 // Avoids duplicate new Promise(timeout) boilerplate and ensures
 // ALL queries (including the re-fetch after uploading local items) are guarded.
 function _timedQuery(queryPromise, ms) {
-  ms = ms || 6000
+  ms = ms || 12000
   return Promise.race([
     queryPromise,
     new Promise(function(_, rej) {
