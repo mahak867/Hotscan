@@ -213,7 +213,8 @@ export async function analyzePhoto() {
       var prices = await Promise.all(pricePromises)
       var allCars = multiResult.cars.map(function(car, i) {
         car._sourceImage = state.imgThumb
-        return Object.assign({}, car, prices[i] || {})
+        var merged = Object.assign({}, car, prices[i] || {})
+        return applyKnownPremiumOverrides(merged)
       })
       window.setStep(2, 'done'); window.setStep(3, 'done')
       window.stopTimer()
