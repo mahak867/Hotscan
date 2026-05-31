@@ -21,7 +21,7 @@ function applyKnownPremiumOverrides(d) {
     d.india_retail_inr = '800-1500';
     d.india_collector_inr = '1500-3500';
     d.us_retail_usd = '4.99';
-    d.us_collector_usd = '10-25';
+    undefined
   }
   return d;
 }
