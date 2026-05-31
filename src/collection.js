@@ -42,6 +42,11 @@ export function addToCol() {
 export function delFromCol(id) {
   id = String(id)
   var item = state.collection.find(function(c) { return String(c.id) === String(id) })
+  if (!item) {
+    // fallback: try matching by index (for legacy numeric IDs)
+    var asNum = parseInt(id)
+    if (!isNaN(asNum)) item = state.collection.find(function(c) { return Math.abs(Number(c.id) - asNum) < 1000 })
+  }
   if (!item) { showToast('Car not found', 'error'); return }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
