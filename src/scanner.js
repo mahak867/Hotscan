@@ -14,7 +14,7 @@ async function identifyCar(imageData) {
     'RULE 2: fun_fact must be 100% certain — else write: \"A popular Hot Wheels die-cast casting.\"',
     'RULE 3: Default rarity = Common. Only upgrade with VISIBLE physical proof.',
     'RULE 6: PREMIUM LINE DETECTION — If you see Real Riders rubber tires, metal/metal body, display plinth, or foil/premium packaging → rarity = Premium, india_retail_inr = 800-1500, NOT 150-200.',
-    'RULE 7: Hot Wheels Premium lines include: Boulevard, Car Culture, Team Transport, Fast &amp; Furious, Formula 1, RLC, Collectors — these are NEVER Common mainline pricing.',
+    'RULE 7: KNOWN PREMIUM CASTINGS — always rarity=Premium, india_retail_inr=800-1500 even loose unboxed: McLaren F1, Bugatti Chiron, any Ferrari, any Porsche, any Lamborghini, any Formula 1 car, Koenigsegg, Pagani, Aston Martin, Maserati, any NASCAR. NEVER price these as Common.',
     'RULE 4: series = Unknown if you cannot read it clearly on card/base. BUT if you can identify the car name, infer the most likely series — e.g. McLaren F1 2025 = Hot Wheels Premium Formula 1 2025, Bugatti Chiron = Hot Wheels Boulevard, Bone Shaker = Hot Wheels Mainline, Ferrari = Hot Wheels Car Culture or Premium, Porsche = Hot Wheels Car Culture, Skyline = Hot Wheels Car Culture Japan Historics.',
     'RULE 5: Every field must be answerable from what is VISIBLE in the image.',
     '',
@@ -597,7 +597,7 @@ export async function identifyMultipleCars(imageData) {
       body: JSON.stringify({
         model: model,
         messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
-        temperature: 0.02, max_tokens: 2500
+        temperature: 0.1, max_tokens: 2500
       })
     })
     if (!res.ok) {
