@@ -28,6 +28,8 @@ export function addToCol() {
     india_insight: state.lastResult.india_insight,
     image: state.imgThumb, added: new Date().toISOString()
   }
+  var isDupe = state.collection.some(function(x){ return x.name && item.name && x.name.toLowerCase()===item.name.toLowerCase() && x.color===item.color })
+  if (isDupe) { showToast(item.name + " is already in your collection!", "error"); return }
   state.collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
   if (state._sb && state.currentUser) {
