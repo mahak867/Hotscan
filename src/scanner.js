@@ -142,7 +142,7 @@ async function searchPrices(carName, rarity, castingYear) {
   // Real-Time 3-Source Pricing: web search + community + AI synthesis
   try {
     var ctrl = new AbortController()
-    var t = setTimeout(function(){ ctrl.abort() }, 20000)
+    var t = setTimeout(function(){ ctrl.abort() }, 6000)
     var res = await fetch('/api/prices', {
       method: 'POST', signal: ctrl.signal,
       headers: {'Content-Type':'application/json'},
@@ -691,6 +691,7 @@ export async function analyzeMultiPhoto() {
     })
     var prices = await Promise.all(pricePromises)
     prices.forEach(function(p, i) { if (p) allCars[i] = Object.assign({}, allCars[i], p) })
+    allCars = allCars.map(function(car){ return applyKnownPremiumOverrides(car) })
 
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()
