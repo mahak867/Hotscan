@@ -246,7 +246,7 @@ export function renderCol() {
             '<div style="font-size:17px;font-weight:800;color:'+bc+';margin-top:6px">₹'+cleanINR(c.india_collector_inr)+'</div>'+
           '</div>'+
           '<div style="display:flex;gap:4px;flex-shrink:0">'+
-            '<button onclick="delFromCol(\'+c.id+\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;transition:color .2s" onmouseenter="this.style.color=\'var(--red)\'" onmouseleave="this.style.color=\'var(--text3)\'">🗑</button>'+
+            '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;transition:color .2s" onmouseenter="this.style.color=\'var(--red)\'" onmouseleave="this.style.color=\'var(--text3)\'">🗑</button>'+
           '</div>'+
         '</div>'
     } else {
