@@ -734,9 +734,12 @@ export function showMultiResults(cars) {
   addAllBtn.style.cssText = 'margin:0 14px 12px;background:var(--green);color:#000;border:none;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;width:calc(100% - 28px)'
   addAllBtn.textContent = '➕ Add All ' + cars.length + ' Cars to Collection'
   addAllBtn.onclick = function() {
+    var added=0, skipped=0
     cars.forEach(function(car) {
-      addCarToCollection(car, car._sourceImage)
+      var isDupe = window.state && window.state.collection && window.state.collection.some(function(x){ return x.name && car.name && x.name.toLowerCase()===car.name.toLowerCase() && x.color===car.color })
+      if (!isDupe) { addCarToCollection(car, car._sourceImage); added++ } else { skipped++ }
     })
+    if (skipped>0) window.showToast(added+" added, "+skipped+" duplicate(s) skipped", "success")
     window.goPage('collection')
   }
   resultEl.appendChild(addAllBtn)
