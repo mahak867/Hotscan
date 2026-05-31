@@ -536,12 +536,23 @@ export async function identifyMultipleCars(imageData) {
     '- Vintage Redline: MUST see red stripe on tires',
     '- Default to Common unless evidence is clear',
     '',
-    'PREMIUM LINE DETECTION — CRITICAL:',
-    'If you see Real Riders rubber tires, metal/metal body, display plinth, or premium/foil packaging → rarity = Premium',
-    'Premium lines: Boulevard, Car Culture, Team Transport, Fast &amp; Furious, Formula 1, RLC — NEVER price these as Common mainline',
-    'Premium india_retail_inr = 800-1500, india_collector_inr = 1500-3500',
-    'Mainline india_retail_inr = 150-200, india_collector_inr = 200-400',
-    'McLaren F1, Bugatti Chiron, Ferrari, Porsche in Premium packaging = 800-1500 retail, NOT 150-200'
+    'RARITY FROM CAR ITSELF — no packaging needed:',
+    '- Plastic wheels + enamel paint = Common mainline 150-200 retail',
+    '- Real Riders rubber tires (soft treaded) = Premium minimum 800-1500 retail',
+    '- Real Riders + Spectraflame + TH logo = Super Treasure Hunt 4000-15000 collector',
+    '- Real Riders + TH logo only = Treasure Hunt 1200-3500 collector',
+    '- Red stripe on tire sidewall = Vintage Redline 2000-20000 collector',
+    '',
+    'KNOWN PREMIUM CASTINGS always Premium even loose unboxed:',
+    'McLaren F1, Bugatti Chiron, any Ferrari, any Porsche, any Lamborghini,',
+    'any Formula 1 car, Koenigsegg, Pagani, Aston Martin, Maserati, any NASCAR',
+    '',
+    'PRICE BANDS:',
+    'Common: india_retail_inr=150-200 india_collector_inr=200-400',
+    'Premium: india_retail_inr=800-1500 india_collector_inr=1500-3500',
+    'TH: india_retail_inr=500-800 india_collector_inr=1200-3500',
+    'STH: india_retail_inr=700-1000 india_collector_inr=4000-15000',
+    'Vintage: india_retail_inr=500-3000 india_collector_inr=2000-20000'
   ].join('\n')
 
   var usr = [
