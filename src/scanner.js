@@ -787,5 +787,20 @@ export function showMultiResults(cars) {
     resultEl.appendChild(card)
   })
 
+  var rescanBtn = document.createElement('button')
+  rescanBtn.textContent = '🔄 Scan More Cars'
+  rescanBtn.style.cssText = 'margin:10px 14px 20px;background:rgba(255,255,255,0.07);color:#fff;border:1px solid rgba(255,255,255,0.15);padding:11px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;width:calc(100% - 28px)'
+  rescanBtn.onclick = function() {
+    document.getElementById('result').style.display = 'none'
+    document.getElementById('scan-ph').style.display = 'flex'
+    document.getElementById('preview-wrap').style.display = 'none'
+    document.getElementById('multi-preview').style.display = 'none'
+    document.getElementById('analyze-btn').style.display = 'none'
+    var btn2 = document.getElementById('analyze-btn')
+    btn2.disabled = false
+    btn2.textContent = '🔎 Identify & Get Live Prices'
+    if (window.state) { window.state.img64 = null; window.state.multiImages = [] }
+  }
+  resultEl.appendChild(rescanBtn)
   resultEl.scrollIntoView({behavior:'smooth', block:'start'})
 }
