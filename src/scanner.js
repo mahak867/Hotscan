@@ -208,7 +208,7 @@ export async function analyzePhoto() {
       window.setStep(1, 'done'); window.setStep(2, 'active')
       document.getElementById('timer-lbl').textContent = 'Found ' + multiResult.cars.length + ' cars — fetching prices...'
       var pricePromises = multiResult.cars.map(function(car) {
-        applyKnownPremiumOverrides(car); return searchPrices(car.name, car.rarity, car.casting_year)
+        car = applyKnownPremiumOverrides(car); return searchPrices(car.name, car.rarity, car.casting_year)
       })
       var prices = await Promise.all(pricePromises)
       var allCars = multiResult.cars.map(function(car, i) {
