@@ -287,7 +287,7 @@ export async function analyzeDeal() {
     '"fair_india_price":"realistic INR range e.g. 300-500",',
     '"verdict_reason":"1-2 sentences explaining why at this price",',
     '"suggestion":"specific actionable advice e.g. offer ₹X or walk away",',
-    '"market_retail":"India store price e.g. 150-200",',
+    '"market_retail":"India store price e.g. 150-200 mainline or 800-1500 Premium",',
     '"market_collector":"India resale price e.g. 350-600",',
     '"savings_or_overpay":"saving ₹X or overpaying ₹X",',
     '"confidence":"High|Medium|Low — how sure you are about this car\'s India price"}'
@@ -465,7 +465,7 @@ export async function scanBarcode() {
       isMattel ? 'Note: This has the correct Mattel Hot Wheels UPC prefix (027084).' : '⚠️ This barcode does NOT start with 027084 — it may not be a genuine Hot Wheels product.',
       '',
       'Return ONLY valid JSON:',
-      '{"identified":true,"confidence":75,"name":"exact car name from this barcode","series":"series and year","casting_year":"year","color":"color","tampo":"tampo","wheel_type":"wheel type","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","rarity_reason":"why","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian market insight","barcode_note":"what this barcode tells us"}',
+      '{"identified":true,"confidence":75,"name":"exact car name from this barcode","series":"series and year","casting_year":"year","color":"color","tampo":"tampo","wheel_type":"wheel type","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","rarity_reason":"why","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"why","fun_fact":"fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-1500 depending on line","india_collector_inr":"300-3500 depending on rarity","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian market insight","barcode_note":"what this barcode tells us"}',
       'If not found: {"identified":false,"reason":"barcode not in database or not a Hot Wheels product"}'
     ].join('\n')
   } else {
@@ -481,7 +481,7 @@ export async function scanBarcode() {
       'Search query: "' + code + '"',
       '',
       'Return ONLY valid JSON:',
-      '{"identified":true,"confidence":80,"name":"exact Hot Wheels casting name","series":"most common series","casting_year":"year first produced","color":"most common color","tampo":"typical tampo","wheel_type":"standard wheel type for this casting","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"specific reason based on the standard version","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"honest investment case for the standard version","fun_fact":"one interesting fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-200","india_collector_inr":"300-600","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian collector demand","also_look_for":"notable valuable variants worth knowing about"}',
+      '{"identified":true,"confidence":80,"name":"exact Hot Wheels casting name","series":"most common series","casting_year":"year first produced","color":"most common color","tampo":"typical tampo","wheel_type":"standard wheel type for this casting","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Vintage|Premium","rarity_reason":"specific reason based on the standard version","condition":"Mint on Card","investment":"Low|Medium|High|Very High","investment_reason":"honest investment case for the standard version","fun_fact":"one interesting fact","us_retail_usd":"1.49","us_collector_usd":"5-12","india_retail_inr":"150-1500 depending on line","india_collector_inr":"300-3500 depending on rarity","price_trend":"Stable","price_trend_reason":"reason","india_insight":"Indian collector demand","also_look_for":"notable valuable variants worth knowing about"}',
       'If no match: {"identified":false,"reason":"no Hot Wheels car matches this search"}'
     ].join('\n')
   }
@@ -558,8 +558,8 @@ export async function identifyMultipleCars(imageData) {
     '"condition":"Mint on Card|Near Mint|Very Good|Good",',
     '"investment":"Low|Medium|High|Very High",',
     '"investment_reason":"why",',
-    '"india_retail_inr":"150-200",',
-    '"india_collector_inr":"300-600",',
+    '"india_retail_inr":"150-1500 depending on line — mainline 150-200, Premium 800-1500",',
+    '"india_collector_inr":"300-3500 depending on rarity — mainline 300-600, Premium 1500-3500",',
     '"us_retail_usd":"1.49",',
     '"us_collector_usd":"5-12",',
     '"confidence":80,',
