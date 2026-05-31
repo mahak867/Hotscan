@@ -534,7 +534,14 @@ export async function identifyMultipleCars(imageData) {
     '- Treasure Hunt (TH): MUST see special paint + TH flame logo',
     '- Real Riders rubber tires WITHOUT TH = Premium at most',
     '- Vintage Redline: MUST see red stripe on tires',
-    '- Default to Common unless evidence is clear'
+    '- Default to Common unless evidence is clear',
+    '',
+    'PREMIUM LINE DETECTION — CRITICAL:',
+    'If you see Real Riders rubber tires, metal/metal body, display plinth, or premium/foil packaging → rarity = Premium',
+    'Premium lines: Boulevard, Car Culture, Team Transport, Fast &amp; Furious, Formula 1, RLC — NEVER price these as Common mainline',
+    'Premium india_retail_inr = 800-1500, india_collector_inr = 1500-3500',
+    'Mainline india_retail_inr = 150-200, india_collector_inr = 200-400',
+    'McLaren F1, Bugatti Chiron, Ferrari, Porsche in Premium packaging = 800-1500 retail, NOT 150-200'
   ].join('\n')
 
   var usr = [
