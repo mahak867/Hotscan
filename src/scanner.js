@@ -13,6 +13,8 @@ async function identifyCar(imageData) {
     'RULE 1: casting_year MUST come from the verified list below — else return \"Unknown\"',
     'RULE 2: fun_fact must be 100% certain — else write: \"A popular Hot Wheels die-cast casting.\"',
     'RULE 3: Default rarity = Common. Only upgrade with VISIBLE physical proof.',
+    'RULE 6: PREMIUM LINE DETECTION — If you see Real Riders rubber tires, metal/metal body, display plinth, or foil/premium packaging → rarity = Premium, india_retail_inr = 800-1500, NOT 150-200.',
+    'RULE 7: Hot Wheels Premium lines include: Boulevard, Car Culture, Team Transport, Fast &amp; Furious, Formula 1, RLC, Collectors — these are NEVER Common mainline pricing.',
     'RULE 4: series = Unknown if you cannot read it clearly on card/base.',
     'RULE 5: Every field must be answerable from what is VISIBLE in the image.',
     '',
@@ -136,13 +138,13 @@ async function searchPrices(carName, rarity, castingYear) {
 async function _fallbackPrices(carName, rarity, castingYear) {
   var rp = {
     'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},
-    'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},'Premium':{r:'450-800',c:'700-1500',ur:'4.99',uc:'8-20'},
+    'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},'Premium':{r:'800-1500',c:'1500-3500',ur:'4.99',uc:'10-25'},
     'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},
     'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}
   }
   var p = rp[rarity]||rp['Common']
   var n=(carName||'').toLowerCase()
-  var hi=['skyline','supra','rx-7','nsx','camaro','mustang','charger','ferrari','lamborghini','porsche','bone shaker','twin mill','deora','beach bomb','corvette'].some(function(k){return n.includes(k)})
+  var hi=['skyline','supra','rx-7','nsx','camaro','mustang','charger','ferrari','lamborghini','porsche','bone shaker','twin mill','deora','beach bomb','corvette','mclaren','bugatti','formula 1','f1','lamborghini countach','ferrari'].some(function(k){return n.includes(k)})
   var prompt='India Hot Wheels price analyst for "'+carName+'" ('+rarity+')\nBands: India retail ₹'+p.r+' | Collector ₹'+p.c+' | US $'+p.ur+'/'+p.uc+'\nHigh India demand: '+hi+'\nReturn ONLY JSON: {"india_retail_inr":"'+p.r+'","india_collector_inr":"'+p.c+'","us_retail_usd":"'+p.ur+'","us_collector_usd":"'+p.uc+'","price_trend":"Stable","price_trend_reason":"Based on rarity and India collector demand","india_insight":"Indian collectors seek this through OLX and Instagram groups.","sell_platforms":["OLX India","Instagram #hotwheelsindia","Maido"],"buy_tip":"Check OLX India and local collector groups","data_quality":"Estimated"}'
   try { return await groqJSON(prompt, HAIKU_MODEL) } catch(e) { return null }
 }
