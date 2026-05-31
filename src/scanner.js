@@ -15,13 +15,13 @@ function applyKnownPremiumOverrides(d) {
     'alpine f1','haas f1','williams f1','alfa romeo f1'
   ];
   var isPremium = premiumCastings.some(function(k){ return n.includes(k); });
-  if (isPremium && (d.rarity === 'Common' || d.rarity === 'Uncommon')) {
+  if (isPremium) {
     d.rarity = 'Premium';
     d.rarity_reason = 'Known Premium casting — always Premium line regardless of packaging';
-    d.india_retail_inr = d.india_retail_inr === '150-200' || d.india_retail_inr === '200-350' || d.india_retail_inr === '500-1400' ? '800-1500' : d.india_retail_inr;
-    d.india_collector_inr = d.india_collector_inr === '200-400' || d.india_collector_inr === '300-600' ? '1500-3500' : d.india_collector_inr;
+    d.india_retail_inr = '800-1500';
+    d.india_collector_inr = '1500-3500';
     d.us_retail_usd = '4.99';
-    d.series = d.series === 'Unknown' ? inferSeries(n) : d.series;
+    d.us_collector_usd = '10-25';
   }
   return d;
 }
