@@ -342,3 +342,12 @@ window.submitScanFeedback = async function(accurate) {
     })
   } catch(e) {}
 }
+// Background collection sync every 30s when logged in
+setInterval(function() {
+  if (window.state && window.state.currentUser && window.state._sb) {
+    window.fullCloudSync().then(function(ok) {
+      if (ok) window.renderCol()
+    }).catch(function(){})
+  }
+}, 30000)
+
