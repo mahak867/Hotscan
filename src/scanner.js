@@ -233,7 +233,7 @@ export async function analyzePhoto() {
     var priceData = await searchPrices(carData.name, carData.rarity, carData.casting_year)
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()
-    var result = Object.assign({}, carData, priceData || {})
+    var result = applyKnownPremiumOverrides(Object.assign({}, carData, priceData || {}))
     state.lastResult = result
     window.incScans()
     window.saveToHist(result)
@@ -685,6 +685,7 @@ export async function analyzeMultiPhoto() {
 
     window.setStep(2, 'active')
     document.getElementById('timer-lbl').textContent = 'Fetching prices for ' + allCars.length + ' cars...'
+    allCars = allCars.map(function(car){ return applyKnownPremiumOverrides(car) })
     var pricePromises = allCars.map(function(car) {
       return searchPrices(car.name, car.rarity, car.casting_year)
     })
