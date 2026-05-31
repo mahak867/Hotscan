@@ -40,13 +40,13 @@ export function addToCol() {
 
 export function delFromCol(id) {
   id = String(id)
-  var item = state.collection.find(function(c) { return String(c.id) === id })
+  var item = state.collection.find(function(c) { return String(c.id) === String(id) })
   if (!item) { showToast('Car not found', 'error'); return }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
     if (cloudId) deleteFromCloud(cloudId)
   }
-  state.collection = state.collection.filter(function(c) { return String(c.id) !== id })
+  state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
   showToast('🗑 Car removed', 'success')
   renderCol()
