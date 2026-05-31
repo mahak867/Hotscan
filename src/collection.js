@@ -49,7 +49,7 @@ export function delFromCol(id) {
   if (!item) { showToast('Car not found', 'error'); return }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
-    if (cloudId) deleteFromCloud(cloudId)
+    deleteFromCloud(cloudId, item.name)
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
   showToast('🗑 Car removed', 'success')
@@ -611,9 +611,15 @@ export async function saveToCloud(item) {
   return null
 }
 
-export async function deleteFromCloud(id) {
+export async function deleteFromCloud(id, name) {
   if (!state.currentUser || !state._sb) return
-  try { await state._sb.from('collection').delete().eq('id', id).eq('user_id', state.currentUser.id) } catch(e) {}
+  try {
+    if (id && typeof id === 'string' && id.includes('-')) {
+      await state._sb.from('collection').delete().eq('id', id).eq('user_id', state.currentUser.id)
+    } else if (name) {
+      await state._sb.from('collection').delete().eq('user_id', state.currentUser.id).ilike('name', name)
+    }
+  } catch(e) { captureException(e) }
 }
 
 export function searchCol(query) {
