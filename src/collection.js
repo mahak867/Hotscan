@@ -32,6 +32,7 @@ export function addToCol() {
   if (isDupe) { showToast(item.name + " is already in your collection!", "error"); return }
   state.collection.unshift(item)
   localStorage.setItem('hs_col', JSON.stringify(state.collection))
+  renderCol()
   if (state._sb && state.currentUser) {
     ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col', JSON.stringify(state.collection)) } }catch(e){} })()
   }
