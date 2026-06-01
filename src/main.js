@@ -351,3 +351,24 @@ setInterval(function() {
   }
 }, 30000)
 
+
+// Pull to refresh on collection page
+;(function(){
+  var startY = 0, pulling = false
+  document.addEventListener('touchstart', function(e) {
+    var pg = document.getElementById('page-collection')
+    if (!pg || !pg.classList.contains('active')) return
+    if (pg.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true }
+  }, {passive: true})
+  document.addEventListener('touchend', function(e) {
+    if (!pulling) return
+    var dy = e.changedTouches[0].clientY - startY
+    if (dy > 80 && window.state && window.state.currentUser) {
+      window.showToast('Refreshing collection...', 'info')
+      window.fullCloudSync().then(function(ok) {
+        if (ok) { window.renderCol(); window.showToast('Collection updated', 'success') }
+      })
+    }
+    pulling = false
+  }, {passive: true})
+})()

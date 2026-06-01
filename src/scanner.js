@@ -27,12 +27,38 @@ function applyKnownPremiumOverrides(d) {
 }
 
 function inferSeries(n) {
-  if (n.includes('mclaren') || n.includes('formula 1') || n.includes('f1')) return 'Hot Wheels Premium Formula 1 2025';
+  if (n.includes('mclaren') || n.includes('formula 1') || n.includes('f1 team')) return 'Hot Wheels Premium Formula 1 2025';
   if (n.includes('bugatti')) return 'Hot Wheels Boulevard';
-  if (n.includes('ferrari') || n.includes('porsche') || n.includes('lamborghini')) return 'Hot Wheels Car Culture';
-  if (n.includes('koenigsegg') || n.includes('pagani')) return 'Hot Wheels Car Culture Exotic Envy';
-  if (n.includes('aston martin') || n.includes('maserati')) return 'Hot Wheels Car Culture';
-  return 'Hot Wheels Premium';
+  if (n.includes('ferrari') || n.includes('laferrari') || n.includes('458') || n.includes('488')) return 'Hot Wheels Car Culture';
+  if (n.includes('porsche') || n.includes('911') || n.includes('cayenne')) return 'Hot Wheels Car Culture';
+  if (n.includes('lamborghini') || n.includes('huracan') || n.includes('aventador') || n.includes('countach')) return 'Hot Wheels Car Culture';
+  if (n.includes('koenigsegg') || n.includes('pagani') || n.includes('huayra')) return 'Hot Wheels Car Culture Exotic Envy';
+  if (n.includes('aston martin') || n.includes('maserati') || n.includes('bentley')) return 'Hot Wheels Car Culture';
+  if (n.includes('nascar')) return 'Hot Wheels NASCAR';
+  if (n.includes('bone shaker')) return 'Hot Wheels HW Art Cars';
+  if (n.includes('twin mill')) return 'Hot Wheels Legends';
+  if (n.includes('deora')) return 'Hot Wheels Legends';
+  if (n.includes('beach bomb') || n.includes('volkswagen beach')) return 'Hot Wheels Legends';
+  if (n.includes('dodge viper')) return 'Hot Wheels HW Exotics';
+  if (n.includes('supra') || n.includes('a80')) return 'Hot Wheels Car Culture Japan Historics';
+  if (n.includes('skyline') || n.includes('gt-r') || n.includes('gtr')) return 'Hot Wheels Car Culture Japan Historics';
+  if (n.includes('rx-7') || n.includes('rx7')) return 'Hot Wheels Car Culture Japan Historics';
+  if (n.includes('honda s2000')) return 'Hot Wheels Car Culture Japan Historics';
+  if (n.includes('mazda') || n.includes('miata')) return 'Hot Wheels Car Culture Japan Historics';
+  if (n.includes('mustang')) return 'Hot Wheels HW Speed Graphics';
+  if (n.includes('camaro')) return 'Hot Wheels HW Speed Graphics';
+  if (n.includes('corvette')) return 'Hot Wheels HW Exotics';
+  if (n.includes('charger') || n.includes('challenger')) return 'Hot Wheels HW Speed Graphics';
+  if (n.includes('bmw') || n.includes('m3') || n.includes('m4') || n.includes('m5')) return 'Hot Wheels Car Culture';
+  if (n.includes('audi') || n.includes('quattro') || n.includes('r8')) return 'Hot Wheels Car Culture';
+  if (n.includes('mercedes') || n.includes('amg')) return 'Hot Wheels Car Culture';
+  if (n.includes('volkswagen') || n.includes('vw golf') || n.includes('gti')) return 'Hot Wheels Car Culture German Cars';
+  if (n.includes('datsun') || n.includes('240z') || n.includes('280z')) return 'Hot Wheels Car Culture Japan Historics';
+  if (n.includes('toyota') || n.includes('ae86') || n.includes('trueno')) return 'Hot Wheels Car Culture Japan Historics';
+  if (n.includes('subaru') || n.includes('impreza') || n.includes('wrx')) return 'Hot Wheels Car Culture';
+  if (n.includes('mitsubishi') || n.includes('lancer') || n.includes('evo')) return 'Hot Wheels Car Culture';
+  if (n.includes('nissan') || n.includes('silvia') || n.includes('180sx')) return 'Hot Wheels Car Culture Japan Historics';
+  return 'Hot Wheels Mainline';
 }
 
 
