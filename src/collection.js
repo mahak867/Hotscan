@@ -53,6 +53,7 @@ export function delFromCol(id) {
     deleteFromCloud(cloudId, item.name)
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
+  localStorage.removeItem('hs_col_hash')
   if (navigator.vibrate) navigator.vibrate([20, 30, 20])
   showToast('🗑 Car removed', 'success')
   renderCol()
@@ -634,9 +635,11 @@ export async function deleteFromCloud(id, name) {
   if (!state.currentUser || !state._sb) return
   try {
     if (id && typeof id === 'string' && id.includes('-')) {
-      await state._sb.from('collection').delete().eq('id', id).eq('user_id', state.currentUser.id)
+      var r = await state._sb.from('collection').delete().eq('id', id).eq('user_id', state.currentUser.id)
+      if (r.error) captureException(new Error('deleteFromCloud: ' + r.error.message))
     } else if (name) {
-      await state._sb.from('collection').delete().eq('user_id', state.currentUser.id).ilike('name', name)
+      var r2 = await state._sb.from('collection').delete().eq('user_id', state.currentUser.id).ilike('name', name)
+      if (r2.error) captureException(new Error('deleteFromCloud by name: ' + r2.error.message))
     }
   } catch(e) { captureException(e) }
 }
