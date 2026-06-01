@@ -894,12 +894,15 @@ export async function saveProfileUsername() {
       if (btn) { btn.disabled = false; btn.textContent = 'Save' }
       return
     }
-    var res = await state._sb.from('profiles').upsert({
-      id: state.currentUser.id,
-      email: state.currentUser.email,
-      username: username,
-      display_name: username
-    }, { onConflict: 'id' })
+    var res = await Promise.race([
+      state._sb.from('profiles').upsert({
+        id: state.currentUser.id,
+        email: state.currentUser.email,
+        username: username,
+        display_name: username
+      }, { onConflict: 'id' }),
+      new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('Save timed out — check connection')) }, 8000) })
+    ])
     if (res && res.error) { showToast(res.error.message || "Save failed — try again", "error"); return }
     if (!state.userProfile) state.userProfile = {}
     state.userProfile.username = username
