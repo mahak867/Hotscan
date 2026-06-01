@@ -552,6 +552,7 @@ async function _doFullCloudSync(retryCount) {
     if (cloudItems.length > 0 || localOnly.length > 0) {
       if (cloudItems.length > 0) {
         state.collection = cloudItems
+        localStorage.setItem('hs_col', JSON.stringify(cloudItems))
         renderCol()
       }
       return true

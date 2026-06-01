@@ -4,7 +4,7 @@ export const state = {
   imgThumb: null,
   fakeImg64: null,
   lastResult: null,
-  collection: [],
+  collection: JSON.parse(localStorage.getItem('hs_col') || '[]'),
   scanHistory: JSON.parse(localStorage.getItem('hs_hist') || '[]'),
   alerts: JSON.parse(localStorage.getItem('hs_alerts') || '[]'),
   achievements: JSON.parse(localStorage.getItem('hs_ach') || '[]'),
