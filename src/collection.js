@@ -140,6 +140,13 @@ export function sCol(by, el) { state.sortBy = by; document.querySelectorAll('#sc
 export function fCol(f, el) { state.filterBy = f; document.querySelectorAll('#fc2 .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
 
 export function renderCol() {
+  if (window._colSyncing) {
+    var list = document.getElementById('col-list')
+    if (list && state.collection.length === 0) {
+      list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text2)"><div style="font-size:32px;margin-bottom:12px">☁️</div><div style="font-size:14px;font-weight:600">Syncing your collection...</div><div style="font-size:12px;margin-top:6px;opacity:.6">Loading from cloud</div></div>'
+      return
+    }
+  }
   var items = state.collection.slice()
   if (state.searchQuery && state.searchQuery.trim()) {
     var q = state.searchQuery.toLowerCase()
