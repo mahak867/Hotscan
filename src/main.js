@@ -343,13 +343,34 @@ window.submitScanFeedback = async function(accurate) {
   } catch(e) {}
 }
 // Background collection sync every 30s when logged in
+// Supabase Realtime — instant sync when collection changes on any device
+function _setupRealtimeSync() {
+  if (!window.state || !window.state._sb || !window.state.currentUser) return
+  if (window._realtimeChannel) window._realtimeChannel.unsubscribe()
+  window._realtimeChannel = window.state._sb
+    .channel('collection-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'collection',
+      filter: 'user_id=eq.' + window.state.currentUser.id
+    }, function() {
+      window.fullCloudSync().then(function(ok) {
+        if (ok) window.renderCol()
+      }).catch(function(){})
+    })
+    .subscribe()
+}
+// Set up realtime after auth resolves
+setTimeout(_setupRealtimeSync, 3000)
+// Fallback poll every 30s in case realtime disconnects
 setInterval(function() {
-  if (window.state && window.state.currentUser && window.state._sb && !window._syncInFlight) {
+  if (window.state && window.state.currentUser && window.state._sb) {
     window.fullCloudSync().then(function(ok) {
       if (ok) window.renderCol()
     }).catch(function(){})
   }
-}, 5000)
+}, 30000)
 
 
 // Pull to refresh on collection page
