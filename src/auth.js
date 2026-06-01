@@ -295,6 +295,7 @@ export async function initAuth(){
         state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
         await loadProfile()
         if(event==='SIGNED_IN'){ closeAuth(); setTimeout(showSuccessCelebration,300) }
+        window._authResolved = true
         if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
           ;(async function(){ window._colSyncing = true; try{ var _sok = await window.fullCloudSync(); window._colSyncing = false; window.renderCol(); if(_sok && event==='SIGNED_IN') window.showToast('Collection synced ✅', 'success') }catch(e){} })()
           if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)

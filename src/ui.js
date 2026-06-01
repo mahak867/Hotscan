@@ -824,7 +824,7 @@ export function renderProfilePage() {
   }
 
   var _bd = [
-    { icon:'🎯', name:'First Scan',     desc:'Scanned your first car',       fn:function(){return ((state.userProfile&&state.userProfile.total_scans)||0)>=1 || (state.scanHistory&&state.scanHistory.length>=1) || JSON.parse(localStorage.getItem("hs_hist")||"[]").length>=1} },
+    { icon:'🎯', name:'First Scan',     desc:'Scanned your first car',       fn:function(){return true} },
     { icon:'📦', name:'10 Cars',        desc:'Added 10 cars to collection',  fn:function(){return state.collection.length>=10} },
     { icon:'🏆', name:'50 Cars',        desc:'Serious collector — 50 cars',  fn:function(){return state.collection.length>=50} },
     { icon:'💰', name:'₹5K Club',       desc:'Collection worth ₹5,000+',     fn:function(){var v=0;state.collection.forEach(function(x){v+=parseINR(x.india_collector_inr)});return v>=5000} },
