@@ -31,6 +31,7 @@ export function addToCol() {
   var isDupe = state.collection.some(function(x){ return x.name && item.name && x.name.toLowerCase()===item.name.toLowerCase() && x.color===item.color })
   if (isDupe) { showToast(item.name + " is already in your collection!", "error"); return }
   state.collection.unshift(item)
+  if (navigator.vibrate) navigator.vibrate(30)
   renderCol()
   if (state._sb && state.currentUser) {
     ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; } }catch(e){} })()
@@ -52,6 +53,7 @@ export function delFromCol(id) {
     deleteFromCloud(cloudId, item.name)
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
+  if (navigator.vibrate) navigator.vibrate([20, 30, 20])
   showToast('🗑 Car removed', 'success')
   renderCol()
 }
@@ -140,6 +142,11 @@ export function sCol(by, el) { state.sortBy = by; document.querySelectorAll('#sc
 export function fCol(f, el) { state.filterBy = f; document.querySelectorAll('#fc2 .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
 
 export function renderCol() {
+  if (!window.state || (!window.state.currentUser && state.collection.length === 0)) {
+    var _list = document.getElementById('col-list')
+    if (_list) _list.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;margin-bottom:12px">🔐</div><div style="font-size:15px;font-weight:700;margin-bottom:6px">Sign in to see your collection</div><div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">Your collection syncs across all devices when signed in</div><button class="btn-red" style="padding:12px 24px;border-radius:12px;font-size:14px" onclick="window.openAuth()">Sign In / Create Account</button></div>'
+    return
+  }
   if (window._colSyncing) {
     var list = document.getElementById('col-list')
     if (list && state.collection.length === 0) {

@@ -286,7 +286,7 @@ export function showResult(d) {
   
   // Check and earn achievements
   window._checkAchievements && window._checkAchievements(d)
-  
+  if (window.updateStreak) window.updateStreak()
   // #1 — color-coded confidence bar: red <50%, gold 50-79%, green ≥80%
   var conf = d.confidence || 75
   var confFill = document.getElementById('r-conf')

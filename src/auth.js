@@ -111,12 +111,12 @@ export async function authContinue(){
   if(_authMode==='signup'&&pass.length<6){ showAuthErr('Password must be at least 6 characters'); return }
   if(!state._sb){ showAuthErr('Service unavailable — please refresh the page'); return }
   setAuthLoading(true); showAuthErr('')
-  var _to=setTimeout(function(){ setAuthLoading(false); showAuthErr('Request timed out — try again') },15000)
+  var _to=setTimeout(function(){ setAuthLoading(false); showAuthErr('Connection timed out — check your internet and try again') },25000)
   try{
     if(_authMode==='signin'){
       var signInEmail = rawInput
       if(!rawInput.includes('@')){
-        var lu = await state._sb.rpc('get_email_by_username', { p_username: rawInput })
+        var lu = await Promise.race([state._sb.rpc('get_email_by_username', { p_username: rawInput }), new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},8000)})])
         if(lu.error || !lu.data || !lu.data.email){
           clearTimeout(_to); setAuthLoading(false)
           showAuthErr('No account found for that username. Try your email instead.')

@@ -211,6 +211,21 @@ async function _fallbackPrices(carName, rarity, castingYear) {
 export async function analyzePhoto() {
   if (!state.img64) return
   if (!window.checkLimit()) return
+  try {
+    var _imgKey = state.img64.substring(50, 150)
+    var _cache = JSON.parse(localStorage.getItem('hs_scan_cache') || '{}')
+    if (_cache[_imgKey] && Date.now() - _cache[_imgKey].ts < 86400000) {
+      var _cached = _cache[_imgKey].data
+      state.lastResult = _cached
+      window.saveToHist && window.saveToHist(_cached)
+      window.showResult(_cached)
+      window.incScans()
+      window.updateScanCounter && window.updateScanCounter()
+      if (navigator.vibrate) navigator.vibrate(30)
+      if (window.updateStreak) window.updateStreak()
+      return
+    }
+  } catch(e) {}
   var btn = document.getElementById('analyze-btn')
   btn.disabled = true; btn.textContent = '⏳ Scanning...'; btn.classList.remove('sticky-btn')
   document.getElementById('pipeline').style.display = 'block'
@@ -265,7 +280,15 @@ export async function analyzePhoto() {
     window.saveToHist(result)
     window.showResult(result)
     var skel2 = document.getElementById('result-skeleton'); if (skel2) skel2.style.display = 'none'
-    if (navigator.vibrate) navigator.vibrate(200)
+    if (navigator.vibrate) navigator.vibrate([30, 50, 30])
+    try {
+      var _imgKey2 = state.img64.substring(50, 150)
+      var _cache2 = JSON.parse(localStorage.getItem('hs_scan_cache') || '{}')
+      _cache2[_imgKey2] = { data: result, ts: Date.now() }
+      var _keys = Object.keys(_cache2)
+      if (_keys.length > 50) delete _cache2[_keys[0]]
+      localStorage.setItem('hs_scan_cache', JSON.stringify(_cache2))
+    } catch(e) {}
     window.updateScanCounter()
     if (!window.isPro()) {
       var rem = window.FREE_SCANS - window.getTodayScans()
