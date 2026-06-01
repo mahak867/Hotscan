@@ -110,7 +110,7 @@ window.doCloudSync = async function(btn) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing…' }
   try {
     var timeoutP = new Promise(function(_, rej) {
-      setTimeout(function() { rej(new Error('timeout')) }, 10000)
+      setTimeout(function() { rej(new Error('timeout')) }, 5000)
     })
     var ok = await Promise.race([window.fullCloudSync(), timeoutP])
     window.renderProfilePage()
@@ -349,7 +349,7 @@ setInterval(function() {
       if (ok) window.renderCol()
     }).catch(function(){})
   }
-}, 30000)
+}, 5000)
 
 
 // Pull to refresh on collection page
