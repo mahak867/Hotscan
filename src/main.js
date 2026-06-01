@@ -344,7 +344,7 @@ window.submitScanFeedback = async function(accurate) {
 }
 // Background collection sync every 30s when logged in
 setInterval(function() {
-  if (window.state && window.state.currentUser && window.state._sb) {
+  if (window.state && window.state.currentUser && window.state._sb && !window._syncInFlight) {
     window.fullCloudSync().then(function(ok) {
       if (ok) window.renderCol()
     }).catch(function(){})
