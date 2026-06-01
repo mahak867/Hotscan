@@ -554,6 +554,9 @@ async function _doFullCloudSync(retryCount) {
         state.collection = cloudItems
         localStorage.setItem('hs_col', JSON.stringify(cloudItems))
         renderCol()
+      } else if (cloudItems.length === 0 && localOnly.length === 0 && state.collection.length > 0) {
+        // Cloud returned empty but we have local data — dont wipe
+        return false
       }
       return true
     }
