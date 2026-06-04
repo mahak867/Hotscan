@@ -558,7 +558,7 @@ async function _doFullCloudSync(retryCount) {
       })
     }
 
-        if (cloudItems.length > 0) {
+    if (cloudItems.length > 0) {
       state.collection = cloudItems
       var _nh = cloudItems.map(function(x){return String(x.id)}).join(',')
       var _oh = localStorage.getItem('hs_col_hash') || ''
@@ -569,11 +569,7 @@ async function _doFullCloudSync(retryCount) {
     } else if (localOnly.length > 0) {
       return true
     }
-    return false=== 0 && localOnly.length === 0 && state.collection.length > 0) {
-        // Cloud returned empty but we have local data — dont wipe
-        return false
-      }
-      return true
+    return false
     }
   } catch(e) {
     captureException(e)
