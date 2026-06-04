@@ -1,7 +1,7 @@
 // Strip any accidental ₹ prefix that AI may include in price range strings (e.g. "₹8000-25000" → "8000-25000")
 export function cleanINR(v) { return v ? String(v).replace(/^₹+/, '') : '' }
 // Parse the lower bound of a price range stored in india_collector_inr, safely ignoring ₹ prefix
-export function parseINR(v, fallback) { var n = parseFloat(cleanINR(v||String(fallback||0)).split('-')[0]); return isNaN(n) ? (fallback||0) : n }
+export function parseINR(v, fallback) { var n = parseFloat(cleanINR(v||String(fallback||0)).replace(/,/g,'').split('-')[0]); return isNaN(n) ? (fallback||0) : n }
 
 export function escHtml(str) {
   if (str === null || str === undefined) return ''

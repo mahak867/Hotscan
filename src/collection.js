@@ -32,9 +32,8 @@ export function addToCol() {
   if (isDupe) { showToast(item.name + " is already in your collection!", "error"); return }
   state.collection.unshift(item)
   if (navigator.vibrate) navigator.vibrate(30)
-  renderCol()
   if (state._sb && state.currentUser) {
-    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; } }catch(e){} })()
+    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col_hash','') } }catch(e){} })()
   }
   renderCol(); window.goPage('collection')
 }
@@ -42,12 +41,7 @@ export function addToCol() {
 export function delFromCol(id) {
   id = String(id)
   var item = state.collection.find(function(c) { return String(c.id) === String(id) })
-  if (!item) {
-    // fallback: try matching by index (for legacy numeric IDs)
-    var asNum = parseInt(id)
-    if (!isNaN(asNum)) item = state.collection.find(function(c) { return Math.abs(Number(c.id) - asNum) < 1000 })
-  }
-  if (!item) { showToast('Car not found', 'error'); return }
+  if (!item) { showToast('Car not found — try refreshing', 'error'); return }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
     deleteFromCloud(cloudId, item.name)

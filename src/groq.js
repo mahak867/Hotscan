@@ -47,9 +47,10 @@ async function callVision(model, imageData, systemPrompt, userPrompt) {
         throw new Error('AI is busy right now 🔄 — wait ' + wait + 's and try again, or upgrade to Pro for unlimited access')
       }
       if (res.status === 503) throw new Error(sm || 'AI service is temporarily down — try again in a moment')
-      if (res.status === 400 || res.status === 404) {
+      if (res.status === 404) {
         var err = new Error(sm || 'Model not available'); err.modelError = true; throw err
       }
+      if (res.status === 400) { throw new Error(sm || 'Bad request — try again') }
       throw new Error('Something went wrong (error ' + res.status + ') — try again')
     }
     var data = await res.json()

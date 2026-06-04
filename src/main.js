@@ -59,6 +59,8 @@ Sentry.init({
 })
 // Expose on window so captureException wrapper in utils.js can access it
 window.Sentry = Sentry
+window.onerror = function(msg,src,line,col,err){ if(window.Sentry) window.Sentry.captureException(err||new Error(msg)); if(window.showToast&&msg&&!msg.includes('Script error')) window.showToast('Something went wrong — try refreshing','error',4000); return false }
+window.onunhandledrejection = function(e){ if(window.Sentry) window.Sentry.captureException(e.reason) }
 
 // NOTE: Do NOT strip the URL hash here — Supabase's detectSessionInUrl:true reads
 // the access_token from the hash when the client initialises. Stripping it early

@@ -122,7 +122,7 @@ export async function authContinue(){
           showAuthErr('No account found for that username. Try your email instead.')
           return
         }
-        signInEmail = lu.data
+        signInEmail = typeof lu.data === 'string' ? lu.data : (lu.data && lu.data.email) ? lu.data.email : String(lu.data || '')
       }
       var r=await state._sb.auth.signInWithPassword({email:signInEmail,password:pass})
       clearTimeout(_to)
@@ -294,7 +294,7 @@ export async function initAuth(){
         var u=session.user
         state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
         await loadProfile()
-        if(event==='SIGNED_IN'){ closeAuth(); setTimeout(showSuccessCelebration,300) }
+        if(event==='SIGNED_IN'){ closeAuth(); if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setTimeout(showSuccessCelebration,300) }
         window._authResolved = true
         if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
           ;(async function(){ window._colSyncing = true; try{ var _sok = await window.fullCloudSync(); window._colSyncing = false; window.renderCol(); if(_sok && event==='SIGNED_IN') window.showToast('Collection synced ✅', 'success') }catch(e){} })()

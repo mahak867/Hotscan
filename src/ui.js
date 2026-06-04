@@ -37,11 +37,11 @@ export function incScans() {
   var c = (d.date === t ? (d.count || 0) : 0) + 1
   localStorage.setItem('hs_scans', JSON.stringify({date:t, count:c}))
   // Log to Supabase scan_logs (Supabase v2 - must await, no .catch())
-  if (state._sb) {
+  if (state._sb && state.currentUser) {
     ;(async function() {
       try {
         await state._sb.from('scan_logs').insert({
-          user_id: state.currentUser ? state.currentUser.id : null,
+          user_id: state.currentUser.id,
           scanned_at: new Date().toISOString(),
         })
       } catch(e) {}
@@ -520,9 +520,10 @@ export function renderAlerts() {
 
 // ── History ──
 export function saveToHist(d) {
-  state.scanHistory.unshift({id:Date.now(), name:d.name, series:d.series, rarity:d.rarity, india_collector_inr:d.india_collector_inr, image:state.imgThumb, scanned:new Date().toISOString()})
+  var entry = {id:Date.now(), name:d.name, series:d.series, rarity:d.rarity, india_collector_inr:d.india_collector_inr, scanned:new Date().toISOString()}
+  state.scanHistory.unshift(entry)
   if (state.scanHistory.length > 50) state.scanHistory = state.scanHistory.slice(0, 50)
-  localStorage.setItem('hs_hist', JSON.stringify(state.scanHistory))
+  try { localStorage.setItem('hs_hist', JSON.stringify(state.scanHistory)) } catch(e) { try { localStorage.removeItem('hs_hist'); localStorage.setItem('hs_hist', JSON.stringify([entry])) } catch(e2) {} }
 }
 
 // ── Share ──

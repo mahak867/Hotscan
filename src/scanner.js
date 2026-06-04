@@ -212,7 +212,7 @@ export async function analyzePhoto() {
   if (!state.img64) return
   if (!window.checkLimit()) return
   try {
-    var _imgKey = state.img64.substring(50, 150)
+    var _l=state.img64.length; var _imgKey=state.img64.substring(0,40)+state.img64.substring(Math.floor(_l/2)-20,Math.floor(_l/2)+20)+state.img64.substring(_l-40)
     var _cache = JSON.parse(localStorage.getItem('hs_scan_cache') || '{}')
     if (_cache[_imgKey] && Date.now() - _cache[_imgKey].ts < 86400000) {
       var _cached = _cache[_imgKey].data
@@ -282,7 +282,7 @@ export async function analyzePhoto() {
     var skel2 = document.getElementById('result-skeleton'); if (skel2) skel2.style.display = 'none'
     if (navigator.vibrate) navigator.vibrate([30, 50, 30])
     try {
-      var _imgKey2 = state.img64.substring(50, 150)
+      var _l2=state.img64.length; var _imgKey2=state.img64.substring(0,40)+state.img64.substring(Math.floor(_l2/2)-20,Math.floor(_l2/2)+20)+state.img64.substring(_l2-40)
       var _cache2 = JSON.parse(localStorage.getItem('hs_scan_cache') || '{}')
       _cache2[_imgKey2] = { data: result, ts: Date.now() }
       var _keys = Object.keys(_cache2)
