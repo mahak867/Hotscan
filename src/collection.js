@@ -570,7 +570,6 @@ async function _doFullCloudSync(retryCount) {
       return true
     }
     return false
-    }
   } catch(e) {
     captureException(e)
   }
