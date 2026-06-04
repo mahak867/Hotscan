@@ -393,3 +393,10 @@ setInterval(function() {
     pulling = false
   }, {passive: true})
 })()
+
+// Keep Supabase connection warm — prevents cold start timeouts
+setInterval(function() {
+  if (window.state && window.state._sb) {
+    window.state._sb.from('profiles').select('id').limit(1).then(function(){}).catch(function(){})
+  }
+}, 240000) // every 4 minutes
