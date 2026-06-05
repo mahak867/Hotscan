@@ -302,7 +302,8 @@ export async function initAuth(){
         }
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
       } else {
-        state.currentUser=null; state.userProfile=null
+        state.currentUser=null; state.userProfile=null; state.collection=[]
+  if(window.renderCol) window.renderCol()
         localStorage.removeItem('hs_pro')
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
       }

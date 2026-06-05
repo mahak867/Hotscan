@@ -7,6 +7,7 @@ import { addCarToCollection } from './collection.js'
 
 // Override rarity for known Premium castings the AI misclassifies
 function applyKnownPremiumOverrides(d) {
+  d = Object.assign({}, d);
   var n = d.name.toLowerCase();
   var premiumCastings = [
     'mclaren','bugatti','ferrari','porsche','lamborghini',
@@ -713,24 +714,12 @@ export async function analyzeMultiPhoto() {
 
   var allCars = []
   try {
-    for (var i = 0; i < state.multiImages.length; i++) {
-      window.setStep(1, 'active')
-      document.getElementById('timer-lbl').textContent = 'Scanning image ' + (i+1) + ' of ' + state.multiImages.length + '...'
-      var result = await identifyMultipleCars(state.multiImages[i].img64)
-      if (result && result.is_hot_wheels === false) {
-        // Skip this image silently — show a note in scan_notes
-        window.setStep(1, 'done')
-        continue
-      }
-      if (result && result.cars) {
-        result.cars.forEach(function(car) {
-          car._sourceImage = state.multiImages[i].thumb
-          car._imageIndex = i
-          allCars.push(car)
-        })
-      }
-      window.setStep(1, 'done')
-    }
+    var _imgs = state.multiImages
+    var _results = await Promise.all(_imgs.map(function(imgObj) {
+      return identifyMultipleCars(imgObj.img64).catch(function(){ return {cars:[],total_cars_found:0,is_hot_wheels:false} })
+    }))
+    for (var i = 0; i < _results.length; i++) {
+      var result = _results[i]
 
     window.setStep(2, 'active')
     document.getElementById('timer-lbl').textContent = 'Fetching prices for ' + allCars.length + ' cars...'
