@@ -367,6 +367,7 @@ function _setupRealtimeSync() {
 setTimeout(_setupRealtimeSync, 3000)
 // Fallback poll every 30s in case realtime disconnects
 setInterval(function() {
+  if (document.hidden) return
   if (window.state && window.state.currentUser && window.state._sb) {
     window.fullCloudSync().then(function(ok) {
       if (ok) window.renderCol()
