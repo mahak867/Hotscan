@@ -552,6 +552,7 @@ async function _doFullCloudSync(retryCount) {
       })
     }
 
+    // never wipe existing collection on empty sync
     if (cloudItems.length > 0) {
       state.collection = cloudItems
       var _nh = cloudItems.map(function(x){return String(x.id)}).join(',')
