@@ -720,7 +720,8 @@ export async function analyzeMultiPhoto() {
     }))
     for (var i = 0; i < _results.length; i++) {
       var result = _results[i]
-
+      if (result && result.cars) result.cars.forEach(function(c){ c._sourceImage = _imgs[i]&&_imgs[i].thumb; allCars.push(c) })
+    }
     window.setStep(2, 'active')
     document.getElementById('timer-lbl').textContent = 'Fetching prices for ' + allCars.length + ' cars...'
     allCars = allCars.map(function(car){ return applyKnownPremiumOverrides(car) })
