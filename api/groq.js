@@ -97,6 +97,53 @@ export default async function handler(req) {
     )
   }
 
+  // Server-side scan limit for free users
+  // Reads Authorization header set by client — verifies with Supabase
+  const authHeader = req.headers.get('authorization') || ''
+  const xToken = req.headers.get('x-user-token') || ''
+  const userToken = (authHeader.startsWith('Bearer gsk_') ? '' : authHeader.replace('Bearer ', '').trim()) || xToken
+  if (userToken && userToken.length > 20) {
+    try {
+      const SUPA_URL = process.env.VITE_SUPA_URL || process.env.SUPA_URL
+      const SUPA_KEY = process.env.VITE_SUPA_KEY || process.env.SUPA_KEY
+      if (SUPA_URL && SUPA_KEY) {
+        // Get user from token
+        const userRes = await fetch(SUPA_URL + '/auth/v1/user', {
+          headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
+        })
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          const userId = userData.id
+          if (userId) {
+            // Check profile for Pro status
+            const profileRes = await fetch(SUPA_URL + '/rest/v1/profiles?id=eq.' + userId + '&select=is_pro,is_developer', {
+              headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
+            })
+            if (profileRes.ok) {
+              const profiles = await profileRes.json()
+              const profile = profiles && profiles[0]
+              const isPro = profile && (profile.is_pro || profile.is_developer)
+              if (!isPro) {
+                // Count today's scans
+                const today = new Date().toISOString().split('T')[0]
+                const logsRes = await fetch(
+                  SUPA_URL + '/rest/v1/scan_logs?user_id=eq.' + userId + '&scanned_at=gte.' + today + 'T00:00:00Z&select=id',
+                  { headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY } }
+                )
+                if (logsRes.ok) {
+                  const logs = await logsRes.json()
+                  if (logs && logs.length >= 5) {
+                    return json({ error: 'Daily scan limit reached — upgrade to Pro for unlimited scans', limitReached: true }, 429, cors)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch(e) { /* fail open — don't block scan if check errors */ }
+  }
+
   // Key pool
   const pool = buildKeyPool()
   if (!pool.length) {

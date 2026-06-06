@@ -598,11 +598,38 @@ export async function syncCollectionFromCloud() {
   return fullCloudSync()
 }
 
+async function uploadImageToStorage(imageDataUrl, itemId) {
+  if (!imageDataUrl || !state._sb || !state.currentUser) return null
+  try {
+    // Convert base64 to blob
+    var arr = imageDataUrl.split(',')
+    var mime = arr[0].match(/:(.*?);/)[1]
+    var bstr = atob(arr[1])
+    var n = bstr.length
+    var u8arr = new Uint8Array(n)
+    while(n--) u8arr[n] = bstr.charCodeAt(n)
+    var blob = new Blob([u8arr], {type: mime})
+    var ext = mime === 'image/png' ? 'png' : 'jpg'
+    var path = state.currentUser.id + '/' + itemId + '.' + ext
+    var up = await state._sb.storage.from('car-images').upload(path, blob, {
+      contentType: mime, upsert: true
+    })
+    if (up.error) return null
+    var urlData = state._sb.storage.from('car-images').getPublicUrl(path)
+    return urlData.data && urlData.data.publicUrl ? urlData.data.publicUrl : null
+  } catch(e) { return null }
+}
+
 export async function saveToCloud(item) {
   if (!state.currentUser || !state._sb) return null
   try {
     var thumb = item.image || null
-    if (thumb && thumb.length > 8000) thumb = null
+    // Upload to Supabase Storage if image is base64 (not already a URL)
+    if (thumb && thumb.startsWith('data:') && thumb.length > 100) {
+      var storageUrl = await uploadImageToStorage(thumb, item.id || Date.now())
+      if (storageUrl) thumb = storageUrl
+      else if (thumb.length > 8000) thumb = null // too large for DB column
+    }
     var payload = {
       user_id: state.currentUser.id,
       name: item.name,
