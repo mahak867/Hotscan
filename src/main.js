@@ -17,6 +17,7 @@ import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
   quickSell, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected
 } from './marketplace.js'
+import { addToWantList, removeFromWantList, renderWantList } from './ui.js'
 import {
   goPage, saveKey, showKeySetup, setMode, resetScan,
   openCam, openGal, openFakeCam, openFakeGal, openMulti,
@@ -142,6 +143,9 @@ window._checkAchievements = checkAndEarnAchievements
 
 // Expose utility functions to window
 window.clearScanHistory = clearScanHistory
+window.addToWantList = addToWantList
+window.removeFromWantList = removeFromWantList
+window.renderWantList = renderWantList
 window.exportCollectionCSV = exportCollectionCSV
 window.resetAchievements = resetAchievements
 

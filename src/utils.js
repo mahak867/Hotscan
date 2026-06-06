@@ -56,6 +56,23 @@ export function compressThumb(dataUrl) {
   })
 }
 
+var _toastQueue = []
+var _toastRunning = false
+function _runToastQueue() {
+  if (_toastRunning || !_toastQueue.length) return
+  _toastRunning = true
+  var item = _toastQueue.shift()
+  var el = document.getElementById('hs-toast')
+  if (!el) { _toastRunning = false; _runToastQueue(); return }
+  el.textContent = item.msg
+  el.className = 'toast-show toast-' + (item.type || 'info')
+  el.style.display = 'block'
+  setTimeout(function() {
+    el.style.display = 'none'
+    _toastRunning = false
+    _runToastQueue()
+  }, item.duration || 2800)
+}
 export function showToast(msg, type, duration){
   type = type || 'info'; duration = duration || 2800
   var existing = document.getElementById('hs-toast')

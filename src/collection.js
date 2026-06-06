@@ -29,9 +29,25 @@ export function addToCol() {
     image: state.imgThumb, added: new Date().toISOString()
   }
   var isDupe = state.collection.some(function(x){ return x.name && item.name && x.name.toLowerCase()===item.name.toLowerCase() && x.color===item.color })
-  if (isDupe) { showToast(item.name + " is already in your collection!", "error"); return }
+  if (isDupe) {
+    hsConfirm('Already in Collection', item.name + ' is already in your collection. Add another copy?', 'Add Copy', '➕').then(function(ok) {
+      if (ok) _doAddToCol(item)
+    })
+    return
+  }
+  _doAddToCol(item)
+}
+function _doAddToCol(item) {
   state.collection.unshift(item)
   if (navigator.vibrate) navigator.vibrate(30)
+  // Snapshot collection value for history chart
+  try {
+    var _vh = JSON.parse(localStorage.getItem('hs_val_hist') || '[]')
+    var _tv = 0; state.collection.forEach(function(c){ _tv += parseINR(c.india_collector_inr) })
+    _vh.push({ts: Date.now(), val: _tv})
+    if (_vh.length > 90) _vh = _vh.slice(-90)
+    localStorage.setItem('hs_val_hist', JSON.stringify(_vh))
+  } catch(e) {}
   if (state._sb && state.currentUser) {
     ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col_hash','') } }catch(e){} })()
   }
@@ -172,35 +188,41 @@ export function renderCol() {
   document.getElementById('v-sth').textContent = sth
   document.getElementById('v-avg').textContent = total > 0 ? '₹' + Math.round(val/total).toLocaleString('en-IN') : '₹0'
 
-  // #7 — micro sparkline: last 6 months of car additions
+  // Sparkline: show value history over last 6 months
   var sparkEl = document.getElementById('val-sparkline')
   if (sparkEl) {
+    var _vh = []
+    try { _vh = JSON.parse(localStorage.getItem('hs_val_hist') || '[]') } catch(e) {}
     var now = new Date()
     var months = []
     for (var mi = 5; mi >= 0; mi--) {
-      var d = new Date(now.getFullYear(), now.getMonth() - mi, 1)
-      months.push({label: d.toLocaleString('default', {month:'short'}), count: 0})
+      var md = new Date(now.getFullYear(), now.getMonth() - mi, 1)
+      months.push({label: md.toLocaleString('default', {month:'short'}), val: 0})
     }
-    state.collection.forEach(function(c) {
-      if (!c.added) return
-      var added = new Date(c.added)
+    // Use latest snapshot per month
+    _vh.forEach(function(snap) {
+      var sd = new Date(snap.ts)
       for (var i = 0; i < 6; i++) {
         var ref = new Date(now.getFullYear(), now.getMonth() - (5-i), 1)
-        if (added.getMonth() === ref.getMonth() && added.getFullYear() === ref.getFullYear()) {
-          months[i].count++; break
+        if (sd.getMonth() === ref.getMonth() && sd.getFullYear() === ref.getFullYear()) {
+          months[i].val = Math.max(months[i].val, snap.val)
         }
       }
     })
-    var maxCount = Math.max.apply(null, months.map(function(m){return m.count})) || 1
+    // Fill empty months with current value
+    var currentVal = 0; state.collection.forEach(function(c){ currentVal += parseINR(c.india_collector_inr) })
+    months.forEach(function(m) { if (!m.val && currentVal) m.val = currentVal })
+    var maxVal = Math.max.apply(null, months.map(function(m){return m.val})) || 1
     sparkEl.innerHTML = ''
     months.forEach(function(m, idx) {
-      var h = Math.max(Math.round((m.count / maxCount) * 28), m.count > 0 ? 4 : 2)
-      var col = document.createElement('div'); col.className = 'val-spark-col'
+      var h = Math.max(Math.round((m.val / maxVal) * 28), m.val > 0 ? 4 : 2)
+      var sc = document.createElement('div'); sc.className = 'val-spark-col'
       var bar = document.createElement('div'); bar.className = 'val-spark-bar' + (idx === 5 ? ' now' : '')
       bar.style.height = h + 'px'
+      bar.title = m.label + ': ₹' + Math.round(m.val).toLocaleString('en-IN')
       var lbl = document.createElement('div'); lbl.className = 'val-spark-lbl'; lbl.textContent = m.label
-      col.appendChild(bar); col.appendChild(lbl)
-      sparkEl.appendChild(col)
+      sc.appendChild(bar); sc.appendChild(lbl)
+      sparkEl.appendChild(sc)
     })
   }
 

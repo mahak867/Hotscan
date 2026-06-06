@@ -473,6 +473,57 @@ export async function submitPrice() {
 }
 
 // ── Alerts ──
+export function addToWantList() {
+  if (!state.lastResult) { showToast('Scan a car first', 'error'); return }
+  try {
+    var wl = JSON.parse(localStorage.getItem('hs_want') || '[]')
+    var exists = wl.some(function(w){ return w.name === state.lastResult.name })
+    if (exists) { showToast(state.lastResult.name + ' is already on your want list', 'error'); return }
+    wl.unshift({
+      id: Date.now(),
+      name: state.lastResult.name,
+      series: state.lastResult.series,
+      rarity: state.lastResult.rarity,
+      india_retail_inr: state.lastResult.india_retail_inr,
+      image: state.imgThumb,
+      added: new Date().toISOString()
+    })
+    localStorage.setItem('hs_want', JSON.stringify(wl))
+    showToast('Added to want list ❤️', 'success')
+    renderWantList()
+  } catch(e) {}
+}
+
+export function removeFromWantList(id) {
+  try {
+    var wl = JSON.parse(localStorage.getItem('hs_want') || '[]')
+    wl = wl.filter(function(w){ return w.id !== id })
+    localStorage.setItem('hs_want', JSON.stringify(wl))
+    renderWantList()
+    showToast('Removed from want list', 'success')
+  } catch(e) {}
+}
+
+export function renderWantList() {
+  var el = document.getElementById('want-list')
+  if (!el) return
+  var wl = []
+  try { wl = JSON.parse(localStorage.getItem('hs_want') || '[]') } catch(e) {}
+  if (!wl.length) {
+    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No cars on your want list yet. Scan a car and tap ❤️ Want!</div>'
+    return
+  }
+  el.innerHTML = wl.map(function(w) {
+    var thumb = w.image ? '<img src="' + w.image + '" style="width:40px;height:40px;border-radius:8px;object-fit:cover">' : '<div style="width:40px;height:40px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px">🚗</div>'
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+      thumb +
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(w.name) + '</div>' +
+      '<div style="font-size:11px;color:var(--text2)">' + escHtml(w.rarity||'') + ' · ₹' + cleanINR(w.india_retail_inr) + '</div></div>' +
+      '<button onclick="removeFromWantList(' + w.id + ')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">🗑️</button>' +
+      '</div>'
+  }).join('')
+}
+
 export function addAlert() {
   if(!state.lastResult){ showToast('Scan a car first to set a price alert', 'error'); return }
   if (state.alerts.find(function(a) { return a.name === state.lastResult.name })) { showToast('Alert already set for: ' + state.lastResult.name, 'error'); return }
