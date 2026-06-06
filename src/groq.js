@@ -29,7 +29,7 @@ async function callVision(model, imageData, systemPrompt, userPrompt) {
   var url     = state.KEY ? 'https://api.groq.com/openai/v1/chat/completions' : '/api/groq'
   var headers = state.KEY
     ? { 'Authorization': 'Bearer ' + state.KEY, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json', 'x-user-token': (typeof window._userToken !== 'undefined' ? window._userToken : '') }.valueOf().replace("}", ", 'x-user-token': window._userToken||'' }")
   
   var controller = new AbortController()
   var timeoutId = setTimeout(function() { controller.abort() }, 45000)  // 45 second timeout for vision
@@ -83,7 +83,7 @@ export async function groqText(prompt, model) {
   var url = useProxy ? '/api/groq' : 'https://api.groq.com/openai/v1/chat/completions'
   var headers = state.KEY
     ? { 'Authorization': 'Bearer ' + state.KEY, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json', 'x-user-token': (window._userToken||'') }.valueOf().replace("}", ", 'x-user-token': window._userToken||'' }")
   var res = await fetch(url, {
     method: 'POST', headers: headers,
     body: JSON.stringify({ model: chosenModel, messages: [{ role: 'user', content: prompt }], temperature: 0.1, max_tokens: 900 })
