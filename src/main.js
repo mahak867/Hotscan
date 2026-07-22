@@ -42,13 +42,13 @@ import {
 
 // ── Sentry error monitoring ────────────────────────────────────────────
 var _hostname = window.location.hostname
-var _sentryEnv = _hostname === 'hotscan.in' ? 'production'
+var _sentryEnv = (_hostname === 'hotscan.in' || _hostname.endsWith('.hotscan.in')) ? 'production'
                : _hostname.includes('vercel.app') ? 'preview'
                : 'development'
 Sentry.init({
   dsn: 'https://d30983e80b41aa7d1074e677160ffe4d@o4511283952353280.ingest.us.sentry.io/4511283969851392',
   environment: _sentryEnv,
-  release: 'hotscan@5.0.0',
+  release: 'hotscan@' + (typeof __SENTRY_RELEASE__ !== 'undefined' ? __SENTRY_RELEASE__ : 'dev'),
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: _sentryEnv === 'production' ? 0.1 : 1.0,
   beforeSend: function(event) {
