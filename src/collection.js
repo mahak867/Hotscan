@@ -60,7 +60,7 @@ export function delFromCol(id) {
   if (!item) { showToast('Car not found — try refreshing', 'error'); return }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
-    deleteFromCloud(cloudId, item.name)
+    deleteFromCloud(cloudId, item.name, item.color, item.series)
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
   localStorage.removeItem('hs_col_hash')
@@ -513,11 +513,16 @@ async function _doFullCloudSync(retryCount) {
     }
 
     // 2. Get local items that are NOT yet in cloud (have numeric/float IDs from Date.now())
-    var cloudNames = cloudItems.map(function(c) { return (c.name || '').toLowerCase() })
+    // Keyed on name+color+series (not name alone) — matches the same key addToCol()
+    // uses for its own duplicate-copy check, so a second copy of the same casting
+    // in a different color (or a genuine duplicate not yet synced) doesn't get
+    // silently treated as "already uploaded" and dropped.
+    var dupeKey = function(c) { return (c.name||'').toLowerCase()+'|'+(c.color||'').toLowerCase()+'|'+(c.series||'').toLowerCase() }
+    var cloudKeys = cloudItems.map(dupeKey)
     var localOnly = state.collection.filter(function(c) {
       // Cloud IDs are UUIDs (strings with dashes), local IDs are numbers
       var isLocalId = typeof c.id === 'number' || String(c.id).indexOf('-') === -1
-      return isLocalId && !cloudNames.includes((c.name || '').toLowerCase())
+      return isLocalId && !cloudKeys.includes(dupeKey(c))
     })
 
     // 3. Upload local-only items to cloud
@@ -658,11 +663,12 @@ export async function saveToCloud(item) {
       if (upd.data && upd.data.id) return upd.data.id
       if (upd.error) captureException(new Error('saveToCloud update: ' + upd.error.message))
     } else {
-      // New item — check if name already exists first, then insert
+      // New item — check if name+color+series already exists first, then insert
       var existing = await state._sb.from('collection')
         .select('id').eq('user_id', state.currentUser.id)
         .ilike('name', item.name)
         .eq('series', item.series || '')
+        .eq('color', item.color || '')
         .limit(1)
       if (existing.data && existing.data.length > 0) {
         // Already in cloud — return existing id
@@ -676,15 +682,25 @@ export async function saveToCloud(item) {
   return null
 }
 
-export async function deleteFromCloud(id, name) {
+export async function deleteFromCloud(id, name, color, series) {
   if (!state.currentUser || !state._sb) return
   try {
     if (id && typeof id === 'string' && id.includes('-')) {
       var r = await state._sb.from('collection').delete().eq('id', id).eq('user_id', state.currentUser.id)
       if (r.error) captureException(new Error('deleteFromCloud: ' + r.error.message))
     } else if (name) {
-      var r2 = await state._sb.from('collection').delete().eq('user_id', state.currentUser.id).ilike('name', name)
-      if (r2.error) captureException(new Error('deleteFromCloud by name: ' + r2.error.message))
+      // Name-only match would delete EVERY row with that name (e.g. all copies
+      // of a duplicate casting) — narrow by color+series, and cap at one row
+      // via a select-then-delete-by-id so at most the single matching copy goes.
+      var q = state._sb.from('collection').select('id')
+        .eq('user_id', state.currentUser.id).ilike('name', name)
+      if (color) q = q.eq('color', color)
+      if (series) q = q.eq('series', series)
+      var found = await q.limit(1)
+      if (found.data && found.data.length > 0) {
+        var r2 = await state._sb.from('collection').delete().eq('id', found.data[0].id)
+        if (r2.error) captureException(new Error('deleteFromCloud by name: ' + r2.error.message))
+      }
     }
   } catch(e) { captureException(e) }
 }

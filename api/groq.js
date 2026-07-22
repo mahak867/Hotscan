@@ -28,27 +28,40 @@ const ALLOWED_ORIGINS = [
 ]
 function isAllowedOrigin(o) { return !o ? false : ALLOWED_ORIGINS.includes(o) || o.endsWith('.vercel.app') }
 
-// ── Per-IP rate limiter (in-memory, resets per Edge instance) ────────────────
-// Each Edge invocation is stateless, but this is good enough to blunt burst
-// abuse within a single instance.  Max 10 requests / 60 s per IP.
-const ipMap = new Map()
-const IP_WINDOW_MS  = 60_000
+// ── Per-IP rate limiter (Upstash Redis — shared across ALL Edge instances) ───
+// Fixed-window counter via Redis INCR + EXPIRE. Unlike the old in-memory Map,
+// this is consistent no matter which region/instance serves the request.
+// Uses the raw REST API (no @upstash/redis dependency needed) since Vercel's
+// integration named the vars UPSTASH_KV_* rather than UPSTASH_REDIS_REST_*.
+const IP_WINDOW_S   = 60
 const IP_MAX_REQS   = 25
+const UPSTASH_URL   = process.env.UPSTASH_KV_REST_API_URL
+const UPSTASH_TOKEN = process.env.UPSTASH_KV_REST_API_TOKEN
 
-function isRateLimited(ip) {
-  const now  = Date.now()
-  // Evict stale entries to prevent memory leak
-  if (ipMap.size > 500) {
-    for (const [k, v] of ipMap) { if (now - v.start > IP_WINDOW_MS * 2) ipMap.delete(k) }
+async function isRateLimited(ip) {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) return false // fail open if Redis isn't configured
+  try {
+    const key = 'ratelimit:groq:' + ip
+    // Pipeline: INCR the counter, then EXPIRE it (only takes effect on first INCR
+    // in the window since Redis EXPIRE just refreshes the TTL — fine for a fixed window).
+    const res = await fetch(UPSTASH_URL + '/pipeline', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + UPSTASH_TOKEN,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([
+        ['INCR', key],
+        ['EXPIRE', key, IP_WINDOW_S, 'NX'], // NX = only set expiry if key has none yet
+      ]),
+    })
+    if (!res.ok) return false // fail open on Redis errors — don't take the app down
+    const data = await res.json()
+    const count = data && data[0] && data[0].result
+    return typeof count === 'number' && count > IP_MAX_REQS
+  } catch (e) {
+    return false // fail open
   }
-  const rec  = ipMap.get(ip) || { count: 0, start: now }
-  if (now - rec.start > IP_WINDOW_MS) {
-    ipMap.set(ip, { count: 1, start: now })
-    return false
-  }
-  if (rec.count >= IP_MAX_REQS) return true
-  ipMap.set(ip, { count: rec.count + 1, start: rec.start })
-  return false
 }
 
 // ── Key pool builder ─────────────────────────────────────────────────────────
@@ -89,7 +102,7 @@ export default async function handler(req) {
 
   // Per-IP rate limit
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (isRateLimited(ip)) {
+  if (await isRateLimited(ip)) {
     return json(
       { error: 'Too many requests — you\'ve hit the shared scan limit. Add your own free Groq key at console.groq.com for unlimited personal access, or upgrade to HotScan Pro.' },
       429,
@@ -102,10 +115,14 @@ export default async function handler(req) {
   const authHeader = req.headers.get('authorization') || ''
   const xToken = req.headers.get('x-user-token') || ''
   const userToken = (authHeader.startsWith('Bearer gsk_') ? '' : authHeader.replace('Bearer ', '').trim()) || xToken
+  // Hoisted so the scan_logs insert after a successful Groq call (below) can
+  // reuse them — this is what makes the count and the gate the same request,
+  // instead of relying on the client to separately call incScans() afterward.
+  const SUPA_URL = process.env.VITE_SUPA_URL || process.env.SUPA_URL
+  const SUPA_KEY = process.env.VITE_SUPA_KEY || process.env.SUPA_KEY
+  let scanUserId = null
   if (userToken && userToken.length > 20) {
     try {
-      const SUPA_URL = process.env.VITE_SUPA_URL || process.env.SUPA_URL
-      const SUPA_KEY = process.env.VITE_SUPA_KEY || process.env.SUPA_KEY
       if (SUPA_URL && SUPA_KEY) {
         // Get user from token
         const userRes = await fetch(SUPA_URL + '/auth/v1/user', {
@@ -115,6 +132,7 @@ export default async function handler(req) {
           const userData = await userRes.json()
           const userId = userData.id
           if (userId) {
+            scanUserId = userId
             // Check profile for Pro status
             const profileRes = await fetch(SUPA_URL + '/rest/v1/profiles?id=eq.' + userId + '&select=is_pro,is_developer', {
               headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
@@ -194,6 +212,25 @@ export default async function handler(req) {
         cors
       )
     }
+    // Log the scan server-side, right here, so usage and enforcement are the
+    // same request. Previously this only happened client-side via incScans(),
+    // which anyone calling this endpoint directly (bypassing the frontend)
+    // could skip entirely — letting the daily-limit counter never increment.
+    if (groqRes.ok && scanUserId && SUPA_URL && SUPA_KEY) {
+      try {
+        await fetch(SUPA_URL + '/rest/v1/scan_logs', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + userToken,
+            'apikey': SUPA_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({ user_id: scanUserId, scanned_at: new Date().toISOString() }),
+        })
+      } catch (e) { /* don't fail the response if logging errors */ }
+    }
+
     return new Response(data, {
       status: groqRes.status,
       headers: { 'Content-Type': 'application/json', ...cors },
