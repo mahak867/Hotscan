@@ -452,6 +452,11 @@ export async function signOutUser(){
   try { localStorage.removeItem('hs_auth_v2') } catch(e) {}
   closeAccountModal()
   window.closeProModal()
+  // Update the UI now, using the local state we already cleared — don't make
+  // the person wait on a network round-trip before they see they're signed out.
+  updateHeaderUI()
+  window.renderProfilePage()
+  window.updateScanCounter()
   try{ if(state._sb) await state._sb.auth.signOut() }catch(e){}
   updateHeaderUI()
   window.renderProfilePage()

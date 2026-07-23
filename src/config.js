@@ -11,12 +11,17 @@ export var RZP_KEY   = _env.VITE_RZP_KEY   || ''
 export var WA_COMMUNITY = 'https://chat.whatsapp.com/GCEONvdK5Vx1luFVcVD8QH'
 export var WA_SUPPORT   = '918089558314'
 export var FREE_SCANS = 5
-// Models — Maverick: 128 experts vs Scout's 16, better STH/TH detection
-// kimi-k2-instruct deprecated Sept 2025 → llama-3.3-70b-versatile
-export var HAIKU_MODEL  = 'llama-3.1-8b-instant'
-export var CODEX_MODEL  = 'llama-3.3-70b-versatile'
-export var VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
-export var VISION_FALLBACK = 'llama-3.2-90b-vision-preview'
+// Models — Groq deprecated Llama 4 Scout/Maverick (vision) and the old
+// llama-3.2-90b-vision-preview fallback; as of July 2026 qwen/qwen3.6-27b is
+// the ONLY vision-capable model Groq offers, so there's no real second model
+// to fall back to anymore — VISION_FALLBACK just retries the same model,
+// which still helps for transient errors/rate limits.
+// llama-3.1-8b-instant and llama-3.3-70b-versatile are both scheduled for
+// shutdown 08/16/26 — swapped proactively to Groq's recommended replacements.
+export var HAIKU_MODEL  = 'openai/gpt-oss-20b'
+export var CODEX_MODEL  = 'openai/gpt-oss-120b'
+export var VISION_MODEL = 'qwen/qwen3.6-27b'
+export var VISION_FALLBACK = 'qwen/qwen3.6-27b'
 
 export var HUNT_DATA = {
   mainline:[
