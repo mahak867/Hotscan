@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "HotScan India",
   "short_name": "HotScan",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "India's #1 Hot Wheels scanner. Identify any car by name or barcode, get Indian market prices and investment ratings instantly.",
   "icons": {
     "16":  "icon-16.png",

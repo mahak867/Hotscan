@@ -81,8 +81,10 @@ async function webSearch(carName, rarity, pool) {
     'India collector demand level for this casting: ' + demand + '\n\n' +
     'Return ONLY valid JSON (no markdown): {"india_retail_inr":"range e.g. 150-200","india_collector_inr":"range e.g. 200-350","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences about Indian collector demand for this specific casting","buy_tip":"actionable India buying advice"}'
 
-  // Use compound-beta-mini — much lower rate limit usage than compound-beta
-  var content = await callGroq({model:'compound-beta-mini',messages:[{role:'user',content:q}],max_tokens:500,temperature:0},pool,12000)
+  // groq/compound-mini — renamed from compound-beta-mini when Groq moved
+  // Compound systems from beta to general availability; much lower rate
+  // limit usage than groq/compound
+  var content = await callGroq({model:'groq/compound-mini',messages:[{role:'user',content:q}],max_tokens:500,temperature:0},pool,12000)
   if (!content) return null
   try {
     var s=content.indexOf('{'),e=content.lastIndexOf('}')
@@ -127,7 +129,7 @@ async function synthesize(carName, rarity, web, community, pool) {
     '5. Prioritize accuracy over conservatism.\n\n'+
     'Return ONLY JSON: {"india_retail_inr":"range","india_collector_inr":"range","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences","buy_tip":"actionable advice","data_quality":"Live+Community|Live Only|Community Only|Estimated"}'
 
-  var content=await callGroq({model:'llama-3.3-70b-versatile',messages:[
+  var content=await callGroq({model:'openai/gpt-oss-120b',messages:[
     {role:'system',content:'You are an India Hot Wheels die-cast toy price analyst. Return accurate evidence-based JSON pricing. Never artificially cap prices that are supported by real data.'},
     {role:'user',content:ctx}
   ],max_tokens:600,temperature:0,response_format:{type:'json_object'}},pool)
