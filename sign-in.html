@@ -601,16 +601,6 @@ async function doForgot() {
   clearMsg()
   
   try {
-    // Try Clerk
-    if (window.Clerk && window.Clerk.client) {
-      await window.Clerk.client.signIn.create({
-        strategy: 'reset_password_email_code',
-        identifier: email
-      })
-      showMsg('Reset link sent! Check your inbox.', true)
-      setLoading('fp', false)
-      return
-    }
     // Supabase fallback
     if (sb) {
       const { error } = await sb.auth.resetPasswordForEmail(email, {

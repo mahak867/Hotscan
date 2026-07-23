@@ -24,7 +24,26 @@ async function verifyRazorpaySignature(body, signature, secret) {
   const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const sigBuffer = await crypto.subtle.sign('HMAC', key, msgData)
   const sigHex = Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
-  return sigHex === signature
+  return timingSafeEqualHex(sigHex, signature)
+}
+
+// Constant-time comparison for hex strings. The Edge runtime has no
+// crypto.timingSafeEqual (that's Node-only), so this compares every
+// character regardless of an early mismatch, accumulating differences
+// with bitwise OR rather than short-circuiting on the first bad char —
+// closing the timing side-channel a plain `===` would leave open.
+function timingSafeEqualHex(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false
+  if (a.length !== b.length) {
+    // Still do a same-cost dummy comparison so mismatched-length requests
+    // don't return measurably faster than same-length ones.
+    let dummy = 0
+    for (let i = 0; i < a.length; i++) dummy |= a.charCodeAt(i)
+    return false
+  }
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
 }
 
 async function markUserPro(userId, paymentId) {

@@ -279,25 +279,43 @@ export function renderCol() {
           '</div>'+
         '</div>'
     } else {
-      div.style.cssText = 'background:var(--surface);border-radius:14px;padding:11px;border:1px solid var(--border);border-left:3px solid '+bc+';transition:transform .15s,box-shadow .15s'
-      div.onmouseenter=function(){this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.5)'}
-      div.onmouseleave=function(){this.style.transform='';this.style.boxShadow=''}
+      div.className = 'flip-card'
+      div.style.cssText = 'border-radius:14px;transition:transform .15s'
+      div.onmouseenter=function(){this.style.transform='translateY(-2px)'}
+      div.onmouseleave=function(){this.style.transform=''}
       var valBar = pct>0?'<div style="height:3px;background:var(--surface3);border-radius:2px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+bc+';border-radius:2px"></div></div>':''
-      div.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px">'+
-        '<div style="width:50px;height:50px;border-radius:10px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+thumbHtml+'</div>'+
-        '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.name||'Unknown')+'</div>'+
-          '<div style="font-size:11px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.series||'')+'</div>'+
-          '<div style="display:flex;align-items:center;margin-top:4px;gap:6px">'+
-            '<span style="font-size:10px;font-weight:700;color:'+bc+'">'+icon+' '+colRarity+'</span>'+
-            (c.india_collector_inr?'<span style="font-size:12px;font-weight:800;margin-left:auto">₹'+cleanINR(c.india_collector_inr)+'</span>':'')+
-          '</div>'+valBar+
-        '</div>'+
-        '<div style="display:flex;gap:4px;flex-shrink:0">'+
-          
-          '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s">🗑</button>'+
-        '</div>'+
-      '</div>'
+      var backFacts = []
+      if (c.casting_year) backFacts.push(['Casting Year', c.casting_year])
+      if (c.tampo) backFacts.push(['Tampo', c.tampo])
+      if (c.wheel_type) backFacts.push(['Wheels', c.wheel_type])
+      var backExtra = (c.fun_fact ? '<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-top:8px">💡 '+escHtml(c.fun_fact)+'</div>' : '')
+        + (c.investment_reason ? '<div style="font-size:11px;color:'+bc+';line-height:1.5;margin-top:6px">📈 '+escHtml(c.investment_reason)+'</div>' : '')
+      div.innerHTML =
+        '<div class="flip-card-inner">'+
+          '<div class="flip-card-front" style="background:var(--surface);padding:11px;border:1px solid var(--border);border-left:3px solid '+bc+'">'+
+            '<button class="flip-card-btn" data-flipid="'+c.id+'" title="Show details">ℹ</button>'+
+            '<div style="display:flex;align-items:flex-start;gap:10px">'+
+              '<div style="width:50px;height:50px;border-radius:10px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+thumbHtml+'</div>'+
+              '<div style="flex:1;min-width:0">'+
+                '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:16px">'+escHtml(c.name||'Unknown')+'</div>'+
+                '<div style="font-size:11px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.series||'')+'</div>'+
+                '<div style="display:flex;align-items:center;margin-top:4px;gap:6px">'+
+                  '<span style="font-size:10px;font-weight:700;color:'+bc+'">'+icon+' '+colRarity+'</span>'+
+                  (c.india_collector_inr?'<span style="font-size:12px;font-weight:800;margin-left:auto">₹'+cleanINR(c.india_collector_inr)+'</span>':'')+
+                '</div>'+valBar+
+              '</div>'+
+              '<div style="display:flex;gap:4px;flex-shrink:0">'+
+                '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s">🗑</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="flip-card-back">'+
+            '<button class="flip-card-btn" data-flipid="'+c.id+'" title="Back to card">✕</button>'+
+            '<div style="font-size:13px;font-weight:800;padding-right:16px">'+escHtml(c.name||'Unknown')+'</div>'+
+            (backFacts.length ? '<div style="margin-top:8px">'+backFacts.map(function(f){return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">'+f[0]+'</span><span style="color:var(--text2);font-weight:600">'+escHtml(String(f[1]))+'</span></div>'}).join('')+'</div>' : '<div style="font-size:11px;color:var(--text3);margin-top:8px">No extra details for this car yet</div>')+
+            backExtra+
+          '</div>'+
+        '</div>'
     }
     return div
   }
@@ -315,8 +333,8 @@ export function renderCol() {
     }
   })
   
-  // Handle edit and delete clicks
-  var oh=list._ch;if(oh)list.removeEventListener('click',oh);list._ch=function(e){var eb=e.target.closest('[data-editid]'),db=e.target.closest('[data-delid]');if(eb){e.stopPropagation();editColItem(eb.dataset.editid)}if(db){e.stopPropagation();delFromCol(db.dataset.delid)}};list.addEventListener('click',list._ch)
+  // Handle edit, delete, and flip clicks
+  var oh=list._ch;if(oh)list.removeEventListener('click',oh);list._ch=function(e){var eb=e.target.closest('[data-editid]'),db=e.target.closest('[data-delid]'),fb=e.target.closest('[data-flipid]');if(eb){e.stopPropagation();editColItem(eb.dataset.editid)}if(db){e.stopPropagation();delFromCol(db.dataset.delid)}if(fb){e.stopPropagation();var fc=fb.closest('.flip-card');if(fc)fc.classList.toggle('flipped')}};list.addEventListener('click',list._ch)
 }
 
 export function exportVal() {

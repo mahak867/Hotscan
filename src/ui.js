@@ -227,7 +227,7 @@ export async function handleMultiFiles(files) {
 export function startTimer(lbl) {
   state.timerSec = 0
   document.getElementById('timer-wrap').style.display = 'block'
-  document.getElementById('timer-lbl').textContent = lbl
+  document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml(lbl)
   document.getElementById('timer-cnt').textContent = '0s'
   var fill = document.getElementById('timer-fill')
   fill.style.width = '0%'
@@ -254,7 +254,7 @@ export function setStep(n, s) {
   var stepEl = el.closest ? el.closest('.pip-step') : el.parentElement
   el.className = 'pip-st'
   if (stepEl) stepEl.classList.remove('step-done')
-  if (s === 'active') { el.classList.add('active'); el.textContent = 'Running...' }
+  if (s === 'active') { el.classList.add('active'); el.innerHTML = '<span class="hs-loader-ring" style="width:14px;height:14px;border-width:2px;vertical-align:middle;margin-right:5px"></span>Running...' }
   else if (s === 'done') {
     el.classList.add('done'); el.textContent = '✓'
     if (stepEl) stepEl.classList.add('step-done')
@@ -858,6 +858,8 @@ export function renderProfilePage() {
   }
   var phoneEl = document.getElementById('prof-wa-phone')
   if (phoneEl && state.userProfile && state.userProfile.whatsapp_phone) phoneEl.value = state.userProfile.whatsapp_phone
+  var celebEl = document.getElementById('pref-celebrations')
+  if (celebEl) celebEl.checked = localStorage.getItem('hs_celebrations') !== 'off'
   var unEl = document.getElementById('prof-username')
   if (unEl) unEl.value = (state.userProfile && state.userProfile.username) ? state.userProfile.username : ''
   var olxEl = document.getElementById('prof-olx-username')

@@ -248,7 +248,7 @@ export async function analyzePhoto() {
 
     if (multiResult && multiResult.cars && multiResult.cars.length > 1) {
       window.setStep(1, 'done'); window.setStep(2, 'active')
-      document.getElementById('timer-lbl').textContent = 'Found ' + multiResult.cars.length + ' cars — fetching prices...'
+      document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Found ' + multiResult.cars.length + ' cars — fetching prices...')
       var pricePromises = multiResult.cars.map(function(car) {
         car = applyKnownPremiumOverrides(car); return searchPrices(car.name, car.rarity, car.casting_year)
       })
@@ -271,7 +271,7 @@ export async function analyzePhoto() {
       : await identifyCar(state.img64)  // fallback only when multi-car returned 0
 
     window.setStep(1, 'done'); window.setStep(2, 'active')
-    document.getElementById('timer-lbl').textContent = 'Fetching Indian prices...'
+    document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Fetching Indian prices...')
     var priceData = await searchPrices(carData.name, carData.rarity, carData.casting_year)
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()
@@ -723,7 +723,7 @@ export async function analyzeMultiPhoto() {
       if (result && result.cars) result.cars.forEach(function(c){ c._sourceImage = _imgs[i]&&_imgs[i].thumb; allCars.push(c) })
     }
     window.setStep(2, 'active')
-    document.getElementById('timer-lbl').textContent = 'Fetching prices for ' + allCars.length + ' cars...'
+    document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Fetching prices for ' + allCars.length + ' cars...')
     allCars = allCars.map(function(car){ return applyKnownPremiumOverrides(car) })
     var pricePromises = allCars.map(function(car) {
       return searchPrices(car.name, car.rarity, car.casting_year)

@@ -53,8 +53,9 @@
     </div>
     <!-- version removed - looks unprofessional in header -->
   </div>
-  <div id="user-hdr-btn" class="app-user-btn" onclick="currentUser?openAccountModal():openAuth()">
-    <div class="app-user-inner">Sign In</div>
+  <div class="profile-dd">
+    <div id="user-hdr-btn" class="app-user-btn"></div>
+    <div id="profile-dd-menu" class="profile-dd-menu"></div>
   </div>
 </div>
 <aside class="hs-sidebar" id="hs-sidebar">
@@ -204,7 +205,7 @@
     <div class="pip-step"><div class="pip-ic">💰</div><div class="pip-lbl">Fetching live prices<div class="pip-sub">Llama 3.3 70B analysis</div></div><div class="pip-st" id="ps2">Waiting</div></div>
     <div class="pip-step" style="border-bottom:none"><div class="pip-ic">✅</div><div class="pip-lbl">Building result<div class="pip-sub">Compiling data</div></div><div class="pip-st" id="ps3">Waiting</div></div>
   </div>
-  <div id="timer-wrap"><div class="timer-row"><div class="timer-lbl" id="timer-lbl">Scanning...</div><div class="timer-cnt" id="timer-cnt">0s</div></div><div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:0%"></div></div></div>
+  <div id="timer-wrap"><div class="timer-row"><div class="timer-lbl" id="timer-lbl"><span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>Scanning...</div><div class="timer-cnt" id="timer-cnt">0s</div></div><div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:0%"></div></div></div>
   <!-- Skeleton loader — shown during analysis -->
   <div id="result-skeleton" style="display:none">
     <div class="skel-hero"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line-lg"></div><div class="skel skel-line-sm"></div><div class="skel skel-badge"></div></div></div>
@@ -292,7 +293,7 @@
 
 <!-- ═══ COLLECTION PAGE ═══ -->
 <div class="page" id="page-collection">
-  <div class="page-hdr"><div class="page-title">Collection</div><button class="btn-red" onclick="goPage('scan')" style="padding:7px 12px;font-size:12px">+ Add</button></div>
+  <div class="page-hdr"><div class="page-title">Collection</div><button class="btn-red hs-slide-btn" onclick="goPage('scan')" style="padding:7px 12px;font-size:12px"><span class="hs-slide-label">+ Add</span><span class="hs-slide-label-hover">📷 Scan One</span></button></div>
   <div style="position:relative;margin-bottom:10px"><input id="col-search" type="search" placeholder="🔍  Search your collection…" oninput="searchCol(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;font-size:14px;color:#fff;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"></div><div class="val-card">
     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
@@ -597,6 +598,16 @@
             <button onclick="saveProfilePhone()" style="background:var(--red);border:none;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Save</button>
           </div>
           <div style="font-size:10px;color:var(--text3);margin-top:5px">Saved once — auto-fills when you list a car for sale</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff">🎉 Celebration Animations</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">Confetti when you sign in or hit a milestone</div>
+          </div>
+          <label class="hs-switch">
+            <input type="checkbox" id="pref-celebrations" onchange="window.toggleCelebrations(this.checked)">
+            <span class="hs-switch-track"></span>
+          </label>
         </div>
         <button onclick="exportVal()" style="background:var(--surface2);border:1px solid var(--border);color:#fff;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;text-align:left">📄 Export Valuation Certificate</button>
 

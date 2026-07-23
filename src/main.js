@@ -136,6 +136,7 @@ window.doCloudSync = async function(btn) {
 
 // Expose collection editing functions to window
 window.delFromCol = delFromCol
+window.toggleCelebrations = function(checked){ localStorage.setItem('hs_celebrations', checked ? 'on' : 'off') }
 window.editColItem = editColItem
 window.saveColEdit = saveColEdit
 window.closeColEdit = closeColEdit

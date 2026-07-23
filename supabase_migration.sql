@@ -283,3 +283,13 @@ grant select on public_listings to anon, authenticated;
 drop policy if exists "community_prices_insert" on community_prices;
 create policy "community_prices_insert" on community_prices
   for insert with check (auth.uid() IS NOT NULL);
+
+-- ── 11. scan_logs cleanup — table grows unbounded (guest rows allowed with
+-- user_id IS NULL, no insert rate limit). Run periodically, or schedule with
+-- pg_cron if your plan supports it (Database → Extensions → pg_cron).
+-- Keeps 35 days of history, which is more than the daily-limit check needs.
+delete from scan_logs where scanned_at < now() - interval '35 days';
+
+-- Optional, only if pg_cron is available on your plan:
+-- select cron.schedule('scan_logs_cleanup', '0 3 * * *',
+--   $$delete from scan_logs where scanned_at < now() - interval '35 days'$$);

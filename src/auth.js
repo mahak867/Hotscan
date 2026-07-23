@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { SUPA_URL, SUPA_KEY, RZP_KEY, DEV_EMAIL } from './config.js'
+import { SUPA_URL, SUPA_KEY, RZP_KEY } from './config.js'
 import { escHtml, sanitize, showToast, captureException } from './utils.js'
 
 export var _authMode = 'signin'
@@ -214,6 +214,7 @@ export async function sendPasswordReset(){
 
 export function showSuccessCelebration(){
   if(!state.currentUser) return
+  if(localStorage.getItem('hs_celebrations') === 'off') return
   var overlay = document.getElementById('auth-success-overlay')
   var nameEl = document.getElementById('auth-success-name')
   if(!overlay) return
@@ -292,12 +293,19 @@ export async function initAuth(){
     state._sb.auth.onAuthStateChange(async function(event,session){
       if(session&&session.user){
         var u=session.user
+        // supabase-js re-fires SIGNED_IN (not just token refresh events) whenever
+        // the tab regains focus/visibility, even for an already-active session.
+        // Only treat it as a genuine new login if we weren't already signed in
+        // as this same user — otherwise the welcome celebration and sync toast
+        // fire every single time you switch back to the tab.
+        var wasAlreadySignedIn = !!(state.currentUser && state.currentUser.id === u.id)
         state.currentUser={id:u.id,email:u.email||'',name:(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email.split('@')[0]}
         await loadProfile()
-        if(event==='SIGNED_IN'){ closeAuth(); if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setTimeout(showSuccessCelebration,300) }
+        var isFreshSignIn = event==='SIGNED_IN' && !wasAlreadySignedIn
+        if(isFreshSignIn){ closeAuth(); if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setTimeout(showSuccessCelebration,300) }
         window._authResolved = true
         if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
-          ;(async function(){ window._colSyncing = true; try{ var _sok = await window.fullCloudSync(); window._colSyncing = false; window.renderCol(); if(_sok && event==='SIGNED_IN') window.showToast('Collection synced ✅', 'success') }catch(e){} })()
+          ;(async function(){ window._colSyncing = true; try{ var _sok = await window.fullCloudSync(); window._colSyncing = false; window.renderCol(); if(_sok && isFreshSignIn) window.showToast('Collection synced ✅', 'success') }catch(e){} })()
           if(window.syncScanCountFromServer) setTimeout(window.syncScanCountFromServer, 1000)
         }
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
@@ -328,11 +336,6 @@ export async function initAuth(){
 
 export async function loadProfile(){
   if(!state.currentUser||!state._sb) return
-  if(state.currentUser.email===DEV_EMAIL){
-    state.userProfile=Object.assign(state.userProfile||{},{is_pro:true,is_developer:true,email:state.currentUser.email})
-    localStorage.setItem('hs_pro','true')
-    updateHeaderUI(); window.renderProfilePage()
-  }
   try{
     var q=await state._sb.from('profiles').select('*').eq('id',state.currentUser.id).single()
     if(q.data){ state.userProfile=q.data }
@@ -348,17 +351,13 @@ export async function loadProfile(){
         email: state.currentUser.email,
         display_name: metaUsername || state.currentUser.name || state.currentUser.email.split('@')[0],
         username: metaUsername || null,
-        is_pro: state.currentUser.email === DEV_EMAIL,
-        is_developer: state.currentUser.email === DEV_EMAIL
+        is_pro: false,
+        is_developer: false
       }, { onConflict: 'id', ignoreDuplicates: true }) // ignoreDuplicates:true = only insert, never overwrite existing
       var q2=await state._sb.from('profiles').select('*').eq('id',state.currentUser.id).single()
       state.userProfile=q2.data||{id:state.currentUser.id,email:state.currentUser.email,is_pro:false,is_developer:false}
     }
-    if(state.currentUser.email===DEV_EMAIL){
-      await state._sb.from('profiles').update({is_pro:true,is_developer:true,pro_since:new Date().toISOString()}).eq('id',state.currentUser.id)
-      state.userProfile=Object.assign({},state.userProfile,{is_pro:true,is_developer:true})
-      localStorage.setItem('hs_pro','true')
-    } else if(state.userProfile&&state.userProfile.is_pro){
+    if(state.userProfile&&state.userProfile.is_pro){
       localStorage.setItem('hs_pro','true')
     }
     try{ localStorage.setItem('hs_profile_cache',JSON.stringify({data:state.userProfile,ts:Date.now()})) }catch(e){}
@@ -374,18 +373,45 @@ export async function loadProfile(){
 
 export function updateHeaderUI(){
   var btn=document.getElementById('user-hdr-btn')
+  var dd=document.getElementById('profile-dd-menu')
   if(!btn) return
-  btn.onclick=function(){ state.currentUser?openAccountModal():openAuth() }
-  if(!state.currentUser){ btn.innerHTML='<div class="app-user-inner">Sign In</div>'; return }
+  if(!state.currentUser){
+    btn.innerHTML='<div class="app-user-inner">Sign In</div>'
+    btn.onclick=function(){ openAuth() }
+    if(dd){ dd.classList.remove('open'); dd.innerHTML='' }
+    return
+  }
   var prefs={}; try{ prefs=JSON.parse(localStorage.getItem('hs_prefs')||'{}') }catch(e){}
   var name=prefs.displayName||(state.userProfile&&state.userProfile.username)||state.currentUser.name||state.currentUser.email.split('@')[0]||'?'
   var initial=escHtml((name.length > 0 ? name[0] : '?').toUpperCase())
   var safeName=escHtml(name)
-  var isDev=!!(state.userProfile&&state.userProfile.is_developer)||(state.currentUser.email===DEV_EMAIL)
+  var isDev=!!(state.userProfile&&state.userProfile.is_developer)
   var isProUser=!isDev&&!!(state.userProfile&&state.userProfile.is_pro)
   var bg=isDev?'linear-gradient(135deg,#7c3aed,#4f46e5)':isProUser?'linear-gradient(135deg,#e63946,#ff6b35)':(prefs.avatarColor||'linear-gradient(135deg,#374151,#4b5563)')
   var badge=isDev?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap">&#x1F451; Dev</span>':isProUser?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span>':''
   btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+initial+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>'+badge+'</div>'
+  btn.onclick=function(e){ e.stopPropagation(); if(dd) dd.classList.toggle('open') }
+  if(dd){
+    dd.innerHTML =
+      '<div class="profile-dd-head"><div class="profile-dd-name">'+safeName+'</div><div class="profile-dd-email">'+escHtml(state.currentUser.email)+'</div></div>'+
+      '<div class="profile-dd-item" id="pdd-profile">👤 Profile</div>'+
+      '<div class="profile-dd-item" id="pdd-collection">🚗 My Collection</div>'+
+      '<div class="profile-dd-divider"></div>'+
+      '<div class="profile-dd-item" id="pdd-settings">⚙️ Account Settings</div>'+
+      '<div class="profile-dd-item danger" id="pdd-signout">↪ Sign Out</div>'
+    document.getElementById('pdd-profile').onclick=function(){ dd.classList.remove('open'); window.goPage('profile') }
+    document.getElementById('pdd-collection').onclick=function(){ dd.classList.remove('open'); window.goPage('collection') }
+    document.getElementById('pdd-settings').onclick=function(){ dd.classList.remove('open'); openAccountModal() }
+    document.getElementById('pdd-signout').onclick=function(){ dd.classList.remove('open'); signOutUser() }
+  }
+}
+// Close the dropdown on any outside click — attached once, not per-render
+if(typeof document!=='undefined' && !document._pddOutsideClickBound){
+  document._pddOutsideClickBound = true
+  document.addEventListener('click', function(e){
+    var dd=document.getElementById('profile-dd-menu')
+    if(dd && dd.classList.contains('open') && !e.target.closest('.profile-dd')) dd.classList.remove('open')
+  })
 }
 
 export function openAccountModal() {

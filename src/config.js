@@ -1,12 +1,13 @@
 // Keys — loaded from Vite env vars (set in Vercel dashboard, never hardcoded here).
 // Supabase anon key: safe to be public by design (RLS enforces access).
 // Razorpay key: must NEVER be hardcoded — set VITE_RZP_KEY in Vercel env vars.
-// DEV_EMAIL: set via VITE_DEV_EMAIL env var — not in source.
+// Dev/Pro status is server-authoritative (profiles.is_developer / is_pro,
+// protected by the profiles_update_safe RLS policy) — no client-side email
+// check or env var needed for it anymore.
 var _env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
 export var SUPA_URL  = _env.VITE_SUPA_URL  || ''
 export var SUPA_KEY  = _env.VITE_SUPA_KEY  || ''
 export var RZP_KEY   = _env.VITE_RZP_KEY   || ''
-export var DEV_EMAIL = _env.VITE_DEV_EMAIL  || ''
 export var WA_COMMUNITY = 'https://chat.whatsapp.com/GCEONvdK5Vx1luFVcVD8QH'
 export var WA_SUPPORT   = '918089558314'
 export var FREE_SCANS = 5
