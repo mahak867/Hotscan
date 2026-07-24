@@ -33,6 +33,32 @@ function getDemand(n) {
   return HIGH_DEMAND.some(k=>n.includes(k)) ? 'high' : 'medium'
 }
 
+// Parses "200-350", "₹1,200", "150" etc into [low, high] numbers.
+function parseRange(s) {
+  if (!s) return null
+  var nums = String(s).replace(/[₹,\s]/g,'').match(/\d+(\.\d+)?/g)
+  if (!nums || !nums.length) return null
+  var vals = nums.map(Number)
+  return [Math.min.apply(null,vals), Math.max.apply(null,vals)]
+}
+
+// The AI is deliberately told not to cap prices below real market data — but
+// nothing was stopping it from returning a wildly hallucinated number if its
+// web search picked up one irrelevant listing. This clamps the result to a
+// generous multiple of the rarity band (allows genuine premium pricing
+// through, catches outright hallucination) rather than trusting it blindly.
+// Returns the original string if it doesn't even parse as a number.
+function sanityClamp(aiStr, bandStr, minMult, maxMult) {
+  var ai = parseRange(aiStr), band = parseRange(bandStr)
+  if (!ai) return bandStr
+  if (!band) return aiStr
+  var floor = band[0] * minMult, ceiling = band[1] * maxMult
+  var lo = Math.max(ai[0], floor * 0.3) // still allow real dips below band, just not near-zero
+  var hi = Math.min(Math.max(ai[1], lo), ceiling)
+  lo = Math.min(lo, hi)
+  return Math.round(lo) === Math.round(hi) ? String(Math.round(lo)) : Math.round(lo) + '-' + Math.round(hi)
+}
+
 function buildPool() {
   var pool = []
   var s = process.env.GROQ_API_KEY; if (s) pool.push(s)
@@ -73,18 +99,21 @@ async function callGroq(body, pool, timeoutMs) {
 
 async function webSearch(carName, rarity, pool) {
   var demand = getDemand(carName)
+  var year = new Date().getFullYear()
   // Explicitly specify die-cast toy to avoid web search returning real car results
-  var q = 'Find current 2025 India market prices for the Mattel Hot Wheels die-cast toy car "' + carName + '" (' + rarity + ' rarity).\n' +
+  var q = 'Find current ' + year + ' India market prices for the Mattel Hot Wheels die-cast toy car "' + carName + '" (' + rarity + ' rarity).\n' +
     'Search specifically: OLX.in "hot wheels" "' + carName + '" listings, Amazon.in Hot Wheels section, ' +
     'Flipkart Hot Wheels listings, Instagram #hotwheelsindia #hotwheelsindiasale posts.\n' +
     'This is a small ~7cm die-cast toy car made by Mattel, NOT the real vehicle.\n' +
     'India collector demand level for this casting: ' + demand + '\n\n' +
     'Return ONLY valid JSON (no markdown): {"india_retail_inr":"range e.g. 150-200","india_collector_inr":"range e.g. 200-350","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences about Indian collector demand for this specific casting","buy_tip":"actionable India buying advice"}'
 
-  // groq/compound-mini — renamed from compound-beta-mini when Groq moved
-  // Compound systems from beta to general availability; much lower rate
-  // limit usage than groq/compound
-  var content = await callGroq({model:'groq/compound-mini',messages:[{role:'user',content:q}],max_tokens:500,temperature:0},pool,12000)
+  // groq/compound (full, not -mini) — mini only makes a single tool call per
+  // request, meaning one search with no cross-checking. Full compound can
+  // make multiple tool calls, which matters here since price accuracy is
+  // this product's actual core value — worth the extra latency/rate-limit
+  // cost over mini.
+  var content = await callGroq({model:'groq/compound',messages:[{role:'user',content:q}],max_tokens:500,temperature:0},pool,15000)
   if (!content) return null
   try {
     var s=content.indexOf('{'),e=content.lastIndexOf('}')
@@ -166,8 +195,8 @@ export default async function handler(req) {
   var band=BANDS[rarity]||BANDS['Common']
 
   var result={
-    india_retail_inr:    (final&&final.india_retail_inr)||band.r,
-    india_collector_inr: (final&&final.india_collector_inr)||band.c,
+    india_retail_inr:    sanityClamp((final&&final.india_retail_inr)||band.r, band.r, 1, 6),
+    india_collector_inr: sanityClamp((final&&final.india_collector_inr)||band.c, band.c, 1, 8),
     us_retail_usd:       (final&&final.us_retail_usd)||band.ur,
     us_collector_usd:    (final&&final.us_collector_usd)||band.uc,
     price_trend:         (final&&final.price_trend)||'Stable',
@@ -180,6 +209,16 @@ export default async function handler(req) {
     community_count:     community?community.community_count:0,
     sources:{web_search:!!web,community:!!community,synthesized:!!final},
     car_name:carName, rarity:rarity
+  }
+  // With 3+ real community submissions, trust that over the AI's synthesized
+  // guess entirely for the collector price — actual sold/listed prices from
+  // real people beat an LLM's web-search interpretation, and this is the
+  // strongest accuracy lever available without building a full scraped
+  // price database.
+  if (community && community.community_count >= 3 && community.community_median_inr) {
+    var med = community.community_median_inr
+    result.india_collector_inr = Math.round(med*0.85) + '-' + Math.round(med*1.15)
+    result.data_quality = 'Community Verified (' + community.community_count + ' submissions)'
   }
   return new Response(JSON.stringify(result),{status:200,headers:{...cors,'Content-Type':'application/json'}})
 }

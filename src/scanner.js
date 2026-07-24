@@ -246,6 +246,20 @@ export async function analyzePhoto() {
       throw new Error('Not a Hot Wheels car — AI sees: ' + what + '. Please photograph a Hot Wheels die-cast car.')
     }
 
+    // The vision model occasionally detects one physical car as two entries
+    // (especially confused by the small inset photo printed on Hot Wheels
+    // blister cards). Collapse exact name+color+series duplicates down to
+    // one before spending API calls fetching prices for a phantom second car.
+    if (multiResult && multiResult.cars && multiResult.cars.length > 1) {
+      var seenKeys = {}
+      multiResult.cars = multiResult.cars.filter(function(car) {
+        var key = (car.name||'').toLowerCase()+'|'+(car.color||'').toLowerCase()+'|'+(car.series||'').toLowerCase()
+        if (seenKeys[key]) return false
+        seenKeys[key] = true
+        return true
+      })
+    }
+
     if (multiResult && multiResult.cars && multiResult.cars.length > 1) {
       window.setStep(1, 'done'); window.setStep(2, 'active')
       document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Found ' + multiResult.cars.length + ' cars — fetching prices...')
