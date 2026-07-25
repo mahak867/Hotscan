@@ -14,12 +14,12 @@
     "cap:ios": "npm run cap:sync && npx cap open ios"
   },
   "devDependencies": {
-    "@sentry/vite-plugin": "^3.1.2",
     "@capacitor/android": "8.3.4",
     "@capacitor/cli": "8.3.4",
     "@capacitor/core": "8.3.4",
     "@capacitor/ios": "8.3.4",
     "@playwright/test": "^1.60.0",
+    "@sentry/vite-plugin": "^5.4.0",
     "typescript": "^6.0.3",
     "vite": "^6.4.2"
   },
