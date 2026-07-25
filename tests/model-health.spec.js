@@ -17,8 +17,11 @@ const MODELS_TO_CHECK = [
   { name: 'qwen/qwen3.6-27b', vision: true },
 ]
 
-// A 1x1 transparent PNG — smallest possible valid image for the vision check
-const TINY_PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+// A tiny but real 64x64 solid-color PNG — small enough to keep the request
+// cheap, but not the degenerate 1x1 pixel case that some vision models'
+// preprocessing may reject or choke on for reasons unrelated to whether the
+// model itself is actually available.
+const TINY_PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAYklEQVR4nO3PMQ0AIADAMEAS/gUgCxEcDcmqYJtn7/GzpQNeNaA1oDWgNaA1oDWgNaA1oDWgNaA1oDWgNaA1oDWgNaA1oDWgNaA1oDWgNaA1oDWgNaA1oDWgNaA1oDWgNaBdzXoBrL6L/ScAAAAASUVORK5CYII='
 
 test.describe('Groq model health', () => {
   test.skip(!GROQ_KEY, 'GROQ_API_KEY_1 not set — add it as a GitHub Actions secret to enable this check')
