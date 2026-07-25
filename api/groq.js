@@ -1,5 +1,6 @@
 // HotScan India — Groq API proxy  (Vercel Edge Function)
 //
+import { captureServerException } from './_sentry.js'
 // Rate-limit strategy:
 //   1. Reads a POOL of up to 5 Groq keys:  GROQ_API_KEY_1 … GROQ_API_KEY_5
 //      (GROQ_API_KEY is also accepted as a single-key shorthand)
@@ -211,6 +212,13 @@ export default async function handler(req) {
         429,
         cors
       )
+    }
+    if (!groqRes.ok) {
+      // This is exactly the class of failure (e.g. a deprecated model ID)
+      // that broke scanning entirely and went unnoticed until a user
+      // happened to report it — report it immediately instead of only the
+      // client seeing the raw error.
+      captureServerException(new Error('Groq scan API error ' + groqRes.status + ': ' + data.slice(0,300)), { tags: { endpoint: 'groq' }, function: 'scan handler' })
     }
     // Log the scan server-side, right here, so usage and enforcement are the
     // same request. Previously this only happened client-side via incScans(),

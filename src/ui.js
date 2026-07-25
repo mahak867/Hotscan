@@ -338,6 +338,12 @@ export function showResult(d) {
   if (!d.data_quality || d.data_quality === 'Estimated') {
     _dqEl.textContent = '⚠️ Estimated — verify on OLX'
     _dqEl.style.color = 'var(--gold)'
+  } else if (d.data_quality.indexOf('Verified Sale') === 0) {
+    _dqEl.textContent = '✅ ' + d.data_quality
+    _dqEl.style.color = 'var(--green)'
+  } else if (d.data_quality.indexOf('Community Verified') === 0) {
+    _dqEl.textContent = '👥 ' + d.data_quality
+    _dqEl.style.color = 'var(--blue)'
   } else {
     _dqEl.textContent = 'Updated just now · ' + d.data_quality
     _dqEl.style.color = ''

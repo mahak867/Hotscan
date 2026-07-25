@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, captureException } from './utils.js'
+import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, hsPromptPrice, captureException } from './utils.js'
 import { groqText, groqJSON } from './groq.js'
 import { HAIKU_MODEL } from './config.js'
 
@@ -159,9 +159,11 @@ export async function renderMyListings(arr) {
       row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)'
       var nm = document.createElement('div'); nm.style.cssText = 'flex:1;font-size:13px;font-weight:600'; nm.textContent = l.name
       var px = document.createElement('div'); px.style.cssText = 'font-size:12px;color:var(--text2);flex-shrink:0'; px.textContent = '₹' + Number(l.price).toLocaleString('en-IN')
+      var sold = document.createElement('button'); sold.style.cssText = 'background:none;border:none;color:var(--green);cursor:pointer;font-size:15px;flex-shrink:0'; sold.textContent = '✅'; sold.title = 'Mark as sold'
+      sold.onclick = (function(id, name) { return function() { markListingSold(id, name) } })(l.id, l.name)
       var del = document.createElement('button'); del.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;flex-shrink:0'; del.textContent = '🗑'; del.title = 'Remove listing'
       del.onclick = (function(id) { return function() { deleteListing(id) } })(l.id)
-      row.appendChild(nm); row.appendChild(px); row.appendChild(del)
+      row.appendChild(nm); row.appendChild(px); row.appendChild(sold); row.appendChild(del)
       wrap.appendChild(row)
     })
   } catch(e) { card.style.display = 'none' }
@@ -177,6 +179,32 @@ export async function deleteListing(id) {
     renderMyListings()
     _mpListings = null
   } catch(e) { showToast('Could not remove listing', 'error') }
+}
+
+// This is the highest-value real price data Hotscan can capture: an actual
+// closed transaction on its own marketplace, not a self-reported guess or an
+// AI's web-search interpretation. Tagged via the `platform` field (no schema
+// migration needed) so api/prices.js can weight it above regular community
+// submissions when computing a car's collector price.
+export async function markListingSold(id, carName) {
+  if (!state.currentUser || !state._sb) return
+  var price = await hsPromptPrice('Mark as Sold', 'What did "' + carName + '" actually sell for? This helps keep prices accurate for every collector.')
+  if (!price) return
+  try {
+    await state._sb.from('community_prices').insert({
+      car_name: carName,
+      price_inr: price,
+      platform: 'Hotscan Marketplace (Verified Sale)',
+      user_id: state.currentUser.id,
+      user_name: state.currentUser.name || state.currentUser.email.split('@')[0],
+    })
+  } catch(e) { captureException(e) }
+  try {
+    await state._sb.from('listings').update({is_active: false}).eq('id', id).eq('seller_id', state.currentUser.id)
+  } catch(e) { captureException(e) }
+  showToast('Marked as sold — thanks for keeping prices accurate! 🎉', 'success')
+  renderMyListings()
+  _mpListings = null
 }
 
 export async function submitListing() {

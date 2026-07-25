@@ -1,5 +1,6 @@
 // HotScan India — Razorpay Webhook Handler (Vercel Edge Function)
 //
+import { captureServerException } from './_sentry.js'
 // Verifies payment server-side using Razorpay webhook signature,
 // then marks the user as Pro in Supabase.
 //
@@ -90,6 +91,7 @@ export default async function handler(req) {
   const isValid = await verifyRazorpaySignature(body, signature, webhookSecret)
   if (!isValid) {
     console.error('Invalid Razorpay webhook signature')
+    captureServerException(new Error('Invalid Razorpay webhook signature'), { tags: { endpoint: 'razorpay-webhook' } })
     return new Response('Invalid signature', { status: 400 })
   }
 
@@ -110,12 +112,18 @@ export default async function handler(req) {
 
     if (!userId) {
       console.error('No user_id in payment notes — payment:', paymentId)
+      captureServerException(new Error('Razorpay payment captured with no user_id in notes'), { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId } })
       return new Response('No user_id in notes', { status: 400 })
     }
 
     const success = await markUserPro(userId, paymentId)
     if (!success) {
+      // This means someone was actually charged money and their Pro upgrade
+      // failed to apply — the single most business-critical silent failure
+      // this webhook could have, and previously it only logged to Vercel's
+      // console where nobody would see it until the customer complained.
       console.error('Failed to update Supabase for user:', userId)
+      captureServerException(new Error('Payment captured but Supabase Pro upgrade failed — customer was charged without receiving Pro'), { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId, userId } })
       return new Response('DB update failed', { status: 500 })
     }
 

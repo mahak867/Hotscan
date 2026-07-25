@@ -140,6 +140,30 @@ export function hsConfirm(title, message, okLabel, icon) {
   })
 }
 
+// Styled number-input dialog, same pattern as hsConfirm above. Returns the
+// entered number, or null if cancelled / left blank / non-numeric.
+// Used by markListingSold() to capture the real final sale price.
+export function hsPromptPrice(title, message) {
+  return new Promise(function(resolve) {
+    var overlay = document.getElementById('hs-prompt-overlay')
+    var titleEl = document.getElementById('hs-prompt-title')
+    var msgEl   = document.getElementById('hs-prompt-msg')
+    var input   = document.getElementById('hs-prompt-input')
+    if (!overlay) { var v = window.prompt(message || title); resolve(v ? parseInt(v) : null); return }
+    if (titleEl) titleEl.textContent = title || 'Enter an amount'
+    if (msgEl)   msgEl.textContent   = message || ''
+    if (input)   input.value = ''
+    overlay.style.display = 'flex'
+    setTimeout(function() { if (input) input.focus() }, 50)
+    window._promptResolve = function() {
+      var val = input ? parseInt(input.value) : NaN
+      overlay.style.display = 'none'
+      resolve(isNaN(val) || val <= 0 ? null : val)
+    }
+    window._promptReject = function() { overlay.style.display = 'none'; resolve(null) }
+  })
+}
+
 // Safe Sentry wrapper — works even if Sentry hasn't loaded yet
 // Import this instead of Sentry directly in any module
 export function captureException(e) {

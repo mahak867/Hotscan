@@ -1,10 +1,17 @@
 // HotScan India Chrome Extension — Popup Logic
 
-// llama-3.1-8b-instant deprecated by Groq, shutdown 08/16/26 — replaced with
-// their recommended migration target. This extension bundles separately from
-// the main app and doesn't share src/config.js, so this constant is
-// independent and needs updating here too if Groq changes models again.
+// Fetched at runtime from hotscan.in's own API — this means a future Groq
+// model change takes effect here immediately, without needing to republish
+// the extension through Chrome Web Store review (which can take days).
+// Falls back to this hardcoded value only if that fetch fails (offline, API
+// down, etc.) — keep it reasonably current as a safety net, not the source
+// of truth.
 var HAIKU_MODEL = 'openai/gpt-oss-20b'
+fetch('https://hotscan.in/api/model-config')
+  .then(function(r) { return r.json() })
+  .then(function(cfg) { if (cfg && cfg.haiku) HAIKU_MODEL = cfg.haiku })
+  .catch(function() { /* keep the hardcoded fallback above */ })
+
 var apiKey = ''
 var lastResult = null
 

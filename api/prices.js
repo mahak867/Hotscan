@@ -1,6 +1,8 @@
 // HotScan India — Real-Time Pricing Engine (Vercel Edge Function)
-// 3-source pipeline: Groq compound-beta-mini web search + Supabase community + AI synthesis
+// 3-source pipeline: Groq compound web search + Supabase community + AI synthesis
 export const config = { runtime: 'edge' }
+import { MODELS } from './_models.js'
+import { captureServerException } from './_sentry.js'
 
 const ALLOWED_ORIGINS = ['https://hotscan.in','https://www.hotscan.in','https://hotscan-theta.vercel.app']
 
@@ -15,6 +17,56 @@ const BANDS = {
   'Error Car':           {r:'1000-3000',c:'5000-30000', ur:'10+',  uc:'50-500'},
 }
 
+const HIGH_VALUE_RARITIES = ['Rare','Premium','Treasure Hunt','Super Treasure Hunt','Vintage','Error Car']
+
+// Bootstraps real OLX India listing data for high-value cars that don't have
+// enough community data yet, via Apify's maintained OLX India Scraper
+// (daddyapi/olx-india-scraper) — real listings instead of an LLM guessing at
+// what a web search might contain. Needs its own APIFY_TOKEN env var (not
+// set up yet — this quietly no-ops until it is, same pattern as this app's
+// other optional integrations).
+//
+// Writes results straight into community_prices tagged 'OLX India
+// (Auto-fetched)' — this doubles as the cache: a later request for the same
+// car within 30 days finds these rows already there and skips calling Apify
+// again, with zero new tables or migrations needed.
+async function apifyBootstrap(carName, url, key) {
+  var token = process.env.APIFY_TOKEN
+  if (!token || !url || !key) return
+  try {
+    // Skip if we already auto-fetched this car recently (the cache check)
+    var recent = await fetch(url+'/rest/v1/community_prices?car_name=ilike.*'+encodeURIComponent(carName.split(' ').slice(0,3).join(' '))+'*&platform=eq.OLX India (Auto-fetched)&created_at=gte.'+new Date(Date.now()-30*86400000).toISOString()+'&select=id&limit=1',
+      {headers:{'apikey':key,'Authorization':'Bearer '+key}})
+    var recentRows = recent.ok ? await recent.json() : []
+    if (recentRows.length) return // already fetched within 30 days
+
+    var searchUrl = 'https://www.olx.in/items/q-hot-wheels-' + encodeURIComponent(carName.toLowerCase().replace(/[^a-z0-9]+/g,'-'))
+    var apifyRes = await fetch('https://api.apify.com/v2/acts/daddyapi~olx-india-scraper/run-sync-get-dataset-items?token='+token, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ startUrls: [{ url: searchUrl }], maxItems: 10 }),
+      signal: AbortSignal.timeout(20000),
+    })
+    if (!apifyRes.ok) { captureServerException(new Error('Apify OLX fetch failed: '+apifyRes.status), {tags:{function:'apifyBootstrap'}}); return }
+    var listings = await apifyRes.json()
+    if (!Array.isArray(listings) || !listings.length) return
+
+    var inserts = listings
+      .map(function(l) { return { title: l.title||'', price: parseInt(String(l.price||'').replace(/[₹,\s]/g,'')) } })
+      .filter(function(l) { return l.price > 50 && l.price < 200000 && l.title.toLowerCase().includes('hot wheel') })
+      .slice(0, 8)
+      .map(function(l) { return { car_name: carName, price_inr: l.price, platform: 'OLX India (Auto-fetched)', user_id: null, user_name: 'Apify (OLX India)' } })
+    if (!inserts.length) return
+
+    await fetch(url+'/rest/v1/community_prices', {
+      method: 'POST',
+      headers: {'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify(inserts),
+    })
+  } catch (e) {
+    captureServerException(e, {tags:{function:'apifyBootstrap'}})
+  }
+}
 const HIGH_DEMAND = [
   'skyline','supra','rx-7','nsx','civic','ae86','evo','impreza',
   'camaro','mustang','charger','challenger','cuda','corvette',
@@ -84,13 +136,23 @@ async function callGroq(body, pool, timeoutMs) {
       clearTimeout(timer)
       if (res.status===429&&a<pool.length-1) continue
       rr=(idx+1)%pool.length
-      if (!res.ok) { console.error('Groq error:', res.status); return null }
+      if (!res.ok) {
+        var errBody = await res.text().catch(function(){ return '' })
+        console.error('Groq error:', res.status, errBody)
+        // This is exactly the class of failure that let a deprecated model
+        // silently break scanning for an unknown stretch of time — report
+        // it so a model deprecation or API change surfaces immediately
+        // instead of quietly degrading to the fallback band forever.
+        captureServerException(new Error('Groq API error ' + res.status + ': ' + errBody.slice(0,300)), { tags: { model: body.model }, function: 'callGroq' })
+        return null
+      }
       var d=await res.json()
       return d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content
     } catch(e) {
       clearTimeout(timer)
       if (e.name === 'AbortError') { console.warn('Groq timeout after', timeoutMs, 'ms'); return null }
       if (a < pool.length-1) continue
+      captureServerException(e, { tags: { model: body.model }, function: 'callGroq' })
       return null
     }
   }
@@ -113,7 +175,7 @@ async function webSearch(carName, rarity, pool) {
   // make multiple tool calls, which matters here since price accuracy is
   // this product's actual core value — worth the extra latency/rate-limit
   // cost over mini.
-  var content = await callGroq({model:'groq/compound',messages:[{role:'user',content:q}],max_tokens:500,temperature:0},pool,15000)
+  var content = await callGroq({model:MODELS.COMPOUND,messages:[{role:'user',content:q}],max_tokens:500,temperature:0},pool,15000)
   if (!content) return null
   try {
     var s=content.indexOf('{'),e=content.lastIndexOf('}')
@@ -132,13 +194,27 @@ async function communityPrices(carName) {
     if (!res.ok) return null
     var rows=await res.json()
     if (!rows||!rows.length) return null
-    var prices=rows.map(r=>parseInt((r.price_inr||'0').toString().replace(/[₹,\s]/g,''))).filter(p=>p>50&&p<200000).sort((a,b)=>a-b)
+    // Marketplace-verified sales are a REAL closed transaction, not a
+    // self-reported guess — weight them 3x in the merged price list so they
+    // dominate the median/average when present, without needing a schema
+    // migration (identified purely via the platform field markListingSold
+    // tags them with).
+    var weighted = []
+    var verifiedCount = 0
+    rows.forEach(function(r) {
+      var p = parseInt((r.price_inr||'0').toString().replace(/[₹,\s]/g,''))
+      if (!(p>50 && p<200000)) return
+      var isVerified = (r.platform||'').indexOf('Verified Sale') > -1
+      if (isVerified) { verifiedCount++; weighted.push(p,p,p) } else { weighted.push(p) }
+    })
+    var prices = weighted.sort((a,b)=>a-b)
     if (!prices.length) return null
     return {
       community_avg_inr: Math.round(prices.reduce((a,b)=>a+b,0)/prices.length),
       community_median_inr: prices[Math.floor(prices.length/2)],
       community_min_inr: prices[0], community_max_inr: prices[prices.length-1],
-      community_count: prices.length,
+      community_count: rows.length,
+      community_verified_count: verifiedCount,
       community_range_inr: prices[0]+'-'+prices[prices.length-1]
     }
   } catch { return null }
@@ -158,7 +234,7 @@ async function synthesize(carName, rarity, web, community, pool) {
     '5. Prioritize accuracy over conservatism.\n\n'+
     'Return ONLY JSON: {"india_retail_inr":"range","india_collector_inr":"range","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences","buy_tip":"actionable advice","data_quality":"Live+Community|Live Only|Community Only|Estimated"}'
 
-  var content=await callGroq({model:'openai/gpt-oss-120b',messages:[
+  var content=await callGroq({model:MODELS.CODEX,messages:[
     {role:'system',content:'You are an India Hot Wheels die-cast toy price analyst. Return accurate evidence-based JSON pricing. Never artificially cap prices that are supported by real data.'},
     {role:'user',content:ctx}
   ],max_tokens:600,temperature:0,response_format:{type:'json_object'}},pool)
@@ -187,6 +263,15 @@ export default async function handler(req) {
   var pool=buildPool()
   if (!pool.length) return new Response(JSON.stringify({error:'No API keys'}),{status:503,headers:{...cors,'Content-Type':'application/json'}})
 
+  var supaUrl=process.env.VITE_SUPA_URL||process.env.SUPA_URL
+  var supaKey=process.env.VITE_SUPA_KEY||process.env.SUPA_KEY
+  if (HIGH_VALUE_RARITIES.includes(rarity)) {
+    var precheck = await communityPrices(carName).catch(()=>null)
+    if (!precheck || precheck.community_count < 2) {
+      await apifyBootstrap(carName, supaUrl, supaKey) // no-ops if APIFY_TOKEN isn't set, or already cached within 30 days
+    }
+  }
+
   var [web,community]=await Promise.all([
     webSearch(carName,rarity||'Common',pool).catch(()=>null),
     communityPrices(carName).catch(()=>null)
@@ -210,15 +295,16 @@ export default async function handler(req) {
     sources:{web_search:!!web,community:!!community,synthesized:!!final},
     car_name:carName, rarity:rarity
   }
-  // With 3+ real community submissions, trust that over the AI's synthesized
-  // guess entirely for the collector price — actual sold/listed prices from
-  // real people beat an LLM's web-search interpretation, and this is the
-  // strongest accuracy lever available without building a full scraped
-  // price database.
-  if (community && community.community_count >= 3 && community.community_median_inr) {
+  // A real marketplace sale is strong enough evidence on its own — one
+  // verified transaction beats several self-reported guesses. Regular
+  // self-reported submissions still need 3+ before they're trusted over the
+  // AI's synthesis.
+  if (community && community.community_median_inr && (community.community_verified_count >= 1 || community.community_count >= 3)) {
     var med = community.community_median_inr
     result.india_collector_inr = Math.round(med*0.85) + '-' + Math.round(med*1.15)
-    result.data_quality = 'Community Verified (' + community.community_count + ' submissions)'
+    result.data_quality = community.community_verified_count >= 1
+      ? 'Verified Sale (' + community.community_verified_count + ' on Hotscan Marketplace)'
+      : 'Community Verified (' + community.community_count + ' submissions)'
   }
   return new Response(JSON.stringify(result),{status:200,headers:{...cors,'Content-Type':'application/json'}})
 }

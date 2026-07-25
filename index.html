@@ -851,5 +851,17 @@
     </div>
   </div>
 </div>
+<div id="hs-prompt-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);align-items:center;justify-content:center" onclick="if(event.target===this)window._promptReject&&window._promptReject()">
+  <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+    <div id="hs-prompt-icon" style="font-size:36px;margin-bottom:12px">🎉</div>
+    <div id="hs-prompt-title" style="font-size:17px;font-weight:700;color:#f0ede8;margin-bottom:8px"></div>
+    <div id="hs-prompt-msg" style="font-size:13px;color:#9ca3af;line-height:1.6;margin-bottom:16px"></div>
+    <input id="hs-prompt-input" type="number" inputmode="numeric" placeholder="e.g. 450" style="width:100%;background:#141414;border:1px solid rgba(255,255,255,.12);color:#fff;padding:12px 14px;border-radius:12px;font-size:16px;text-align:center;margin-bottom:18px;box-sizing:border-box" onkeydown="if(event.key==='Enter')window._promptResolve&&window._promptResolve()">
+    <div style="display:flex;gap:10px">
+      <button style="flex:1;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;color:#9ca3af;font-size:14px;font-weight:600;cursor:pointer" onclick="window._promptReject&&window._promptReject()">Cancel</button>
+      <button style="flex:1;padding:13px;background:#2dc653;border:none;border-radius:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer" onclick="window._promptResolve&&window._promptResolve()">Confirm Sale</button>
+    </div>
+  </div>
+</div>
 </div></div></body>
 </html>

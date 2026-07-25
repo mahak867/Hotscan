@@ -1,0 +1,43 @@
+name: Live Site Health Check
+
+# Runs against the LIVE site (hotscan.in), not the PR branch — a PR's code
+# isn't deployed anywhere until merged, so this can't meaningfully run per-PR
+# the way the main CI build/audit job does. Instead this runs after every
+# push to main (once Vercel's had time to deploy) and on a schedule, so a
+# Groq model deprecation gets caught even on a day nobody pushes code —
+# which is exactly the kind of failure that broke scanning silently before.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+  workflow_dispatch:         # manual "Run workflow" button in the Actions tab
+
+jobs:
+  health-check:
+    name: Model Health + Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for deploy to settle
+        if: github.event_name == 'push'
+        run: sleep 60
+
+      - name: Run tests against live site
+        run: npm test
+        env:
+          GROQ_API_KEY_1: ${{ secrets.GROQ_API_KEY_1 }}
