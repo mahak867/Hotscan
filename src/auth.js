@@ -117,12 +117,17 @@ export async function authContinue(){
       var signInEmail = rawInput
       if(!rawInput.includes('@')){
         var lu = await Promise.race([state._sb.rpc('get_email_by_username', { p_username: rawInput }), new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},8000)})])
-        if(lu.error || !lu.data || !lu.data.email){
+        // get_email_by_username returns plain text (a bare email string),
+        // not an object — lu.data IS the email itself in the normal case.
+        // The old check here tested lu.data.email, which is undefined on a
+        // string, so it always failed even when the RPC worked correctly.
+        var foundEmail = typeof lu.data === 'string' ? lu.data : (lu.data && lu.data.email) ? lu.data.email : ''
+        if(lu.error || !foundEmail){
           clearTimeout(_to); setAuthLoading(false)
           showAuthErr('No account found for that username. Try your email instead.')
           return
         }
-        signInEmail = typeof lu.data === 'string' ? lu.data : (lu.data && lu.data.email) ? lu.data.email : String(lu.data || '')
+        signInEmail = foundEmail
       }
       var r=await state._sb.auth.signInWithPassword({email:signInEmail,password:pass})
       clearTimeout(_to)

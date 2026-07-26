@@ -54,7 +54,7 @@ function _doAddToCol(item) {
   renderCol(); window.goPage('collection')
 }
 
-export function delFromCol(id) {
+export async function delFromCol(id) {
   id = String(id)
   var item = state.collection.find(function(c) { return String(c.id) === String(id) })
   if (!item) {
@@ -64,7 +64,16 @@ export function delFromCol(id) {
   }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
-    deleteFromCloud(cloudId, item.name, item.color, item.series)
+    var ok = await deleteFromCloud(cloudId, item.name, item.color, item.series)
+    if (!ok) {
+      // Don't remove it locally if the cloud delete failed — that's exactly
+      // what caused a deleted car to "come back" after a refresh: the local
+      // list said it was gone while the cloud row was untouched, and the
+      // next sync pulled it right back in. Keeping it visible on failure
+      // keeps local and cloud state from silently drifting apart.
+      showToast('Could not delete — check your connection and try again', 'error')
+      return
+    }
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
   localStorage.removeItem('hs_col_hash')
@@ -709,11 +718,12 @@ export async function saveToCloud(item) {
 }
 
 export async function deleteFromCloud(id, name, color, series) {
-  if (!state.currentUser || !state._sb) return
+  if (!state.currentUser || !state._sb) return false
   try {
     if (id && typeof id === 'string' && id.includes('-')) {
       var r = await state._sb.from('collection').delete().eq('id', id).eq('user_id', state.currentUser.id)
-      if (r.error) captureException(new Error('deleteFromCloud: ' + r.error.message))
+      if (r.error) { captureException(new Error('deleteFromCloud: ' + r.error.message)); return false }
+      return true
     } else if (name) {
       // Name-only match would delete EVERY row with that name (e.g. all copies
       // of a duplicate casting) — narrow by color+series, and cap at one row
@@ -725,10 +735,13 @@ export async function deleteFromCloud(id, name, color, series) {
       var found = await q.limit(1)
       if (found.data && found.data.length > 0) {
         var r2 = await state._sb.from('collection').delete().eq('id', found.data[0].id)
-        if (r2.error) captureException(new Error('deleteFromCloud by name: ' + r2.error.message))
+        if (r2.error) { captureException(new Error('deleteFromCloud by name: ' + r2.error.message)); return false }
+        return true
       }
+      return true // nothing matched — already gone, nothing to fail on
     }
-  } catch(e) { captureException(e) }
+    return true // no cloud id and no name to match on — nothing to delete cloud-side
+  } catch(e) { captureException(e); return false }
 }
 
 export function searchCol(query) {
