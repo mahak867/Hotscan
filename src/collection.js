@@ -293,7 +293,6 @@ export function renderCol() {
       div.innerHTML =
         '<div class="flip-card-inner">'+
           '<div class="flip-card-front" style="background:var(--surface);padding:11px;border:1px solid var(--border);border-left:3px solid '+bc+'">'+
-            '<button class="flip-card-btn" data-flipid="'+c.id+'" title="Show details">ℹ</button>'+
             '<div style="display:flex;align-items:flex-start;gap:10px">'+
               '<div style="width:50px;height:50px;border-radius:10px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+thumbHtml+'</div>'+
               '<div style="flex:1;min-width:0">'+
@@ -304,7 +303,8 @@ export function renderCol() {
                   (c.india_collector_inr?'<span style="font-size:12px;font-weight:800;margin-left:auto">₹'+cleanINR(c.india_collector_inr)+'</span>':'')+
                 '</div>'+valBar+
               '</div>'+
-              '<div style="display:flex;gap:4px;flex-shrink:0">'+
+              '<div style="display:flex;gap:4px;flex-shrink:0;align-items:flex-start">'+
+                '<button data-flipid="'+c.id+'" title="Show details" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">ℹ</button>'+
                 '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s">🗑</button>'+
               '</div>'+
             '</div>'+

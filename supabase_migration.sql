@@ -293,3 +293,28 @@ delete from scan_logs where scanned_at < now() - interval '35 days';
 -- Optional, only if pg_cron is available on your plan:
 -- select cron.schedule('scan_logs_cleanup', '0 3 * * *',
 --   $$delete from scan_logs where scanned_at < now() - interval '35 days'$$);
+
+-- ── 12. get_email_by_username — the username-login RPC the client calls,
+-- which was never actually created here. Every username-based sign-in
+-- attempt was failing at this exact call, before it could even check
+-- whether the username existed — hence the generic "No account found"
+-- error on every attempt, valid usernames included.
+--
+-- SECURITY DEFINER is required here: a plain client-side SELECT against
+-- profiles is blocked by the profiles_select_own RLS policy (auth.uid() =
+-- id), which is correct for normal reads but means an anonymous, pre-login
+-- visitor can never look up ANY row that way — including their own username
+-- during login, since they have no session yet. This function narrowly
+-- bypasses that, on purpose, returning ONLY the matching email string and
+-- nothing else about the account.
+create or replace function get_email_by_username(p_username text)
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select email from profiles where username = p_username limit 1
+$$;
+
+-- Must be callable by anon — this runs during login, before authentication
+grant execute on function get_email_by_username(text) to anon, authenticated;
