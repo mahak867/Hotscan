@@ -331,7 +331,7 @@ export async function initAuth(){
     // Note: removed refreshSession() — it fought getSession() for the same lock.
     // onAuthStateChange with INITIAL_SESSION event handles expired token refresh automatically.
   }catch(e){ captureException(e) }
-  updateHeaderUI()
+  updateHeaderUI(); window.renderProfilePage && window.renderProfilePage()
 }
 
 export async function loadProfile(){

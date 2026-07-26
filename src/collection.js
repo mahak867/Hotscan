@@ -57,7 +57,11 @@ function _doAddToCol(item) {
 export function delFromCol(id) {
   id = String(id)
   var item = state.collection.find(function(c) { return String(c.id) === String(id) })
-  if (!item) { showToast('Car not found — try refreshing', 'error'); return }
+  if (!item) {
+    if (window.renderCol) window.renderCol()
+    showToast('That card was already updated — list refreshed', 'error')
+    return
+  }
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
     deleteFromCloud(cloudId, item.name, item.color, item.series)
@@ -73,7 +77,11 @@ export function editColItem(id) {
   if (document.getElementById('col-edit-modal')) return // prevent double-open
   id = String(id)
   var item = state.collection.find(function(c) { return String(c.id) === id })
-  if (!item) { showToast('Car not found', 'error'); return }
+  if (!item) {
+    if (window.renderCol) window.renderCol()
+    showToast('That card was already updated — list refreshed', 'error')
+    return
+  }
   _editingItem = item
   _editingItemId = id
   // Show edit modal
@@ -154,7 +162,7 @@ export function fCol(f, el) { state.filterBy = f; document.querySelectorAll('#fc
 
 export function renderCol() {
   // Only show sign-in prompt if auth has fully resolved AND user is not logged in
-  if (window._authResolved && !window.state.currentUser && state.collection.length === 0) {
+  if (window._authResolved && !state.currentUser && state.collection.length === 0) {
     var _list = document.getElementById('col-list')
     if (_list) _list.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;margin-bottom:12px">🔐</div><div style="font-size:15px;font-weight:700;margin-bottom:6px">Sign in to see your collection</div><div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">Your collection syncs across all devices when signed in</div><button class="btn-red" style="padding:12px 24px;border-radius:12px;font-size:14px" onclick="window.openAuth()">Sign In / Create Account</button></div>'
     return
