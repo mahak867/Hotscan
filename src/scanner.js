@@ -727,10 +727,31 @@ export async function analyzeMultiPhoto() {
   window.resetSteps(); window.startTimer('Scanning ' + state.multiImages.length + ' images...')
 
   var allCars = []
+  var failedCount = 0
   try {
     var _imgs = state.multiImages
-    var _results = await Promise.all(_imgs.map(function(imgObj) {
-      return identifyMultipleCars(imgObj.img64).catch(function(){ return {cars:[],total_cars_found:0,is_hot_wheels:false} })
+    // Staggering the kickoff (not full Promise.all firing simultaneously)
+    // meaningfully reduces the odds of tripping a per-key rate limit — 5
+    // image-heavy vision requests fired at the exact same instant is exactly
+    // the kind of burst that hits a tokens-per-minute cap. This keeps most
+    // of the speed benefit of parallelism while smoothing out the spike.
+    var _results = await Promise.all(_imgs.map(function(imgObj, idx) {
+      return new Promise(function(resolve) {
+        setTimeout(function() {
+          identifyMultipleCars(imgObj.img64)
+            .then(resolve)
+            .catch(function(e) {
+              failedCount++
+              // Distinguish "this call actually failed" (rate limit, network,
+              // bad model response) from "the AI looked and found no Hot
+              // Wheels car" — the old catch treated both identically, so a
+              // rate-limited photo silently vanished with zero indication
+              // anything went wrong, indistinguishable from a genuinely
+              // car-less photo like a landscape shot.
+              resolve({cars:[], total_cars_found:0, is_hot_wheels:false, _failed:true, _errorMsg: e && e.message})
+            })
+        }, idx * 350)
+      })
     }))
     for (var i = 0; i < _results.length; i++) {
       var result = _results[i]
@@ -749,8 +770,7 @@ export async function analyzeMultiPhoto() {
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()
     window.incScans()
-    showMultiResults(allCars)
-  } catch(err) {
+    showMultiResults(allCars, failedCount)
     window.stopTimer(); window.setStep(1, 'err')
     var eb2 = document.getElementById('err-box')
     eb2.textContent = '⚠️ ' + (err.message || '')
@@ -761,9 +781,9 @@ export async function analyzeMultiPhoto() {
   }
 }
 
-export function showMultiResults(cars) {
+export function showMultiResults(cars, failedCount) {
   if (!cars || cars.length === 0) {
-    window.showToast('No Hot Wheels cars identified in these images', 'error')
+    window.showToast(failedCount > 0 ? failedCount + ' photo(s) failed to process — try again' : 'No Hot Wheels cars identified in these images', 'error')
     return
   }
   var resultEl = document.getElementById('result')
@@ -775,6 +795,18 @@ export function showMultiResults(cars) {
   header.style.cssText = 'padding:14px 14px 0'
   header.innerHTML = '<span style="font-size:20px">🚗</span><span>' + cars.length + ' car' + (cars.length===1?'':'s') + ' identified</span>'
   resultEl.appendChild(header)
+
+  if (failedCount > 0) {
+    // Distinct from "no car in this photo" — this specifically means N
+    // photos never got a real answer from the AI at all (usually a rate
+    // limit from scanning several images at once), so it's worth telling
+    // people to just retry those rather than assuming those photos had
+    // nothing in them.
+    var warn = document.createElement('div')
+    warn.style.cssText = 'margin:10px 14px 0;padding:10px 12px;background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.25);border-radius:10px;font-size:12px;color:var(--gold)'
+    warn.textContent = '⚠️ ' + failedCount + ' photo' + (failedCount===1?'':'s') + " couldn't be processed (AI was busy) — try scanning " + (failedCount===1?'it':'those') + ' again separately'
+    resultEl.appendChild(warn)
+  }
 
   var totalVal = 0
   cars.forEach(function(c) { totalVal += parseINR(c.india_collector_inr) })
