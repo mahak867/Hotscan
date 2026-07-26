@@ -730,29 +730,33 @@ export async function analyzeMultiPhoto() {
   var failedCount = 0
   try {
     var _imgs = state.multiImages
-    // Staggering the kickoff (not full Promise.all firing simultaneously)
-    // meaningfully reduces the odds of tripping a per-key rate limit — 5
-    // image-heavy vision requests fired at the exact same instant is exactly
-    // the kind of burst that hits a tokens-per-minute cap. This keeps most
-    // of the speed benefit of parallelism while smoothing out the spike.
-    var _results = await Promise.all(_imgs.map(function(imgObj, idx) {
-      return new Promise(function(resolve) {
-        setTimeout(function() {
-          identifyMultipleCars(imgObj.img64)
-            .then(resolve)
-            .catch(function(e) {
-              failedCount++
-              // Distinguish "this call actually failed" (rate limit, network,
-              // bad model response) from "the AI looked and found no Hot
-              // Wheels car" — the old catch treated both identically, so a
-              // rate-limited photo silently vanished with zero indication
-              // anything went wrong, indistinguishable from a genuinely
-              // car-less photo like a landscape shot.
-              resolve({cars:[], total_cars_found:0, is_hot_wheels:false, _failed:true, _errorMsg: e && e.message})
-            })
-        }, idx * 350)
-      })
-    }))
+    var _results = []
+    // Sequential, not parallel — this is the actual fix, not the earlier
+    // stagger. qwen/qwen3.6-27b's real limit is 8,000 TOKENS per minute
+    // (confirmed via the Groq dashboard), not just request count — each
+    // vision call here runs somewhere around 1,200-2,800 tokens between the
+    // system prompt, the image, and the JSON response. Firing several at
+    // once (even spaced a few hundred ms apart) still lands them all in the
+    // same rolling 60s window and blows past that ceiling. Only real
+    // elapsed time between requests actually helps, so this waits for each
+    // photo to fully finish — plus a fixed pause — before starting the next.
+    for (var idx = 0; idx < _imgs.length; idx++) {
+      window.startTimer('Scanning photo ' + (idx+1) + ' of ' + _imgs.length + '...')
+      try {
+        var r = await identifyMultipleCars(_imgs[idx].img64)
+        _results.push(r)
+      } catch(e) {
+        failedCount++
+        // Distinguish "this call actually failed" (rate limit, network, bad
+        // model response) from "the AI looked and found no Hot Wheels car" —
+        // the old catch treated both identically, so a rate-limited photo
+        // silently vanished with zero indication anything went wrong,
+        // indistinguishable from a genuinely car-less photo like a
+        // landscape shot.
+        _results.push({cars:[], total_cars_found:0, is_hot_wheels:false, _failed:true, _errorMsg: e && e.message})
+      }
+      if (idx < _imgs.length - 1) await new Promise(function(r){ setTimeout(r, 1200) })
+    }
     for (var i = 0; i < _results.length; i++) {
       var result = _results[i]
       if (result && result.cars) result.cars.forEach(function(c){ c._sourceImage = _imgs[i]&&_imgs[i].thumb; allCars.push(c) })
