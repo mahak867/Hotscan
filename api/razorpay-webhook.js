@@ -14,7 +14,7 @@ import { captureServerException } from './_sentry.js'
 //    SUPABASE_SERVICE_KEY    = your supabase service_role key (NOT anon key)
 //    VITE_SUPA_URL           = https://qptxrvvpbrnklzpxjtfr.supabase.co
 
-export const config = { runtime: 'edge' }
+export const config = { runtime: 'nodejs', maxDuration: 30 }
 
 const SUPA_URL = process.env.VITE_SUPA_URL || 'https://qptxrvvpbrnklzpxjtfr.supabase.co'
 

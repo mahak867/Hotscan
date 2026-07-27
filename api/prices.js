@@ -1,6 +1,9 @@
 // HotScan India — Real-Time Pricing Engine (Vercel Edge Function)
 // 3-source pipeline: Groq compound web search + Supabase community + AI synthesis
-export const config = { runtime: 'edge' }
+// Same fix as api/groq.js — Edge's fixed 25s ceiling was a real risk here
+// too, since groq/compound's agentic multi-tool-call search can genuinely
+// take longer than a single completion call.
+export const config = { runtime: 'nodejs', maxDuration: 60 }
 import { MODELS } from './_models.js'
 import { captureServerException } from './_sentry.js'
 

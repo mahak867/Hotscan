@@ -1,6 +1,6 @@
 import { MODELS } from './_models.js'
 
-export const config = { runtime: 'edge' }
+export const config = { runtime: 'nodejs', maxDuration: 30 }
 
 // Public, read-only — just model ID strings, nothing sensitive. Lets the
 // Chrome extension (and anything else that can't be redeployed instantly)

@@ -19,7 +19,13 @@ import { captureServerException } from './_sentry.js'
 //
 // Free Groq accounts: get keys at https://console.groq.com  (takes 2 minutes each)
 
-export const config = { runtime: 'edge' }
+// Edge runtime has a fixed 25-second "must begin responding" ceiling
+// (confirmed via Vercel's own docs) regardless of plan — that's what was
+// actually causing "Vision error 504" on slower Groq responses, not
+// anything in this code. Node.js runtime supports the same Web API
+// Request/Response handler style used here already, so this needed zero
+// rewrite — just more execution headroom than Edge allows.
+export const config = { runtime: 'nodejs', maxDuration: 60 }
 
 // ── Allowed browser origins ──────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
