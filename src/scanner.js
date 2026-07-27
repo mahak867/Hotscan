@@ -775,6 +775,7 @@ export async function analyzeMultiPhoto() {
     window.stopTimer()
     window.incScans()
     showMultiResults(allCars, failedCount)
+  } catch(err) {
     window.stopTimer(); window.setStep(1, 'err')
     var eb2 = document.getElementById('err-box')
     eb2.textContent = '⚠️ ' + (err.message || '')
