@@ -89,6 +89,27 @@ let rrIndex = 0
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export default async function handler(req) {
+  try {
+    return await handleRequest(req)
+  } catch (e) {
+    // The fetch() to Groq below had no error handling at all — if it threw
+    // (network error, DNS failure, a Node-runtime-specific fetch quirk,
+    // anything) rather than just returning a non-200 response, the
+    // exception escaped straight past the error-reporting code further
+    // down, which only runs after a SUCCESSFUL fetch. That's exactly why
+    // Vercel's dashboard showed 100% errors while Sentry stayed silent —
+    // the crash never reached the code that would have reported it. This
+    // outer wrapper guarantees visibility into whatever is actually
+    // happening, no matter where it happens.
+    captureServerException(e, { tags: { endpoint: 'groq' }, function: 'handler (uncaught)' })
+    return new Response(JSON.stringify({ error: 'Server error — this has been reported. Please try again.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+}
+
+async function handleRequest(req) {
   const origin    = req.headers.get('origin') || ''
   const corsOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0]
 

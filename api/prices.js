@@ -255,6 +255,18 @@ function isAllowedOrigin(origin) {
 }
 
 export default async function handler(req) {
+  try {
+    return await handleRequest(req)
+  } catch (e) {
+    captureServerException(e, { tags: { endpoint: 'prices' }, function: 'handler (uncaught)' })
+    return new Response(JSON.stringify({ error: 'Server error — this has been reported. Please try again.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+}
+
+async function handleRequest(req) {
   var origin=req.headers.get('origin')||''
   var co=isAllowedOrigin(origin)?origin:ALLOWED_ORIGINS[0]
   var cors={'Access-Control-Allow-Origin':co,'Access-Control-Allow-Methods':'POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type'}
