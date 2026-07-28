@@ -689,14 +689,31 @@ export async function identifyMultipleCars(imageData) {
     : {'Content-Type':'application/json'}
 
   async function tryModel(model) {
-    var res = await fetch(url2, {
-      method: 'POST', headers: hdrs2,
-      body: JSON.stringify({
-        model: model,
-        messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
-        temperature: 0.1, max_tokens: 2500
+    // No timeout existed here at all before — if the server (or the
+    // connection itself) hung rather than erroring, the browser would just
+    // wait indefinitely, which is exactly what happened: 108+ seconds with
+    // no resolution either way. 70s gives the server's own 60s maxDuration
+    // room to return its own clean error first in the normal case, while
+    // guaranteeing this can never hang forever regardless of what's
+    // actually happening server-side.
+    var ctrl2 = new AbortController()
+    var t2 = setTimeout(function(){ ctrl2.abort() }, 70000)
+    var res
+    try {
+      res = await fetch(url2, {
+        method: 'POST', headers: hdrs2, signal: ctrl2.signal,
+        body: JSON.stringify({
+          model: model,
+          messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
+          temperature: 0.1, max_tokens: 2500
+        })
       })
-    })
+    } catch (e) {
+      if (e.name === 'AbortError') throw new Error('Request timed out — try again')
+      throw e
+    } finally {
+      clearTimeout(t2)
+    }
     if (!res.ok) {
       var e = await res.json().catch(function(){return{}})
       if (res.status === 401) throw new Error('Invalid API key')
