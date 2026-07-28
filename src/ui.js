@@ -225,6 +225,13 @@ export async function handleMultiFiles(files) {
 
 // ── Timer/pipeline ──
 export function startTimer(lbl) {
+  // Without this, calling startTimer again (once per photo in the
+  // sequential multi-scan loop) left the previous interval running forever
+  // in the background — by photo 5 there were 5 separate 1s intervals all
+  // still firing and all incrementing the same counter, making the
+  // displayed time run several times faster than real elapsed time. This
+  // is almost certainly what looked like a 100+ second hang.
+  if (state.timerInt) clearInterval(state.timerInt)
   state.timerSec = 0
   document.getElementById('timer-wrap').style.display = 'block'
   document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml(lbl)
