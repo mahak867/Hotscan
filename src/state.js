@@ -10,6 +10,7 @@ export const state = {
   achievements: JSON.parse(localStorage.getItem('hs_ach') || '[]'),
   sortBy: 'date',
   filterBy: 'all',
+  colView: localStorage.getItem('hs_col_view') === 'grid' ? 'grid' : 'list',
   searchQuery: '',
   currentMode: 'photo',
   currentSeries: 'mainline',

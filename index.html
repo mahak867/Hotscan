@@ -311,6 +311,13 @@
   </div>
   <div class="chips" id="sc"><button class="chip active" onclick="sCol('date',this)">Latest</button><button class="chip" onclick="sCol('value',this)">Highest Value</button><button class="chip" onclick="sCol('rarity',this)">By Rarity</button><button class="chip" onclick="sCol('name',this)">A-Z</button></div>
   <div class="chips" id="fc2"><button class="chip active" onclick="fCol('all',this)">All</button><button class="chip" onclick="fCol('Common',this)">Common</button><button class="chip" onclick="fCol('Uncommon',this)">Uncommon</button><button class="chip" onclick="fCol('Rare',this)">Rare</button><button class="chip" onclick="fCol('Treasure',this)">TH</button><button class="chip" onclick="fCol('Super',this)">STH</button><button class="chip" onclick="fCol('Premium',this)">Premium</button><button class="chip" onclick="fCol('Vintage',this)">Vintage</button></div>
+  <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px">
+    <div id="col-count" style="font-size:11px;color:var(--text3);font-weight:600"></div>
+    <div class="col-viewtog" role="group" aria-label="Collection view">
+      <button id="cv-list" class="col-viewbtn active" onclick="setColView('list')" title="List view" aria-label="List view">☰</button>
+      <button id="cv-grid" class="col-viewbtn" onclick="setColView('grid')" title="Grid view" aria-label="Grid view">▦</button>
+    </div>
+  </div>
   <div id="want-list" style="margin-bottom:16px"></div>
   <div id="col-list"></div>
 </div>

@@ -181,6 +181,17 @@ function createEditModal() {
   el.addEventListener('click', function(e) { if (e.target === el) closeColEdit() })
 }
 
+// 'list' or 'grid'. Persisted because a view preference that resets every
+// session is worse than not offering the choice at all.
+export function setColView(v) {
+  state.colView = (v === 'grid') ? 'grid' : 'list'
+  try { localStorage.setItem('hs_col_view', state.colView) } catch(e) {}
+  var lb = document.getElementById('cv-list'), gb = document.getElementById('cv-grid')
+  if (lb) lb.classList.toggle('active', state.colView === 'list')
+  if (gb) gb.classList.toggle('active', state.colView === 'grid')
+  renderCol()
+}
+
 export function sCol(by, el) { state.sortBy = by; document.querySelectorAll('#sc .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
 export function fCol(f, el) { state.filterBy = f; document.querySelectorAll('#fc2 .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
 
@@ -352,9 +363,88 @@ export function renderCol() {
     return div
   }
 
-  spotlights.forEach(function(c){list.appendChild(makeCard(c,true))})
-  regular.forEach(function(c){list.appendChild(makeCard(c,false))})
-  
+  // Grid mode: photo-first cards. Falls back to the rarity icon when a car has
+  // no image, same as the list rows do.
+  function makeGridCard(c) {
+    var rv = (c.rarity||'common').toLowerCase()
+    var bc = dotColors[rv] || '#444'
+    var colRarity = c.rarity || 'Common'
+    var icon = rarIcons[colRarity] || '🚗'
+    var glow = rv.indexOf('super treasure') > -1 ? '0 0 22px rgba(230,57,70,.28)'
+             : rv.indexOf('treasure') > -1 ? '0 0 18px rgba(255,214,10,.2)'
+             : rv.indexOf('vintage') > -1 || rv.indexOf('error') > -1 ? '0 0 16px rgba(255,107,107,.16)'
+             : 'none'
+    // Full tier names are too long for a corner pill — "Super Treasure Hunt"
+    // wrapped to two lines and collided with the card art.
+    var shortRar = {'Super Treasure Hunt':'STH','Treasure Hunt':'TH','Error Car':'Error'}[colRarity] || colRarity
+    var d = document.createElement('div')
+    d.className = 'col-gcard'
+    d.style.borderColor = bc
+    if (glow !== 'none') d.style.boxShadow = glow
+    d.innerHTML =
+      '<div class="col-gcard-img">'+
+        (c.image ? '<img src="'+escHtml(c.image)+'" alt="" loading="lazy">' : '<span>'+icon+'</span>')+
+        '<div class="col-gcard-scrim"></div>'+
+        '<span class="col-gcard-rar" style="color:'+bc+'" title="'+escHtml(colRarity)+'">'+icon+' '+escHtml(shortRar)+'</span>'+
+        '<button class="col-gcard-del" data-delid="'+c.id+'" title="Remove" aria-label="Remove">🗑</button>'+
+        (c.india_collector_inr ? '<div class="col-gcard-price">₹'+cleanINR(c.india_collector_inr)+'</div>' : '')+
+      '</div>'+
+      '<div class="col-gcard-body">'+
+        '<div class="col-gcard-nm">'+escHtml(c.name||'Unknown')+'</div>'+
+        '<div class="col-gcard-sr">'+escHtml(c.series||'—')+'</div>'+
+      '</div>'
+    d.addEventListener('click', function(e) {
+      if (e.target.closest('[data-delid]')) return
+      editColItem(c.id)
+    })
+    return d
+  }
+
+  function sectionHeader(label, count, color) {
+    var h = document.createElement('div')
+    h.className = 'col-section'
+    h.innerHTML = '<span class="col-section-t" style="color:'+color+'">'+escHtml(label)+'</span>'+
+                  '<span class="col-section-c">'+count+'</span>'+
+                  '<span class="col-section-r"></span>'
+    return h
+  }
+
+  var isGrid = state.colView === 'grid'
+  list.className = isGrid ? 'col-grid' : ''
+  // Sync the toggle here rather than only in setColView, so a grid preference
+  // restored from localStorage shows the right button as active on first paint.
+  var _lb = document.getElementById('cv-list'), _gb = document.getElementById('cv-grid')
+  if (_lb) _lb.classList.toggle('active', !isGrid)
+  if (_gb) _gb.classList.toggle('active', isGrid)
+
+  var cntEl = document.getElementById('col-count')
+  if (cntEl) {
+    cntEl.textContent = items.length === state.collection.length
+      ? items.length + (items.length === 1 ? ' car' : ' cars')
+      : items.length + ' of ' + state.collection.length + ' cars'
+  }
+
+  if (state.sortBy === 'rarity' && items.length) {
+    // Items are already rarity-ordered here, so a header goes in each time the
+    // tier changes. Grouping beats an undifferentiated scroll for big collections.
+    var tierCounts = {}
+    items.forEach(function(c){ var r=c.rarity||'Common'; tierCounts[r]=(tierCounts[r]||0)+1 })
+    var currentTier = null
+    items.forEach(function(c) {
+      var r = c.rarity || 'Common'
+      if (r !== currentTier) {
+        currentTier = r
+        list.appendChild(sectionHeader(r, tierCounts[r], dotColors[r.toLowerCase()] || '#444'))
+      }
+      list.appendChild(isGrid ? makeGridCard(c) : makeCard(c, false))
+    })
+  } else if (isGrid) {
+    items.forEach(function(c){ list.appendChild(makeGridCard(c)) })
+  } else {
+    spotlights.forEach(function(c){list.appendChild(makeCard(c,true))})
+    regular.forEach(function(c){list.appendChild(makeCard(c,false))})
+  }
+
   // Add hover effects to regular cards
   document.querySelectorAll('#col-list [data-editid], #col-list [data-delid]').forEach(function(btn) {
     btn.parentElement.parentElement.onmouseenter = function() {

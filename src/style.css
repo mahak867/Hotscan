@@ -1343,6 +1343,43 @@ input, select, textarea { font-size:16px !important; }
 .flip-card-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:2;transition:background .15s,color .15s}
 .flip-card-btn:hover{background:var(--surface2);color:var(--text)}
 
+/* ── Collection view toggle + grid ────────────────────────────────────────── */
+.col-viewtog{display:flex;gap:2px;margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:2px}
+.col-viewbtn{background:none;border:none;color:var(--text3);width:28px;height:24px;border-radius:7px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+.col-viewbtn:hover{color:var(--text2)}
+.col-viewbtn.active{background:var(--surface3);color:var(--text)}
+
+/* Section headers appear when sorting by rarity. Sticky so the tier stays
+   visible while scrolling a long run of cards in that tier. */
+.col-section{grid-column:1/-1;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:7px 2px 6px;margin-top:4px;background:linear-gradient(180deg,var(--bg) 70%,transparent);backdrop-filter:blur(4px)}
+.col-section-t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em}
+.col-section-c{font-size:10px;font-weight:700;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1px 7px}
+.col-section-r{flex:1;height:1px;background:var(--border)}
+
+/* Grid mode: the photo becomes the hero. A collection reads as a display case
+   rather than a spreadsheet, which is the whole point of the mode. */
+/* !important throughout: the desktop layout block above sets a hard 2-column
+   grid on #col-list, which would otherwise pin grid mode to 2 columns. */
+#col-list.col-grid{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px;align-items:start}
+@media(min-width:720px){#col-list.col-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important}}
+@media(min-width:1040px){#col-list.col-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important}}
+.col-gcard{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease}
+.col-gcard:hover{transform:translateY(-3px)}
+.col-gcard-img{position:relative;width:100%;aspect-ratio:1/1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden}
+.col-gcard-img img{width:100%;height:100%;object-fit:cover;display:block}
+/* Scrim keeps the rarity pill and price legible over any photo. */
+.col-gcard-scrim{position:absolute;inset:auto 0 0 0;height:58%;background:linear-gradient(180deg,transparent,rgba(0,0,0,.82));pointer-events:none}
+.col-gcard-rar{position:absolute;top:7px;left:7px;max-width:calc(100% - 40px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:3px 7px;border-radius:20px;background:rgba(0,0,0,.62);backdrop-filter:blur(6px);border:1px solid currentColor}
+.col-gcard-price{position:absolute;left:8px;right:8px;bottom:7px;font-size:14px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.col-gcard-body{padding:8px 9px 10px}
+.col-gcard-nm{font-size:12px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.col-gcard-sr{font-size:10px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.col-gcard-del{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border:1px solid var(--border2);color:var(--text2);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s,color .15s}
+.col-gcard:hover .col-gcard-del{opacity:1}
+.col-gcard-del:hover{color:var(--red)}
+/* Touch devices get no hover, so the control has to be permanently visible. */
+@media(hover:none){.col-gcard-del{opacity:.85}}
+
 /* Profile Dropdown */
 .profile-dd{position:relative}
 .profile-dd-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:200px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.5);padding:6px;z-index:200;opacity:0;transform:translateY(-6px) scale(.97);pointer-events:none;transition:opacity .15s ease,transform .15s ease;transform-origin:top right}

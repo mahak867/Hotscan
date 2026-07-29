@@ -11,7 +11,8 @@ import {
 } from './auth.js'
 import {
   addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
-  addCarToCollection, fullCloudSync, editColItem, saveColEdit, closeColEdit
+  addCarToCollection, fullCloudSync, editColItem, saveColEdit, closeColEdit,
+  setColView
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
@@ -76,7 +77,7 @@ Object.assign(window, {
   openCam, openGal, openFakeCam, openFakeGal, openMulti, runAnalyze,
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
   addToCol, delFromCol, sCol, fCol, exportVal, addCarToCollection,
-  fullCloudSync, renderCol,
+  fullCloudSync, renderCol, setColView,
   submitPrice, addAlert, delAlert, clearAlerts, renderAlerts,
   showShare, closeShare, shareWA, shareNative, shareApp, shareResultToGroup,
   copyShareText, shareInstagram,
