@@ -437,3 +437,40 @@ create or replace view public_listings as
   where is_active = true;
 
 grant select on public_listings to anon, authenticated;
+
+-- ── 15. car-images bucket ──────────────────────────────────────────────
+-- uploadImageToStorage() has always written to this bucket, but nothing ever
+-- created it. Every upload failed, and saveToCloud then discarded the photo,
+-- which is why collection cars render as emoji placeholders.
+insert into storage.buckets (id, name, public)
+  values ('car-images', 'car-images', true)
+  on conflict (id) do nothing;
+
+do $$ begin
+  create policy "car_images_public_read" on storage.objects
+    for select using (bucket_id = 'car-images');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "car_images_own_insert" on storage.objects
+    for insert with check (
+      bucket_id = 'car-images'
+      and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "car_images_own_update" on storage.objects
+    for update using (
+      bucket_id = 'car-images'
+      and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "car_images_own_delete" on storage.objects
+    for delete using (
+      bucket_id = 'car-images'
+      and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;

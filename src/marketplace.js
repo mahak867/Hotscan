@@ -189,6 +189,34 @@ export function renderListings(arr) {
   })
 }
 
+// ── OLX deep links ──────────────────────────────────────────────────────────
+// A search URL, not a scrape. OLX prohibits automated access, sits behind bot
+// detection, and changes markup without notice — a scraper would break
+// constantly and fail silently. A link costs nothing to maintain, carries no
+// legal exposure, and gives the user the same thing they actually wanted:
+// current asking prices for this casting, one tap away.
+export function olxSearchUrl(carName) {
+  var q = (carName || '').trim()
+  if (!q) return ''
+  // "hot wheels" narrows away unrelated listings that share a model name —
+  // searching "Bugatti Chiron" alone returns actual cars.
+  return 'https://www.olx.in/items/q-' + encodeURIComponent('hot wheels ' + q).replace(/%20/g, '-')
+}
+
+export function openOlxSearch(carName) {
+  var url = olxSearchUrl(carName)
+  if (!url) { showToast('No car name to search', 'error'); return }
+  window.open(url, '_blank', 'noopener')
+}
+
+// No-arg wrapper for the result-page button. `state` is a module binding and is
+// deliberately not on window, so the onclick cannot read it directly.
+export function olxLastResult() {
+  var r = state.lastResult
+  if (!r || !r.name) { showToast('Scan a car first', 'error'); return }
+  openOlxSearch(r.name)
+}
+
 // ── Seller profile sheet ────────────────────────────────────────────────────
 var _sheetSellerId = null
 

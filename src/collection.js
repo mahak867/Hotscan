@@ -776,6 +776,29 @@ export async function syncCollectionFromCloud() {
   return fullCloudSync()
 }
 
+// Last-resort shrink for an oversized data URL. Returns null on failure so the
+// caller can fall back to the original rather than losing the image.
+function _shrinkDataUrl(dataUrl, size, quality) {
+  return new Promise(function(resolve) {
+    var img = new Image()
+    img.onload = function() {
+      try {
+        var s = Math.min(img.width, img.height)
+        var c = document.createElement('canvas')
+        c.width = size; c.height = size
+        c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, size, size)
+        resolve(c.toDataURL('image/jpeg', quality))
+      } catch(e) { resolve(null) }
+    }
+    img.onerror = function(){ resolve(null) }
+    img.src = dataUrl
+  })
+}
+
+// Reported once per session, not per car: if the bucket is missing every save
+// fails the same way, and 30 identical Sentry events tell you nothing extra.
+var _storageWarned = false
+
 async function uploadImageToStorage(imageDataUrl, itemId) {
   if (!imageDataUrl || !state._sb || !state.currentUser) return null
   try {
@@ -792,21 +815,45 @@ async function uploadImageToStorage(imageDataUrl, itemId) {
     var up = await state._sb.storage.from('car-images').upload(path, blob, {
       contentType: mime, upsert: true
     })
-    if (up.error) return null
+    // This used to `return null` silently. A missing bucket or absent storage
+    // policy therefore looked identical to "no image", which is how every car
+    // silently lost its photo with nothing in the logs to explain it.
+    if (up.error) {
+      if (!_storageWarned) {
+        _storageWarned = true
+        captureException(new Error('car-images upload failed: ' + (up.error.message || 'unknown')))
+      }
+      return null
+    }
     var urlData = state._sb.storage.from('car-images').getPublicUrl(path)
     return urlData.data && urlData.data.publicUrl ? urlData.data.publicUrl : null
-  } catch(e) { return null }
+  } catch(e) {
+    if (!_storageWarned) { _storageWarned = true; captureException(e) }
+    return null
+  }
 }
 
 export async function saveToCloud(item) {
   if (!state.currentUser || !state._sb) return null
   try {
     var thumb = item.image || null
-    // Upload to Supabase Storage if image is base64 (not already a URL)
+    // Upload to Supabase Storage if image is base64 (not already a URL).
+    // If Storage is unavailable we keep the base64 rather than discarding it.
+    //
+    // This previously did `thumb = null // too large for DB column` for anything
+    // over 8000 chars, which threw the user's photo away for good. There is no
+    // such column limit: image_thumb is `text`, which Postgres does not bound.
+    // compressThumb output straddles 8000 chars depending on how busy the photo
+    // is, so most cars silently lost their picture while the occasional simple
+    // one survived — exactly the pattern seen in production.
     if (thumb && thumb.startsWith('data:') && thumb.length > 100) {
       var storageUrl = await uploadImageToStorage(thumb, item.id || Date.now())
       if (storageUrl) thumb = storageUrl
-      else if (thumb.length > 8000) thumb = null // too large for DB column
+      else if (thumb.length > 400000) {
+        // Only a genuinely pathological payload gets touched, and even then it
+        // is shrunk rather than dropped — a smaller picture beats no picture.
+        thumb = await _shrinkDataUrl(thumb, 96, 0.6) || thumb
+      }
     }
     var payload = {
       user_id: state.currentUser.id,
