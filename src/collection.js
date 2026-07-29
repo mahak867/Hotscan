@@ -7,6 +7,21 @@ import { cleanINR, parseINR, escHtml, showToast, rcls, captureException } from '
 var _syncInFlight = false
 var _syncRetryCount = 0
 var _syncMaxRetries = 3
+
+// Column list for collection syncs. image_thumb holds a base64 data URI capped
+// at 8000 chars per row (see saveToCloud), so selecting it makes the payload
+// scale with collection size — roughly 800KB at 100 cars. Since fullCloudSync
+// runs on a 30s poll and on every realtime change event, that was re-downloading
+// every thumb continuously and blowing the query timeout on mobile connections.
+// Routine syncs now omit the column and reuse the images already in memory; only
+// the first sync of a session pays for the full set, with a targeted backfill
+// (_backfillThumbs) for individual rows we have no local image for.
+var _COL_FIELDS = 'id,name,series,casting_year,rarity,color,tampo,wheel_type,india_retail_inr,india_collector_inr,us_retail_usd,us_collector_usd,investment,investment_reason,fun_fact,india_insight,added_at'
+var _COL_FIELDS_WITH_THUMBS = _COL_FIELDS + ',image_thumb'
+var _thumbsFetched = false
+// Rows already asked about. A thumb that was too large for the column is stored
+// as null (saveToCloud), so without this we'd re-request those nulls every poll.
+var _thumbBackfillTried = {}
 var _editingItem = null
 var _editingItemId = null
 
@@ -497,6 +512,32 @@ async function _retryWithBackoff(fn, maxAttempts, initialDelay) {
   throw lastError
 }
 
+// Fetches image_thumb for just the rows that have no image yet, mutating them in
+// place. Non-fatal: on failure those cars render without artwork until the next
+// session does a full sync, which beats failing the whole sync over a thumbnail.
+async function _backfillThumbs(items) {
+  var missing = items.filter(function(c) {
+    return !c.image && c.id && !_thumbBackfillTried[c.id]
+  })
+  if (missing.length === 0) return
+  var ids = missing.map(function(c) { return c.id })
+  ids.forEach(function(id) { _thumbBackfillTried[id] = true })
+  try {
+    var res = await _timedQuery(
+      state._sb.from('collection').select('id,image_thumb').in('id', ids)
+    )
+    if (!res.data) return
+    var thumbById = {}
+    res.data.forEach(function(d) { if (d.image_thumb) thumbById[d.id] = d.image_thumb })
+    items.forEach(function(c) {
+      if (!c.image && thumbById[c.id]) c.image = thumbById[c.id]
+    })
+  } catch(e) {
+    // Allow a later sync to try these again.
+    ids.forEach(function(id) { delete _thumbBackfillTried[id] })
+  }
+}
+
 async function _doFullCloudSync(retryCount) {
   if (!state._sb || !state.currentUser) {
     if ((retryCount || 0) < 3) {
@@ -506,13 +547,14 @@ async function _doFullCloudSync(retryCount) {
     throw new Error('Not signed in — sign out and back in, then try again')
   }
   try {
-    // Initial fetch — guarded by _timedQuery with increased timeout
+    // Initial fetch — guarded by _timedQuery's 12s default. Thumbs come along
+    // only on the first sync of the session; later syncs stay small.
+    var withThumbs = !_thumbsFetched
     var res = await _timedQuery(
       state._sb.from('collection')
-        .select('id,name,series,casting_year,rarity,color,tampo,wheel_type,india_retail_inr,india_collector_inr,us_retail_usd,us_collector_usd,investment,investment_reason,fun_fact,india_insight,image_thumb,added_at')
+        .select(withThumbs ? _COL_FIELDS_WITH_THUMBS : _COL_FIELDS)
         .eq('user_id', state.currentUser.id)
-        .order('added_at', { ascending: false }),
-      6000
+        .order('added_at', { ascending: false })
     )
 
     var cloudItems = []
@@ -524,6 +566,8 @@ async function _doFullCloudSync(retryCount) {
       captureException(new Error('fullCloudSync fetch error: ' + errMsg))
       return false
     }
+    // Only latch after a clean response — a failed first sync must retry with thumbs.
+    if (withThumbs) _thumbsFetched = true
     if (res.data && res.data.length > 0) {
       cloudItems = res.data.map(function(d) {
         return {
@@ -577,10 +621,9 @@ async function _doFullCloudSync(retryCount) {
     if (localOnly.length > 0) {
       var res2 = await _timedQuery(
         state._sb.from('collection')
-          .select('id,name,series,casting_year,rarity,color,tampo,wheel_type,india_retail_inr,india_collector_inr,us_retail_usd,us_collector_usd,investment,investment_reason,fun_fact,india_insight,image_thumb,added_at')
+          .select(withThumbs ? _COL_FIELDS_WITH_THUMBS : _COL_FIELDS)
           .eq('user_id', state.currentUser.id)
-          .order('added_at', { ascending: false }),
-        6000
+          .order('added_at', { ascending: false })
       )
       if (res2.data) {
         cloudItems = res2.data.map(function(d) {
@@ -613,6 +656,11 @@ async function _doFullCloudSync(retryCount) {
         return c
       })
     }
+
+    // Any row still without an image is one this device has never rendered —
+    // a car added on another device, or a fresh session. Fetch just those thumbs
+    // by id so the saving above doesn't cost us missing artwork.
+    if (!withThumbs) await _backfillThumbs(cloudItems)
 
     // never wipe existing collection on empty sync
     if (cloudItems.length > 0) {

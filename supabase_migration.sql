@@ -193,6 +193,10 @@ do $$ begin create policy "collection_insert" on collection for insert with chec
 do $$ begin create policy "collection_update" on collection for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
 do $$ begin create policy "collection_delete" on collection for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
 create unique index if not exists idx_collection_user_name on collection(user_id, lower(name));
+-- Serves the fullCloudSync query: filter on user_id, order by added_at desc.
+-- idx_collection_user_name can satisfy the filter but not the sort, so every
+-- sync was paying for a sort.
+create index if not exists idx_collection_user_added on collection(user_id, added_at desc);
 
 -- ── 10. Fix username login — profiles SELECT policy too restrictive
 -- Current policy: auth.uid() = id (can't query when not logged in)
