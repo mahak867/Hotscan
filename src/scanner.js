@@ -455,6 +455,14 @@ export async function analyzeFake() {
     '3. Do NOT say "Likely Fake" without specific visible evidence of faking.',
     '4. Default to "Cannot Determine" when in doubt — it is better than a wrong verdict.',
     '5. Only include items in good_signs / red_flags that you can actually see in THIS image.',
+    '6. NEVER return "Authentic" unless the BASE of the car is visible and you can read the',
+    '   Mattel base text. Without the base you cannot confirm authenticity — the most a',
+    '   top-side or packaged photo can support is "Likely Authentic", and only with several',
+    '   other clear markers. A counterfeit can look correct from above; the base is where it',
+    '   gives itself away. If the base is not visible, say so in base_visible and recommend',
+    '   the user re-shoot the underside.',
+    '7. A wrong "Authentic" costs a real buyer real money. When the evidence is thin, an',
+    '   inconclusive verdict is the correct answer, not a hedge.',
     '',
     'GENUINE Hot Wheels markers (must be clearly visible to count):',
     '- Hot Wheels logo: crisp, correct flame font — can you read it clearly?',
@@ -478,8 +486,9 @@ export async function analyzeFake() {
     'LIST only what you can ACTUALLY see — do not assume.',
     'If image quality is poor and you cannot clearly see key markers, return verdict "Cannot Determine".',
     'Return ONLY valid JSON:',
-    '{"identified":true,"is_authentic":true,"authenticity_score":85,',
-    '"verdict":"Authentic|Likely Authentic|Cannot Determine|Uncertain|Likely Fake|Definitely Fake",',
+    '{"identified":true,"is_authentic":true,',
+    '"verdict":"Authentic|Likely Authentic|Cannot Determine|Likely Fake|Definitely Fake",',
+    '"base_visible":true,',
     '"image_quality":"Good|Fair|Poor — affects confidence",',
     '"features_checked":["list each feature you could actually examine"],',
     '"good_signs":["only genuine markers you can clearly see"],',
@@ -491,13 +500,19 @@ export async function analyzeFake() {
     var d = await groqVision(state.fakeImg64, sys, usr)
     window.stopTimer()
     // Validate verdict is within allowed set
-    var allowed = ['Authentic','Likely Authentic','Cannot Determine','Uncertain','Likely Fake','Definitely Fake']
+    // 'Uncertain' was dropped: having two ways to say "I don't know" split the
+    // signal and made the result harder to read, not more precise.
+    var allowed = ['Authentic','Likely Authentic','Cannot Determine','Likely Fake','Definitely Fake']
     if (!d.verdict || !allowed.includes(d.verdict)) d.verdict = 'Cannot Determine'
+    if (d.verdict === 'Uncertain') d.verdict = 'Cannot Determine'
+    // Enforce rule 6 client-side rather than trusting the model to obey it. A
+    // confident "Authentic" without the base in shot is the single most costly
+    // thing this screen can say — it is what a scammed buyer would rely on.
+    if (d.verdict === 'Authentic' && d.base_visible === false) d.verdict = 'Likely Authentic'
     var bg = {
       'Authentic':'vd-steal',
       'Likely Authentic':'vd-steal',
       'Cannot Determine':'vd-fair',
-      'Uncertain':'vd-high',
       'Likely Fake':'vd-over',
       'Definitely Fake':'vd-over'
     }
@@ -509,12 +524,17 @@ export async function analyzeFake() {
     }
     document.getElementById('dv-icon').textContent = iconMap[d.verdict] || '❓'
     document.getElementById('dv-label').textContent = d.verdict
-    var score = d.authenticity_score || 0
+    // The 0-100 "Authenticity Score" is gone. The model invented that number
+    // with nothing to calibrate it against, and rendering it as a coloured
+    // progress bar dressed a guess up as a measurement — on the one screen
+    // where a user is deciding whether to hand over money. The verdict already
+    // carries the confidence; a fake precision number only adds false comfort.
     var qualNote = d.image_quality ? 'Image quality: ' + d.image_quality : ''
-    var scoreColor = score >= 80 ? '#2dc653' : score >= 55 ? '#FF9500' : '#E63946'
+    var baseNote = d.base_visible === false
+      ? '<div style="font-size:12px;color:var(--gold);margin-bottom:4px">📸 Base not visible — re-shoot the underside for a firmer answer</div>'
+      : ''
     document.getElementById('dv-sub').innerHTML =
-      (score ? '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:4px"><span>Authenticity Score</span><span style="color:'+scoreColor+';font-weight:700">'+score+'/100</span></div><div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+score+'%;background:'+scoreColor+';border-radius:3px;transition:width .6s"></div></div></div>' : '') +
-      (qualNote ? '<span style="font-size:12px;color:#888">'+qualNote+'</span>' : '')
+      baseNote + (qualNote ? '<span style="font-size:12px;color:#888">'+escHtml(qualNote)+'</span>' : '')
     var rows = []
     var goodSigns = Array.isArray(d.good_signs) ? d.good_signs : []
     var redFlags = Array.isArray(d.red_flags) ? d.red_flags : []
@@ -524,6 +544,9 @@ export async function analyzeFake() {
     if (redFlags.length) rows.push(['⚠️ Red flags', redFlags.join(' · ')])
     if (!goodSigns.length && !redFlags.length) rows.push(['ℹ️ Note', 'Could not clearly see enough markers to give a definitive verdict.'])
     if (d.india_fake_note) rows.push(['🇮🇳 India note', d.india_fake_note])
+    // Every other estimate in the app is disclaimed; this one carries the
+    // highest stakes and carried none. Say plainly that it is not proof.
+    rows.push(['⚠️ Not proof', 'This is an AI opinion from one photo, not an authentication. For an expensive car, check the base text and casting against a known-genuine example before paying.'])
     document.getElementById('deal-rows').innerHTML = rows.map(function(r) {
       return '<div class="deal-row" style="flex-direction:column;gap:3px"><span class="deal-k">' + escHtml(String(r[0])) + '</span><span class="deal-v" style="text-align:left;font-weight:400;color:#ccc">' + escHtml(String(r[1])) + '</span></div>'
     }).join('')

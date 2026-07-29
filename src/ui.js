@@ -140,6 +140,11 @@ export function setMode(mode) {
     document.getElementById('analyze-btn').style.display = 'block'
     document.getElementById('analyze-btn').textContent = '💰 Check This Deal'
   }
+  // These tips say "Side profile", which is the wrong advice in Fake mode —
+  // authenticity is settled by the base, and that panel says so already.
+  // Leaving both on screen told the user two contradictory things.
+  var tips = document.getElementById('scan-tips-card')
+  if (tips) tips.style.display = (mode === 'fake') ? 'none' : ''
 }
 
 // ── Image ──

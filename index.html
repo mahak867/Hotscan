@@ -187,6 +187,10 @@
         <div class="scan-emoji">🕵️</div>
         <div class="scan-title">Fake Detector</div>
         <div class="scan-sub">Fake Mattel Hot Wheels are common in India. Upload a photo and we'll check authenticity.</div>
+        <div style="background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.28);border-radius:10px;padding:10px 12px;margin:0 0 12px;text-align:left">
+          <div style="font-size:11px;font-weight:800;color:var(--gold);letter-spacing:.05em;margin-bottom:4px">📸 PHOTOGRAPH THE BASE</div>
+          <div style="font-size:11.5px;color:var(--text2);line-height:1.6">Turn the car over and shoot the underside. The base text — <b>HOT WHEELS MATTEL INC.</b> plus the country of origin — is the clearest evidence of a fake. A top or side photo usually cannot settle it.</div>
+        </div>
         <div class="scan-btns">
           <button class="btn-red" onclick="openFakeCam()">📷 Camera</button>
           <button class="btn-dark" onclick="openFakeGal()">🖼 Gallery</button>
@@ -288,7 +292,7 @@
       <button class="ract" onclick="resetScan()"><span>🔄</span>Rescan</button>
     </div>
   </div>
-  <div class="card"><div class="card-title">📸 Tips for best results</div><div style="font-size:12px;color:var(--text2);line-height:2">💡 White surface · 🔆 Bright light · 🎯 Side profile · 📦 Include card</div></div>
+  <div class="card" id="scan-tips-card"><div class="card-title">📸 Tips for best results</div><div style="font-size:12px;color:var(--text2);line-height:2">💡 White surface · 🔆 Bright light · 🎯 Side profile · 📦 Include card</div></div>
   
 </div>
 
