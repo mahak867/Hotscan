@@ -354,10 +354,30 @@ export function runAnalyze() {
 }
 
 // ── Results ──
+// Applies a one-shot reveal to the result card, escalating with rarity. Classes
+// are removed and re-added so the animation replays on a second scan — without
+// the reflow read, the browser coalesces the change and nothing happens.
+function _playReveal(rarity) {
+  var card = document.getElementById('result')
+  if (!card) return
+  var r = (rarity || '').toLowerCase()
+  var isTh = r.indexOf('treasure') > -1
+  var isRare = isTh || r.indexOf('rare') > -1 || r.indexOf('premium') > -1 ||
+               r.indexOf('vintage') > -1 || r.indexOf('error') > -1
+  card.classList.remove('hs-reveal', 'hs-reveal-rare', 'hs-reveal-th')
+  void card.offsetWidth
+  card.classList.add(isRare ? 'hs-reveal-rare' : 'hs-reveal')
+  if (isTh) card.classList.add('hs-reveal-th')
+}
+
 export function showResult(d) {
   if (state.imgThumb) document.getElementById('r-thumb').innerHTML = '<img src="' + state.imgThumb + '" alt="">'
   document.getElementById('r-name').textContent = d.name || 'Unknown'
   document.getElementById('r-series').textContent = d.series || ''
+  // Rarity reveal. Pulling a Treasure Hunt is the emotional peak of the product
+  // and previously landed with no acknowledgement whatsoever. Runs once, uses
+  // transform/opacity only, and is disabled by the reduced-motion block in CSS.
+  _playReveal(d.rarity)
   
   // Check and earn achievements
   window._checkAchievements && window._checkAchievements(d)

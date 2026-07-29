@@ -1420,3 +1420,67 @@ input, select, textarea { font-size:16px !important; }
 .hs-slide-btn .hs-slide-label-hover{position:absolute !important;top:0;left:0;right:0;bottom:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;white-space:nowrap;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,.2,.2,1)}
 .hs-slide-btn:hover .hs-slide-label{transform:translateY(-100%)}
 .hs-slide-btn:hover .hs-slide-label-hover{transform:translateY(0)}
+
+/* ── Motion: accessibility and battery ─────────────────────────────────────
+   The app had no prefers-reduced-motion support at all. Beyond being an
+   accessibility requirement, several rarity animations (.rt, .iv, the STH glow)
+   run infinitely and animate box-shadow, which forces a repaint every frame for
+   as long as the card is on screen. On a collection with many rare cars that is
+   a continuous, pointless battery drain on exactly the mid-range Android phones
+   most of the audience uses.
+
+   Everything below is opacity/transform only — those are GPU-composited and do
+   not trigger layout or paint. */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Rarity reveal — the emotional peak of the product. Pulling a Treasure Hunt
+   should feel like something, and it previously passed with no acknowledgement
+   at all. Runs ONCE on reveal rather than looping, so it costs nothing after
+   the first second. */
+@keyframes hsRevealCommon {
+  from { opacity: 0; transform: translateY(10px) scale(.99); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes hsRevealRare {
+  0%   { opacity: 0; transform: translateY(12px) scale(.97); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.015); }
+  100% { opacity: 1; transform: none; }
+}
+/* Sweep is a moving gradient on a pseudo-element, composited and self-removing. */
+@keyframes hsSweep {
+  from { transform: translateX(-120%) skewX(-18deg); }
+  to   { transform: translateX(220%) skewX(-18deg); }
+}
+
+.hs-reveal { animation: hsRevealCommon .34s cubic-bezier(.2,.7,.3,1) both; }
+.hs-reveal-rare {
+  animation: hsRevealRare .52s cubic-bezier(.2,.7,.3,1) both;
+  position: relative;
+  overflow: hidden;
+}
+.hs-reveal-rare::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 45%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+  animation: hsSweep .85s ease-out .12s 1 both;
+  pointer-events: none;
+}
+/* Treasure Hunt and above get a warmer, slightly wider sweep. */
+.hs-reveal-th::after {
+  background: linear-gradient(90deg, transparent, rgba(255,214,10,.3), transparent);
+  width: 55%;
+}
+
+/* Collection valuation roll-up. The number is the reason people reopen the app;
+   counting to it reads as the figure being calculated rather than just printed. */
+.val-total.hs-rolling { will-change: contents; }

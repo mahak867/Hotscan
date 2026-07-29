@@ -181,6 +181,46 @@ function createEditModal() {
   el.addEventListener('click', function(e) { if (e.target === el) closeColEdit() })
 }
 
+// Counts the valuation up to its new figure instead of snapping to it — the
+// total is the reason people reopen the app, and counting reads as the number
+// being worked out rather than merely printed.
+//
+// Deliberately cheap and self-limiting: it only animates when the value actually
+// changed, bails out entirely under prefers-reduced-motion, caps at ~30 frames,
+// and cancels any in-flight roll so repeated renders cannot stack timers.
+var _rollTimer = null
+var _rollLast = null
+function _rollValue(el, target) {
+  if (!el) return
+  var fmt = function(v) { return v > 0 ? '₹' + Math.round(v).toLocaleString('en-IN') : '₹0' }
+  var reduce = false
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch(e) {}
+  if (_rollTimer) { clearInterval(_rollTimer); _rollTimer = null }
+  // No animation on first paint, when nothing changed, or when the user has
+  // asked for less motion.
+  if (reduce || _rollLast === null || _rollLast === target) {
+    _rollLast = target
+    el.textContent = fmt(target)
+    return
+  }
+  var from = _rollLast
+  var steps = 26
+  var i = 0
+  _rollLast = target
+  el.classList.add('hs-rolling')
+  _rollTimer = setInterval(function() {
+    i++
+    // Ease-out so it decelerates into the final figure.
+    var t = 1 - Math.pow(1 - i / steps, 3)
+    el.textContent = fmt(from + (target - from) * t)
+    if (i >= steps) {
+      clearInterval(_rollTimer); _rollTimer = null
+      el.textContent = fmt(target)
+      el.classList.remove('hs-rolling')
+    }
+  }, 16)
+}
+
 // 'list' or 'grid'. Persisted because a view preference that resets every
 // session is worse than not offering the choice at all.
 export function setColView(v) {
@@ -225,7 +265,7 @@ export function renderCol() {
   var rare = state.collection.filter(function(c) { var r=(c.rarity||'').toLowerCase(); return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage') }).length
   var sth = state.collection.filter(function(c) { return (c.rarity||'').toLowerCase().includes('treasure') }).length
   var val = 0; state.collection.forEach(function(c) { val += parseINR(c.india_collector_inr) })
-  document.getElementById('val-total').textContent = val > 0 ? '₹' + val.toLocaleString('en-IN') : '₹0'
+  _rollValue(document.getElementById('val-total'), val)
   document.getElementById('v-cars').textContent = total
   document.getElementById('v-rare').textContent = rare
   document.getElementById('v-sth').textContent = sth
