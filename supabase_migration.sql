@@ -368,3 +368,72 @@ exception when duplicate_object then null; end $$;
 
 -- profiles_update_safe (section 4 above) already restricts profile updates to
 -- the owner and freezes is_pro/is_developer, so avatar_url needs no extra policy.
+
+-- ── 14. Seller reputation (marketplace) ────────────────────────────────
+-- One rating per buyer per seller, 1-5 stars with an optional written review.
+create table if not exists seller_ratings (
+  id         uuid primary key default gen_random_uuid(),
+  seller_id  uuid references auth.users(id) on delete cascade not null,
+  rater_id   uuid references auth.users(id) on delete cascade not null,
+  listing_id uuid references listings(id)   on delete set null,
+  stars      smallint not null check (stars between 1 and 5),
+  review     text check (review is null or length(review) <= 500),
+  created_at timestamptz not null default now(),
+  -- Stops one account inflating a seller by rating repeatedly. Re-rating
+  -- updates the existing row instead (upsert on this constraint).
+  unique (seller_id, rater_id),
+  -- Self-rating is the most obvious way to game a reputation system.
+  check (seller_id <> rater_id)
+);
+alter table seller_ratings enable row level security;
+
+-- Ratings are public: the whole point is that buyers can see them.
+do $$ begin
+  create policy "seller_ratings_select" on seller_ratings for select using (true);
+exception when duplicate_object then null; end $$;
+
+-- You may only write a rating authored by yourself.
+do $$ begin
+  create policy "seller_ratings_insert" on seller_ratings
+    for insert with check (auth.uid() = rater_id and auth.uid() <> seller_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "seller_ratings_update" on seller_ratings
+    for update using (auth.uid() = rater_id) with check (auth.uid() = rater_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "seller_ratings_delete" on seller_ratings
+    for delete using (auth.uid() = rater_id);
+exception when duplicate_object then null; end $$;
+
+create index if not exists idx_seller_ratings_seller on seller_ratings(seller_id);
+
+-- Aggregated reputation, safe to expose publicly: counts and averages only,
+-- no rater identities.
+create or replace view seller_stats as
+  select
+    l.seller_id,
+    max(l.seller_name)                                as seller_name,
+    count(distinct l.id)                              as listing_count,
+    min(l.listed_at)                                  as selling_since,
+    coalesce(round(avg(r.stars)::numeric, 1), 0)      as avg_stars,
+    count(distinct r.id)                              as rating_count
+  from listings l
+  left join seller_ratings r on r.seller_id = l.seller_id
+  group by l.seller_id;
+
+grant select on seller_stats to anon, authenticated;
+
+-- public_listings must expose seller_id so the client can join reputation and
+-- open a seller profile. seller_id is an opaque uuid, not contact information -
+-- seller_phone stays excluded exactly as before.
+create or replace view public_listings as
+  select
+    id, seller_id, seller_name, name, rarity, condition,
+    price, city, notes, image_thumb, is_active, listed_at
+  from listings
+  where is_active = true;
+
+grant select on public_listings to anon, authenticated;

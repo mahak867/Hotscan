@@ -17,6 +17,7 @@ import {
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
+  openSellerSheet, closeSellerSheet, submitSellerRating,
   quickSell, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected
 } from './marketplace.js'
 import { addToWantList, removeFromWantList, renderWantList } from './ui.js'
@@ -86,6 +87,7 @@ Object.assign(window, {
   submitEvent, selectSeries, toggleHunt,
   showProModal, closeProModal, isPro, checkLimit,
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
+  openSellerSheet, closeSellerSheet, submitSellerRating,
   quickSell, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected,
   copyRefLink, shareViaWA,
   shareCollection, updateStreak,

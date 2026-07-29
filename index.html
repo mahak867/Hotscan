@@ -776,6 +776,17 @@
 </div>
 
 <!-- Account Modal -->
+<!-- Seller profile / reputation sheet -->
+<div class="auth-modal" id="seller-sheet" onclick="if(event.target===this)closeSellerSheet()">
+  <div class="auth-box" style="max-height:82vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:800">Seller</div>
+      <button onclick="closeSellerSheet()" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px">✕</button>
+    </div>
+    <div id="seller-sheet-body"></div>
+  </div>
+</div>
+
 <div class="auth-modal" id="account-modal">
   <div class="auth-box">
     <div class="prof-hero" style="margin-bottom:12px">

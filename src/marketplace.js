@@ -66,7 +66,44 @@ export async function loadAndRenderListings() {
     } catch(e) { captureException(e) }
   }
   _mpListings = items
+  await loadSellerStats(items)
   renderListings()
+}
+
+// Reputation for every seller in the current result set, fetched in one query
+// rather than per card. Kept in a map so renderListings stays synchronous.
+var _sellerStats = {}
+
+export async function loadSellerStats(items) {
+  if (!state._sb || !items || !items.length) return
+  var ids = []
+  items.forEach(function(l){ if (l.seller_id && ids.indexOf(l.seller_id) === -1) ids.push(l.seller_id) })
+  if (!ids.length) return
+  try {
+    var res = await state._sb.from('seller_stats').select('*').in('seller_id', ids)
+    // Missing view means the migration hasn't been run. Reputation simply
+    // doesn't render; listings still work exactly as they did before.
+    if (res.error || !res.data) return
+    res.data.forEach(function(s){ _sellerStats[s.seller_id] = s })
+  } catch(e) { /* non-fatal — listings render without reputation */ }
+}
+
+// Half-stars would need partial glyphs; rounding to whole stars alongside the
+// numeric average is honest enough and renders identically everywhere.
+function starGlyphs(avg) {
+  var full = Math.round(Number(avg) || 0)
+  return '★★★★★'.slice(0, full) + '☆☆☆☆☆'.slice(0, 5 - full)
+}
+
+export function sellerBadgeHtml(sellerId) {
+  var s = _sellerStats[sellerId]
+  if (!s || !Number(s.rating_count)) {
+    return '<span style="font-size:10px;color:var(--text3)">No ratings yet</span>'
+  }
+  var avg = Number(s.avg_stars).toFixed(1)
+  var col = avg >= 4 ? '#2dc653' : avg >= 3 ? '#ffd60a' : '#ff6b6b'
+  return '<span style="font-size:10px;color:'+col+';font-weight:700">'+starGlyphs(s.avg_stars)+' '+avg+'</span>'+
+         '<span style="font-size:10px;color:var(--text3)"> ('+s.rating_count+')</span>'
 }
 
 export function renderListings(arr) {
@@ -120,7 +157,16 @@ export function renderListings(arr) {
     var price = document.createElement('span'); price.className = 'listing-price'; price.textContent = '₹' + Number(l.price).toLocaleString('en-IN')
     var rar = document.createElement('span'); rar.className = 'rar ' + rcls(l.rarity); rar.style.cssText = 'font-size:10px;padding:2px 6px'; rar.textContent = l.rarity || 'Common'
     priceRow.appendChild(price); priceRow.appendChild(rar)
-    var seller = document.createElement('div'); seller.style.cssText = 'font-size:10px;color:var(--text3)'; seller.textContent = '👤 ' + (l.seller_name || 'Collector')
+    // Seller line now carries reputation and opens the seller's profile.
+    var seller = document.createElement('div')
+    seller.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:10px;color:var(--text3)'
+    var sStat = _sellerStats[l.seller_id]
+    seller.innerHTML = '<span style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">👤 ' + escHtml(l.seller_name || 'Collector') + '</span>' +
+      sellerBadgeHtml(l.seller_id) +
+      (sStat && Number(sStat.listing_count) > 1 ? '<span style="font-size:10px;color:var(--text3)">· ' + sStat.listing_count + ' listings</span>' : '')
+    if (l.seller_id) {
+      seller.firstChild.onclick = (function(id, nm){ return function(){ openSellerSheet(id, nm) } })(l.seller_id, l.seller_name)
+    }
     info.appendChild(nm); info.appendChild(meta); info.appendChild(priceRow); info.appendChild(seller)
     if (l.notes) { var noteEl = document.createElement('div'); noteEl.style.cssText = 'font-size:11px;color:var(--text2);margin-top:3px;white-space:pre-wrap'; noteEl.textContent = l.notes; info.appendChild(noteEl) }
     var acts = document.createElement('div'); acts.className = 'listing-acts'
@@ -141,6 +187,143 @@ export function renderListings(arr) {
     card.appendChild(thumb); card.appendChild(info)
     wrap.appendChild(card)
   })
+}
+
+// ── Seller profile sheet ────────────────────────────────────────────────────
+var _sheetSellerId = null
+
+export async function openSellerSheet(sellerId, sellerName) {
+  if (!sellerId) return
+  _sheetSellerId = sellerId
+  var sheet = document.getElementById('seller-sheet')
+  var body = document.getElementById('seller-sheet-body')
+  if (!sheet || !body) return
+  sheet.classList.add('open')
+  document.body.style.overflow = 'hidden'
+  body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">⏳ Loading seller…</div>'
+
+  var stats = _sellerStats[sellerId] || null
+  var reviews = []
+  var myRating = null
+  try {
+    var rres = await state._sb.from('seller_ratings')
+      .select('id,rater_id,stars,review,created_at')
+      .eq('seller_id', sellerId).order('created_at', {ascending:false}).limit(20)
+    if (!rres.error && rres.data) {
+      reviews = rres.data
+      if (state.currentUser) {
+        myRating = reviews.filter(function(r){ return r.rater_id === state.currentUser.id })[0] || null
+      }
+    }
+  } catch(e) { /* reputation is additive — the sheet still shows the basics */ }
+
+  var isSelf = !!(state.currentUser && state.currentUser.id === sellerId)
+  var since = stats && stats.selling_since ? new Date(stats.selling_since).toLocaleDateString('en-IN',{month:'short',year:'numeric'}) : null
+
+  var head =
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'+
+      '<div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#374151,#4b5563);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:900;color:#fff;flex-shrink:0">'+
+        escHtml(((sellerName||'C')[0]||'C').toUpperCase())+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:16px;font-weight:800">'+escHtml(sellerName||'Collector')+'</div>'+
+        '<div style="margin-top:3px">'+sellerBadgeHtml(sellerId)+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">'+
+      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--gold)">'+(stats?stats.listing_count:0)+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Listings</div></div>'+
+      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--gold)">'+(stats?stats.rating_count:0)+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Ratings</div></div>'+
+      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:12px;font-weight:800;color:var(--gold);margin-top:4px">'+(since||'—')+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Since</div></div>'+
+    '</div>'
+
+  var rateBox = ''
+  if (isSelf) {
+    rateBox = '<div style="font-size:11px;color:var(--text3);padding:10px;background:var(--surface2);border-radius:10px;margin-bottom:14px">This is your seller profile — you can\'t rate yourself.</div>'
+  } else if (!state.currentUser) {
+    rateBox = '<div style="font-size:11px;color:var(--text3);padding:10px;background:var(--surface2);border-radius:10px;margin-bottom:14px">Sign in to rate this seller.</div>'
+  } else {
+    rateBox =
+      '<div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:16px">'+
+        '<div style="font-size:12px;font-weight:700;margin-bottom:8px">'+(myRating?'Update your rating':'Rate this seller')+'</div>'+
+        '<div id="rate-stars" style="display:flex;gap:6px;margin-bottom:9px">'+
+          [1,2,3,4,5].map(function(n){
+            return '<button data-star="'+n+'" style="background:none;border:none;font-size:24px;cursor:pointer;padding:0;line-height:1;color:'+((myRating&&myRating.stars>=n)?'#ffd60a':'var(--text3)')+'">★</button>'
+          }).join('')+
+        '</div>'+
+        '<textarea id="rate-review" maxlength="500" placeholder="How was the deal? (optional)" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:9px;font-size:12px;color:#fff;box-sizing:border-box;resize:vertical;min-height:56px;font-family:inherit">'+escHtml(myRating&&myRating.review?myRating.review:'')+'</textarea>'+
+        '<button id="rate-submit" class="btn-red" style="width:100%;margin-top:9px;padding:10px;border-radius:10px;font-size:13px">'+(myRating?'Update rating':'Submit rating')+'</button>'+
+      '</div>'
+  }
+
+  var revList = reviews.length
+    ? reviews.map(function(r){
+        return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">'+
+          '<div style="font-size:12px;color:#ffd60a">'+starGlyphs(r.stars)+'</div>'+
+          (r.review?'<div style="font-size:12px;color:var(--text2);margin-top:4px;white-space:pre-wrap">'+escHtml(r.review)+'</div>':'')+
+          '<div style="font-size:10px;color:var(--text3);margin-top:4px">'+new Date(r.created_at).toLocaleDateString('en-IN')+'</div>'+
+        '</div>'
+      }).join('')
+    : '<div style="font-size:12px;color:var(--text3);padding:10px 0">No reviews yet.</div>'
+
+  body.innerHTML = head + rateBox +
+    '<div style="font-size:12px;font-weight:700;margin-bottom:2px">Reviews</div>' + revList
+
+  // Star picker
+  var picked = myRating ? myRating.stars : 0
+  var starWrap = document.getElementById('rate-stars')
+  if (starWrap) {
+    starWrap.addEventListener('click', function(e){
+      var b = e.target.closest('[data-star]')
+      if (!b) return
+      picked = parseInt(b.dataset.star, 10)
+      starWrap.querySelectorAll('[data-star]').forEach(function(el){
+        el.style.color = parseInt(el.dataset.star,10) <= picked ? '#ffd60a' : 'var(--text3)'
+      })
+    })
+  }
+  var subBtn = document.getElementById('rate-submit')
+  if (subBtn) {
+    subBtn.onclick = function(){
+      if (!picked) { showToast('Pick a star rating first', 'error'); return }
+      var rv = document.getElementById('rate-review')
+      submitSellerRating(sellerId, picked, rv ? rv.value : '', sellerName)
+    }
+  }
+}
+
+export function closeSellerSheet() {
+  var sheet = document.getElementById('seller-sheet')
+  if (sheet) sheet.classList.remove('open')
+  document.body.style.overflow = ''
+  _sheetSellerId = null
+}
+
+export async function submitSellerRating(sellerId, stars, review, sellerName) {
+  if (!state.currentUser || !state._sb) { showToast('Sign in to rate sellers', 'error'); return }
+  if (state.currentUser.id === sellerId) { showToast('You cannot rate yourself', 'error'); return }
+  try {
+    // Upsert on (seller_id, rater_id): re-rating replaces the previous score
+    // rather than stacking, which is what the unique constraint enforces.
+    var res = await state._sb.from('seller_ratings').upsert({
+      seller_id: sellerId,
+      rater_id: state.currentUser.id,
+      stars: stars,
+      review: (review || '').trim().slice(0, 500) || null
+    }, { onConflict: 'seller_id,rater_id' })
+    if (res.error) throw res.error
+    showToast('Rating saved ✅', 'success')
+    // Refresh aggregates, then re-open so the sheet shows the new average.
+    await loadSellerStats(_mpListings || [])
+    renderListings()
+    openSellerSheet(sellerId, sellerName)
+  } catch(e) {
+    var m = (e && e.message) || ''
+    if (m.indexOf('seller_ratings') > -1 || m.indexOf('does not exist') > -1) {
+      showToast('Seller ratings not set up yet — run the latest SQL migration', 'error')
+    } else {
+      showToast('Could not save rating — ' + (m || 'try again'), 'error')
+    }
+    captureException(e)
+  }
 }
 
 export async function renderMyListings(arr) {
