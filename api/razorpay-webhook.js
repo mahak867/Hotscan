@@ -70,7 +70,7 @@ async function markUserPro(userId, paymentId) {
   return res.ok
 }
 
-export default async function handler(req) {
+async function handler(req) {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
   }
@@ -134,3 +134,13 @@ export default async function handler(req) {
   // Ignore other events
   return new Response('Event ignored', { status: 200 })
 }
+
+// NOTE: these MUST be named HTTP-method exports, not `export default`.
+// Under Vercel's Node.js runtime, a default export is treated as the
+// Express-style (req, res) => void signature and its RETURN VALUE IS
+// IGNORED — so returning a Response from a default export meant the
+// function never actually responded, hung, and died at the maxDuration
+// limit with FUNCTION_INVOCATION_TIMEOUT (a 504 to the client). Named
+// method exports use the Web fetch-style API where returning a Response
+// is correct.
+export async function POST(req) { return await handler(req) }
