@@ -1343,6 +1343,11 @@ input, select, textarea { font-size:16px !important; }
 .flip-card-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:2;transition:background .15s,color .15s}
 .flip-card-btn:hover{background:var(--surface2);color:var(--text)}
 
+/* ── Profile picture ──────────────────────────────────────────────────────── */
+.prof-avatar-wrap{position:relative;display:inline-block}
+.prof-avatar-edit{position:absolute;right:0;bottom:0;width:30px;height:30px;border-radius:50%;background:var(--surface3);border:2px solid var(--bg);color:var(--text);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .15s}
+.prof-avatar-edit:hover{background:var(--red);transform:scale(1.06)}
+
 /* ── Collection view toggle + grid ────────────────────────────────────────── */
 .col-viewtog{display:flex;gap:2px;margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:2px}
 .col-viewbtn{background:none;border:none;color:var(--text3);width:28px;height:24px;border-radius:7px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}

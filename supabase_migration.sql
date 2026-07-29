@@ -322,3 +322,49 @@ $$;
 
 -- Must be callable by anon — this runs during login, before authentication
 grant execute on function get_email_by_username(text) to anon, authenticated;
+
+-- ── 13. Profile pictures ───────────────────────────────────────────────
+-- avatar_url holds a public Storage URL, not base64. Avatars render in the
+-- header on every page, so inlining them would bloat every profile read.
+alter table profiles add column if not exists avatar_url text;
+
+-- Dedicated bucket rather than reusing car-images: different lifecycle
+-- (one per user, overwritten) and different access rules.
+insert into storage.buckets (id, name, public)
+  values ('avatars', 'avatars', true)
+  on conflict (id) do nothing;
+
+-- Avatars are world-readable (they appear next to marketplace listings),
+-- but a user may only write to a path prefixed with their own user id.
+-- storage.foldername(name) returns the path segments, so [1] is the folder.
+do $$ begin
+  create policy "avatars_public_read" on storage.objects
+    for select using (bucket_id = 'avatars');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "avatars_own_insert" on storage.objects
+    for insert with check (
+      bucket_id = 'avatars'
+      and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "avatars_own_update" on storage.objects
+    for update using (
+      bucket_id = 'avatars'
+      and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "avatars_own_delete" on storage.objects
+    for delete using (
+      bucket_id = 'avatars'
+      and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;
+
+-- profiles_update_safe (section 4 above) already restricts profile updates to
+-- the owner and freezes is_pro/is_developer, so avatar_url needs no extra policy.

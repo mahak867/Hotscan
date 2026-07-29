@@ -798,8 +798,17 @@ export function renderProfilePage() {
   ]
   var avatarEl = document.getElementById('prof-avatar')
   if (avatarEl) {
-    avatarEl.textContent = initials
-    avatarEl.style.background = _avatarGrads[displayName.charCodeAt(0) % _avatarGrads.length]
+    var _av = (state.userProfile && state.userProfile.avatar_url) || ''
+    if (_av) {
+      avatarEl.textContent = ''
+      avatarEl.innerHTML = '<img src="' + escHtml(_av) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block">'
+      avatarEl.style.background = 'var(--surface2)'
+    } else {
+      avatarEl.innerHTML = ''
+      avatarEl.textContent = initials
+      avatarEl.style.background = _avatarGrads[displayName.charCodeAt(0) % _avatarGrads.length]
+    }
+    avatarEl.style.overflow = 'hidden'
     avatarEl.style.boxShadow = '0 4px 20px rgba(0,0,0,.4)'
   }
   document.getElementById('prof-name').textContent = displayName

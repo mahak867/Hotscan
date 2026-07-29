@@ -394,7 +394,13 @@ export function updateHeaderUI(){
   var isProUser=!isDev&&!!(state.userProfile&&state.userProfile.is_pro)
   var bg=isDev?'linear-gradient(135deg,#7c3aed,#4f46e5)':isProUser?'linear-gradient(135deg,#e63946,#ff6b35)':(prefs.avatarColor||'linear-gradient(135deg,#374151,#4b5563)')
   var badge=isDev?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap">&#x1F451; Dev</span>':isProUser?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span>':''
-  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+initial+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>'+badge+'</div>'
+  // An uploaded picture replaces the initial; everything else about the chip
+  // (size, ring, Pro/Dev badge) stays identical so the header doesn't shift.
+  var av=avatarUrl()
+  var avInner=av
+    ? '<img src="'+escHtml(av)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block">'
+    : initial
+  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden">'+avInner+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>'+badge+'</div>'
   btn.onclick=function(e){ e.stopPropagation(); if(dd) dd.classList.toggle('open') }
   if(dd){
     dd.innerHTML =
@@ -417,6 +423,101 @@ if(typeof document!=='undefined' && !document._pddOutsideClickBound){
     var dd=document.getElementById('profile-dd-menu')
     if(dd && dd.classList.contains('open') && !e.target.closest('.profile-dd')) dd.classList.remove('open')
   })
+}
+
+// ── Profile picture ─────────────────────────────────────────────────────────
+// Avatars live in Storage, not base64 in the profiles row: the header renders
+// one on every page, so inlining would bloat every profile read.
+// Path is <user-id>/avatar.jpg, which is what the storage RLS policies key on.
+
+// Squares and downsizes to 256px before upload. Users pick full-resolution
+// camera photos; without this a 4MB JPEG would be pushed to Storage and pulled
+// back on every page load.
+function _squareAvatar(dataUrl) {
+  return new Promise(function(resolve) {
+    var img = new Image()
+    img.onload = function() {
+      try {
+        var s = Math.min(img.width, img.height)
+        var c = document.createElement('canvas')
+        c.width = 256; c.height = 256
+        c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 256, 256)
+        c.toBlob(function(b){ resolve(b) }, 'image/jpeg', 0.85)
+      } catch(e) { resolve(null) }
+    }
+    img.onerror = function(){ resolve(null) }
+    img.src = dataUrl
+  })
+}
+
+export async function uploadAvatar(input) {
+  var file = input && input.files && input.files[0]
+  if (!file) return
+  if (!state.currentUser || !state._sb) { showToast('Sign in to set a profile picture', 'error'); return }
+  if (!/^image\//.test(file.type)) { showToast('Pick an image file', 'error'); return }
+  // Guard before decoding — a huge file would otherwise be read into memory
+  // in full just to be thrown away by the resize.
+  if (file.size > 8 * 1024 * 1024) { showToast('Image too large — pick one under 8MB', 'error'); return }
+
+  showToast('Uploading picture…', 'info')
+  try {
+    var raw = await new Promise(function(res, rej) {
+      var rd = new FileReader()
+      rd.onload = function(e){ res(e.target.result) }
+      rd.onerror = function(){ rej(new Error('Could not read that file')) }
+      rd.readAsDataURL(file)
+    })
+    var blob = await _squareAvatar(raw)
+    if (!blob) throw new Error('Could not process that image')
+
+    var path = state.currentUser.id + '/avatar.jpg'
+    var up = await state._sb.storage.from('avatars')
+      .upload(path, blob, { contentType: 'image/jpeg', upsert: true })
+    if (up.error) throw up.error
+
+    var pub = state._sb.storage.from('avatars').getPublicUrl(path)
+    // Cache-bust: the path is stable across uploads (upsert), so without a
+    // changing query string the browser keeps showing the previous picture.
+    var url = pub.data.publicUrl + '?v=' + Date.now()
+
+    var upd = await state._sb.from('profiles').update({ avatar_url: url }).eq('id', state.currentUser.id)
+    if (upd.error) throw upd.error
+
+    if (!state.userProfile) state.userProfile = {}
+    state.userProfile.avatar_url = url
+    updateHeaderUI()
+    if (window.renderProfilePage) window.renderProfilePage()
+    showToast('Profile picture updated ✅', 'success')
+  } catch(e) {
+    // A missing bucket/column means the migration hasn't been run yet — say so
+    // rather than showing a raw Postgres error.
+    var m = (e && e.message) || ''
+    if (m.indexOf('avatar_url') > -1 || m.indexOf('Bucket not found') > -1 || m.indexOf('column') > -1) {
+      showToast('Profile pictures not set up yet — run the latest SQL migration', 'error')
+    } else {
+      showToast('Upload failed — ' + (m || 'try again'), 'error')
+    }
+    captureException(e)
+  } finally {
+    if (input) input.value = ''
+  }
+}
+
+export async function removeAvatar() {
+  if (!state.currentUser || !state._sb) return
+  try {
+    await state._sb.storage.from('avatars').remove([state.currentUser.id + '/avatar.jpg'])
+    await state._sb.from('profiles').update({ avatar_url: null }).eq('id', state.currentUser.id)
+    if (state.userProfile) state.userProfile.avatar_url = null
+    updateHeaderUI()
+    if (window.renderProfilePage) window.renderProfilePage()
+    showToast('Profile picture removed', 'success')
+  } catch(e) { showToast('Could not remove picture', 'error') }
+}
+
+// Single source of truth for "does this user have a usable avatar".
+export function avatarUrl() {
+  return (state.userProfile && state.userProfile.avatar_url) || ''
 }
 
 export function openAccountModal() {

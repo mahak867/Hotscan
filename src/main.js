@@ -7,7 +7,8 @@ import { ol, showToast, checkAndEarnAchievements } from './utils.js'
 import {
   openAuth, closeAuth, toggleAuthMode, authContinue, signInWithGoogle,
   sendPasswordReset, openAccountModal, closeAccountModal, signOutUser,
-  updateHeaderUI, startPayment, loadProfile, initAuth
+  updateHeaderUI, startPayment, loadProfile, initAuth,
+  uploadAvatar, removeAvatar
 } from './auth.js'
 import {
   addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
@@ -73,6 +74,7 @@ Object.assign(window, {
   openAuth, closeAuth, toggleAuthMode, authContinue, signInWithGoogle,
   sendPasswordReset, closeAccountModal, signOutUser, openAccountModal,
   startPayment, handleUpgrade, updateHeaderUI, loadProfile,
+  uploadAvatar, removeAvatar,
   goPage, setMode, saveKey, showKeySetup, resetScan,
   openCam, openGal, openFakeCam, openFakeGal, openMulti, runAnalyze,
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
