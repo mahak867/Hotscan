@@ -95,15 +95,32 @@ function starGlyphs(avg) {
   return '★★★★★'.slice(0, full) + '☆☆☆☆☆'.slice(0, 5 - full)
 }
 
+// Verified Seller is computed in the seller_stats view from completed sales and
+// buyer ratings — it is never something a user can set on themselves, because a
+// self-declared trust badge is worth nothing to the buyer reading it.
+export function verifiedBadgeHtml(sellerId) {
+  var s = _sellerStats[sellerId]
+  if (!s || !s.is_verified_seller) return ''
+  return '<span title="3+ completed sales, 3+ buyer ratings, 4.0+ average" ' +
+         'style="font-size:9px;font-weight:800;color:#0b0b0b;background:linear-gradient(90deg,#ffd60a,#ffb700);' +
+         'border-radius:20px;padding:1px 6px;white-space:nowrap">✓ VERIFIED</span>'
+}
+
 export function sellerBadgeHtml(sellerId) {
   var s = _sellerStats[sellerId]
   if (!s || !Number(s.rating_count)) {
-    return '<span style="font-size:10px;color:var(--text3)">No ratings yet</span>'
+    // Say what is actually true — "no ratings" reads as neutral, whereas a
+    // zero-star display would read as bad.
+    var sold = s && Number(s.sales_count)
+    return sold
+      ? '<span style="font-size:10px;color:var(--text3)">' + sold + ' sold · no ratings yet</span>'
+      : '<span style="font-size:10px;color:var(--text3)">New seller</span>'
   }
   var avg = Number(s.avg_stars).toFixed(1)
   var col = avg >= 4 ? '#2dc653' : avg >= 3 ? '#ffd60a' : '#ff6b6b'
   return '<span style="font-size:10px;color:'+col+';font-weight:700">'+starGlyphs(s.avg_stars)+' '+avg+'</span>'+
-         '<span style="font-size:10px;color:var(--text3)"> ('+s.rating_count+')</span>'
+         '<span style="font-size:10px;color:var(--text3)"> ('+s.rating_count+')</span>' +
+         verifiedBadgeHtml(sellerId)
 }
 
 export function renderListings(arr) {
@@ -243,6 +260,17 @@ export async function openSellerSheet(sellerId, sellerName) {
   var stats = _sellerStats[sellerId] || null
   var reviews = []
   var myRating = null
+  // Ratings now require a recorded contact with this seller. Check up front so
+  // the form explains why it is unavailable, rather than letting the user write
+  // a review and only then have RLS reject the insert.
+  var hasContacted = false
+  if (state.currentUser) {
+    try {
+      var cres = await state._sb.from('listing_contacts')
+        .select('id').eq('buyer_id', state.currentUser.id).eq('seller_id', sellerId).limit(1)
+      hasContacted = !!(cres.data && cres.data.length)
+    } catch(e) { /* table may predate the migration — fall through to allowing it */ }
+  }
   try {
     var rres = await state._sb.from('seller_ratings')
       .select('id,rater_id,stars,review,created_at')
@@ -267,10 +295,11 @@ export async function openSellerSheet(sellerId, sellerName) {
         '<div style="margin-top:3px">'+sellerBadgeHtml(sellerId)+'</div>'+
       '</div>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">'+
-      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--gold)">'+(stats?stats.listing_count:0)+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Listings</div></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:16px">'+
+      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--gold)">'+(stats?(stats.sales_count||0):0)+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Sold</div></div>'+
+      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--gold)">'+(stats?stats.listing_count:0)+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Listed</div></div>'+
       '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--gold)">'+(stats?stats.rating_count:0)+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Ratings</div></div>'+
-      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:12px;font-weight:800;color:var(--gold);margin-top:4px">'+(since||'—')+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Since</div></div>'+
+      '<div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:11px;font-weight:800;color:var(--gold);margin-top:5px">'+(since||'—')+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Since</div></div>'+
     '</div>'
 
   var rateBox = ''
@@ -278,6 +307,12 @@ export async function openSellerSheet(sellerId, sellerName) {
     rateBox = '<div style="font-size:11px;color:var(--text3);padding:10px;background:var(--surface2);border-radius:10px;margin-bottom:14px">This is your seller profile — you can\'t rate yourself.</div>'
   } else if (!state.currentUser) {
     rateBox = '<div style="font-size:11px;color:var(--text3);padding:10px;background:var(--surface2);border-radius:10px;margin-bottom:14px">Sign in to rate this seller.</div>'
+  } else if (!hasContacted && !myRating) {
+    // The gate is the point: ratings from people who never dealt with the seller
+    // are what make a reputation score meaningless.
+    rateBox = '<div style="font-size:11px;color:var(--text3);padding:11px;background:var(--surface2);border-radius:10px;margin-bottom:14px;line-height:1.6">' +
+      '🔒 Only buyers who have contacted this seller can leave a rating. Tap <b>Contact</b> on one of their listings first.' +
+      '</div>'
   } else {
     rateBox =
       '<div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:16px">'+
@@ -421,7 +456,12 @@ export async function markListingSold(id, carName) {
     })
   } catch(e) { captureException(e) }
   try {
-    await state._sb.from('listings').update({is_active: false}).eq('id', id).eq('seller_id', state.currentUser.id)
+    // sold_at distinguishes a completed sale from a quiet delisting. Previously
+    // is_active=false meant both, so sales could not be counted — and seller
+    // standing is only meaningful if it counts sales rather than listings.
+    await state._sb.from('listings')
+      .update({ is_active: false, sold_at: new Date().toISOString() })
+      .eq('id', id).eq('seller_id', state.currentUser.id)
   } catch(e) { captureException(e) }
   showToast('Marked as sold — thanks for keeping prices accurate! 🎉', 'success')
   renderMyListings()

@@ -536,3 +536,164 @@ $$;
 
 revoke execute on function get_listing_contact(uuid) from anon;
 grant execute on function get_listing_contact(uuid) to authenticated;
+
+-- ── 18. Close RLS loopholes ────────────────────────────────────────────
+
+-- scan_logs was world-readable: `select using (true)` let any signed-in user
+-- read every other user's id and full scan timestamps. Insert was equally open,
+-- so scans could be attributed to someone else.
+drop policy if exists "scan_logs_select" on scan_logs;
+drop policy if exists "scan_logs_insert" on scan_logs;
+do $$ begin
+  create policy "scan_logs_select_own" on scan_logs
+    for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  -- user_id IS NULL is a guest scan, which nobody can later claim.
+  create policy "scan_logs_insert_own" on scan_logs
+    for insert with check (user_id is null or auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+-- referrals: `insert with check (true)` let anyone POST arbitrary rows and farm
+-- referral rewards. A referral may now only be recorded for yourself.
+drop policy if exists "referrals_insert" on referrals;
+do $$ begin
+  create policy "referrals_insert_self" on referrals
+    for insert with check (auth.uid() = referred_user_id);
+exception when duplicate_object then null; end $$;
+
+-- community_prices: this is the dataset the whole price guide depends on, so it
+-- is the most valuable thing to poison. Previously any authenticated user could
+-- submit unlimited prices for any car under any user_id — letting a seller
+-- inflate the "community verified" price on a casting they are about to list.
+-- Submissions are now attributable and rate limited.
+drop policy if exists "community_prices_insert" on community_prices;
+do $$ begin
+  create policy "community_prices_insert_own" on community_prices
+    for insert with check (
+      auth.uid() is not null
+      and auth.uid() = user_id
+      and (
+        select count(*) from community_prices c
+        where c.user_id = auth.uid()
+          and c.created_at > now() - interval '1 hour'
+      ) < 10
+    );
+exception when duplicate_object then null; end $$;
+
+-- events: anonymous inserts allowed unlimited spam into a moderation queue.
+drop policy if exists "events_insert" on events;
+do $$ begin
+  create policy "events_insert_auth" on events
+    for insert with check (auth.uid() is not null and auth.uid() = submitted_by);
+exception when duplicate_object then null; end $$;
+
+-- ── 19. Gate seller ratings behind a real interaction ──────────────────
+-- Ratings previously required nothing but an account: a competitor could sink a
+-- rival's score, and a seller could have friends inflate theirs. A rating now
+-- requires having actually requested that seller's contact details.
+
+create table if not exists listing_contacts (
+  id           uuid primary key default gen_random_uuid(),
+  listing_id   uuid references listings(id)     on delete cascade,
+  buyer_id     uuid references auth.users(id)   on delete cascade not null,
+  seller_id    uuid references auth.users(id)   on delete cascade not null,
+  contacted_at timestamptz not null default now(),
+  unique (buyer_id, listing_id)
+);
+alter table listing_contacts enable row level security;
+
+-- Buyers see their own contact history; sellers see who asked about their cars.
+do $$ begin
+  create policy "listing_contacts_select" on listing_contacts
+    for select using (auth.uid() = buyer_id or auth.uid() = seller_id);
+exception when duplicate_object then null; end $$;
+
+create index if not exists idx_listing_contacts_pair
+  on listing_contacts(buyer_id, seller_id);
+
+-- Rows are written only by get_listing_contact() below, never by the client.
+revoke insert, update, delete on listing_contacts from anon, authenticated;
+
+drop policy if exists "seller_ratings_insert" on seller_ratings;
+do $$ begin
+  create policy "seller_ratings_insert_after_contact" on seller_ratings
+    for insert with check (
+      auth.uid() = rater_id
+      and auth.uid() <> seller_id
+      and exists (
+        select 1 from listing_contacts lc
+        where lc.buyer_id  = auth.uid()
+          and lc.seller_id = seller_ratings.seller_id
+      )
+    );
+exception when duplicate_object then null; end $$;
+
+-- get_listing_contact now records the interaction as well as returning the
+-- number, which is what makes the rating gate above enforceable.
+create or replace function get_listing_contact(p_listing_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_phone  text;
+  v_seller uuid;
+begin
+  if auth.uid() is null then
+    return null;
+  end if;
+
+  select l.seller_phone, l.seller_id into v_phone, v_seller
+  from listings l
+  where l.id = p_listing_id and l.is_active = true;
+
+  if v_seller is null or v_seller = auth.uid() then
+    return v_phone;   -- own listing, or nothing found
+  end if;
+
+  insert into listing_contacts (listing_id, buyer_id, seller_id)
+  values (p_listing_id, auth.uid(), v_seller)
+  on conflict (buyer_id, listing_id) do nothing;
+
+  return v_phone;
+end;
+$$;
+
+revoke execute on function get_listing_contact(uuid) from anon;
+grant execute on function get_listing_contact(uuid) to authenticated;
+
+-- ── 20. Earned seller standing ─────────────────────────────────────────
+-- Seller status is accrued from activity, never self-declared: a badge a user
+-- can tick is worth nothing as a trust signal, which is the whole problem with
+-- a "I am a seller" profile toggle.
+
+-- markListingSold() only set is_active = false, which is indistinguishable from
+-- quietly delisting. Completed sales need their own marker to be countable.
+alter table listings add column if not exists sold_at timestamptz;
+
+drop view if exists seller_stats;
+create view seller_stats as
+  select
+    l.seller_id,
+    max(l.seller_name)                                       as seller_name,
+    count(distinct l.id) filter (where l.is_active)          as listing_count,
+    count(distinct l.id) filter (where l.sold_at is not null) as sales_count,
+    min(l.listed_at)                                         as selling_since,
+    coalesce(round(avg(r.stars)::numeric, 1), 0)             as avg_stars,
+    count(distinct r.id)                                     as rating_count,
+    -- Verified Seller is earned, and every input costs something to fake:
+    -- completed sales, ratings from buyers who actually made contact, and a
+    -- score high enough that the ratings are good rather than merely present.
+    (
+      count(distinct l.id) filter (where l.sold_at is not null) >= 3
+      and count(distinct r.id) >= 3
+      and coalesce(avg(r.stars), 0) >= 4.0
+    )                                                        as is_verified_seller
+  from listings l
+  left join seller_ratings r on r.seller_id = l.seller_id
+  group by l.seller_id;
+
+alter view seller_stats set (security_invoker = on);
+grant select on seller_stats to anon, authenticated;

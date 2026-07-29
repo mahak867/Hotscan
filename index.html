@@ -478,24 +478,10 @@
 
   <!-- Swap Meet / Events -->
   <div class="card" style="margin-top:4px"><div class="card-title">📍 Upcoming Collector Events</div></div>
-  <div id="events-list">
-    <div class="event-item">
-      <div class="event-date"><div class="event-day">15</div><div class="event-mon">Jun</div></div>
-      <div><div class="event-name">Mumbai Die-Cast Swap Meet</div><div class="event-loc">📍 Bandra Kurla Complex, Mumbai</div><div class="event-tag">Swap Meet</div></div>
-    </div>
-    <div class="event-item">
-      <div class="event-date"><div class="event-day">22</div><div class="event-mon">Jun</div></div>
-      <div><div class="event-name">Delhi Collector Meet</div><div class="event-loc">📍 Select Citywalk, Saket, Delhi</div><div class="event-tag">Collector Meet</div></div>
-    </div>
-    <div class="event-item">
-      <div class="event-date"><div class="event-day">29</div><div class="event-mon">Jun</div></div>
-      <div><div class="event-name">Bangalore Die-Cast Show</div><div class="event-loc">📍 UB City Mall, Bangalore</div><div class="event-tag">Show & Sale</div></div>
-    </div>
-    <div class="event-item">
-      <div class="event-date"><div class="event-day">6</div><div class="event-mon">Jul</div></div>
-      <div><div class="event-name">Chennai Hot Wheels Meetup</div><div class="event-loc">📍 Phoenix Marketcity, Chennai</div><div class="event-tag">Swap Meet</div></div>
-    </div>
-  </div>
+  <!-- Populated from the approved events table by renderEvents(). Previously
+       four hardcoded entries that went stale months ago, while user submissions
+       were written to the database and never read back. -->
+  <div id="events-list"></div>
   <div class="card" style="margin-top:8px"><div class="card-title">📣 Submit Your Event</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Organising a collector meet? Let the community know!</div>
     <input class="inp" type="text" id="event-name-inp" placeholder="Event name">
@@ -638,6 +624,10 @@
   <div class="more-sec"><div class="more-sec-t">Settings</div>
     <div class="more-item" onclick="showKeySetup()"><div class="more-ic">🔑</div><div><div class="more-t">Groq API Key</div><div class="more-s">Update your free AI key</div></div><div class="more-arr">›</div></div>
   </div>
+  <div class="more-sec"><div class="more-sec-t">Collector Tools</div>
+    <div class="more-item" onclick="goPage('hunt')"><div class="more-ic">🎯</div><div><div class="more-t">Hunt Mode</div><div class="more-s">Series checklists · track what you're still missing</div></div><div class="more-arr">›</div></div>
+    <div class="more-item" onclick="goPage('alerts')"><div class="more-ic">🔔</div><div><div class="more-t">Deal Alerts</div><div class="more-s">Your watchlist of cars to look out for</div></div><div class="more-arr">›</div></div>
+  </div>
   <div class="more-sec"><div class="more-sec-t">Buy Hot Wheels in India</div>
     <div class="more-item" onclick="ol('https://www.amazon.in/s?k=hot+wheels')"><div class="more-ic">📦</div><div><div class="more-t">Amazon India</div><div class="more-s">Official store · Fast delivery</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('https://www.flipkart.com/search?q=hot+wheels')"><div class="more-ic">🛒</div><div><div class="more-t">Flipkart</div><div class="more-s">Great deals</div></div><div class="more-arr">›</div></div>
@@ -648,8 +638,11 @@
     <div class="rg">
       <div class="rg-row"><div class="rg-badge rc" style="background:#1e1e1e;color:#666">Common</div><div class="rg-info">RS150-200 retail RS200-350 collector - Plastic wheels</div></div><div class="rg-row"><div class="rg-badge ru" style="background:#0a1a0a;color:#2dc653">Uncommon</div><div class="rg-info">RS200-350 retail RS350-600 collector</div></div><div class="rg-row"><div class="rg-badge rr" style="background:#0a0a1a;color:#4cc9f0">Rare</div><div class="rg-info">RS300-500 retail RS600-1500 collector - Limited run</div></div><div class="rg-row"><div class="rg-badge" style="background:#0a0a1a;color:#4cc9f0;border:1px solid #4cc9f0">Premium</div><div class="rg-info">RS800-1500 retail RS1500-3500 collector - Real Riders Car Culture</div></div><div class="rg-row"><div class="rg-badge rt" style="background:#1a1000;color:#ffd60a">Treasure Hunt</div><div class="rg-info">RS500-800 retail RS1200-3500 collector - TH flame logo</div></div><div class="rg-row"><div class="rg-badge rs">Super TH</div><div class="rg-info">RS700-1000 retail RS4000-15000 collector - Real Riders Spectraflame</div></div><div class="rg-row"><div class="rg-badge" style="background:#1a0a1a;color:#c084fc;border:1px solid #c084fc">Vintage</div><div class="rg-info">RS500-2000 retail RS1000-8000 collector - Pre-1977 Redline</div></div></div>
     </div>
-  </div>
-  <div class="more-sec" style="display:none"><div class="more-sec-t">About</div>
+  <!-- NOTE: the Rarity Guide rows above already close their own wrapper, so this
+       section needs no further closing tag before About. One extra used to sit
+       here and it closed page-more early, pushing the whole About block (support,
+       privacy policy, terms, CSV export) outside the page and out of reach. -->
+  <div class="more-sec"><div class="more-sec-t">About</div>
     <div class="more-item" onclick="whatsappSupport()"><div class="more-ic">💬</div><div><div class="more-t">Contact Support</div><div class="more-s">Email us directly for help</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('https://github.com/mahak867/Hotscan')"><div class="more-ic">⭐</div><div><div class="more-t">Star on GitHub</div><div class="more-s">Open source · Free forever</div></div><div class="more-arr">›</div></div>
     <div class="more-item" onclick="ol('/privacy.html')"><div class="more-ic">🔒</div><div><div class="more-t">Privacy Policy</div><div class="more-s">How we handle your data</div></div><div class="more-arr">›</div></div>

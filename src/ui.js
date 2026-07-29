@@ -797,6 +797,50 @@ export function submitEvent() {
   showToast('Event submitted! We\'ll review and list it ✅', 'success')
 }
 
+// Renders approved, still-upcoming events from the database.
+//
+// The events list used to be four entries hardcoded in index.html, which went
+// stale months ago — a live product advertising meets that already happened
+// reads as abandoned. Meanwhile submitEvent() wrote user submissions to the
+// events table that nothing ever read, so the loop was open at both ends.
+export async function renderEvents() {
+  var wrap = document.getElementById('events-list')
+  if (!wrap) return
+  var rows = []
+  if (state._sb) {
+    try {
+      // The RLS policy already limits this to approved events (or your own),
+      // so approval stays a deliberate moderation step rather than automatic.
+      var today = new Date().toISOString().slice(0, 10)
+      var res = await state._sb.from('events')
+        .select('name,location,date')
+        .gte('date', today)
+        .order('date', { ascending: true })
+        .limit(12)
+      if (!res.error && res.data) rows = res.data
+    } catch(e) { /* empty state below is a fine fallback */ }
+  }
+  if (!rows.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:22px 16px;color:var(--text3)">' +
+      '<div style="font-size:26px;margin-bottom:8px">📍</div>' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:4px">No upcoming meets listed</div>' +
+      '<div style="font-size:11.5px;line-height:1.6">Know one? Submit it below and we\'ll list it for every collector.</div>' +
+      '</div>'
+    return
+  }
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  wrap.innerHTML = rows.map(function(e) {
+    var d = new Date(e.date)
+    var day = isNaN(d) ? '?' : d.getDate()
+    var mon = isNaN(d) ? '' : months[d.getMonth()]
+    return '<div class="event-item">' +
+             '<div class="event-date"><div class="event-day">' + day + '</div><div class="event-mon">' + mon + '</div></div>' +
+             '<div><div class="event-name">' + escHtml(e.name || '') + '</div>' +
+             '<div class="event-loc">📍 ' + escHtml(e.location || '') + '</div></div>' +
+           '</div>'
+  }).join('')
+}
+
 // ── Hunt ──
 export function selectSeries(series, el) {
   state.currentSeries = series
