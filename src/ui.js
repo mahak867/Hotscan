@@ -203,7 +203,12 @@ export async function handleMultiFiles(files) {
     var raw = await new Promise(function(resolve) {
       var rd = new FileReader(); rd.onload = function(e){resolve(e.target.result)}; rd.readAsDataURL(file)
     })
-    var compressed = await compress(raw, 1024)
+    // 768 rather than the 1024 a single scan uses. Vision tokens scale with
+    // area, so this is ~44% cheaper per image — the difference between a
+    // five-photo batch fitting inside the 8,000 tokens-per-minute ceiling and
+    // being rejected outright. Still ample for reading casting shape, colour,
+    // wheel type and tampo.
+    var compressed = await compress(raw, 768)
     var thumb = await compressThumb(raw)
     state.multiImages.push({img64: compressed, thumb: thumb})
     var thumbEl = document.createElement('div')

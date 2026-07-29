@@ -625,6 +625,16 @@ export function isRateLimitError(e) {
          m.indexOf('AI is busy') > -1
 }
 
+// A 413 means this single request exceeded the per-minute token ceiling, so it
+// can never succeed as-is — unlike a 429, waiting does not help. Splitting the
+// batch is the only thing that does.
+export function isTooLargeError(e) {
+  if (!e) return false
+  if (e.tooLarge) return true
+  var m = e.message || ''
+  return m.indexOf('Request too large') > -1 || m.indexOf('reduce your message size') > -1
+}
+
 // Accepts one data URL (single scan) or an array of them (batch scan).
 //
 // Batching is what keeps multi-photo scans under the rate limit. Every call
@@ -750,9 +760,13 @@ export async function identifyMultipleCars(imageData) {
         body: JSON.stringify({
           model: model,
           messages: [{role:'system',content:sys},{role:'user',content:_visionContent(parts, usr, multi)}],
-          // Room for one car set per photo — a five-photo batch can legitimately
-          // return several times the JSON a single photo does.
-          temperature: 0.1, max_tokens: Math.min(6000, 2500 + (images.length - 1) * 700)
+          // max_tokens is RESERVED against the tokens-per-minute limit, not
+          // billed on what the model actually returns. Scaling it with batch
+          // size therefore made requests fail: a five-photo batch reserved 5,300
+          // tokens on top of ~7,000 of prompt and images, giving a 12,350-token
+          // request against an 8,000 TPM ceiling — a hard 413 no retry can fix.
+          // A flat, modest ceiling is enough for the JSON even at five photos.
+          temperature: 0.1, max_tokens: 2000
         })
       })
     } catch (e) {
@@ -773,6 +787,11 @@ export async function identifyMultipleCars(imageData) {
         rlErr.rateLimited = true
         if (wait > 0) rlErr.retryAfter = wait
         throw rlErr
+      }
+      if (res.status === 413) {
+        var big = new Error((e.error && e.error.message) || 'Request too large')
+        big.tooLarge = true
+        throw big
       }
       if (res.status === 400 || res.status === 404) { var err = new Error((e.error&&e.error.message)||'Model not available'); err.modelError = true; throw err }
       throw new Error((e.error&&e.error.message)||'Vision error '+res.status)
@@ -812,10 +831,40 @@ export async function analyzeMultiPhoto() {
     // pays the prompt once (~6,000 tokens for five photos) and is one request
     // instead of five, which is what actually keeps this under the limit.
     window.startTimer('Scanning ' + _imgs.length + ' photos...')
+
+    // Halve a batch the model rejects as too large, and scan each half. A 413
+    // is about this one request exceeding the per-minute token ceiling, so
+    // unlike a 429 it can never succeed by waiting — splitting is the only
+    // remedy. Each half still draws on the same per-minute budget, hence the
+    // pause between them.
+    async function scanBatch(entries, depth) {
+      var out = []
+      try {
+        var r = await identifyMultipleCars(entries.map(function(e){ return e.img64 }))
+        ;((r && r.cars) || []).forEach(function(c) {
+          // image_index is 1-based and model-supplied, so treat it as untrusted.
+          var i = (parseInt(c.image_index, 10) || 1) - 1
+          if (!(i >= 0 && i < entries.length)) i = 0
+          c._sourceImage = entries[i] && entries[i].thumb
+          out.push(c)
+        })
+        return out
+      } catch(e) {
+        if (isTooLargeError(e) && entries.length > 1 && depth < 3) {
+          var mid = Math.ceil(entries.length / 2)
+          var first = await scanBatch(entries.slice(0, mid), depth + 1)
+          await new Promise(function(r){ setTimeout(r, 2500) })
+          var second = await scanBatch(entries.slice(mid), depth + 1)
+          return first.concat(second)
+        }
+        throw e
+      }
+    }
+
     var batched = null
     var batchErr = null
     try {
-      batched = await identifyMultipleCars(_imgs.map(function(m){ return m.img64 }))
+      batched = await scanBatch(_imgs, 0)
     } catch(e) {
       // A drained pool will drain again on the very next call, so falling back
       // to per-photo requests here would guarantee N more failures and make the
@@ -824,14 +873,8 @@ export async function analyzeMultiPhoto() {
       batchErr = e
     }
 
-    if (batched && batched.cars) {
-      batched.cars.forEach(function(c) {
-        // image_index is 1-based and model-supplied, so treat it as untrusted.
-        var srcIdx = (parseInt(c.image_index, 10) || 0) - 1
-        if (!(srcIdx >= 0 && srcIdx < _imgs.length)) srcIdx = 0
-        c._sourceImage = _imgs[srcIdx] && _imgs[srcIdx].thumb
-        allCars.push(c)
-      })
+    if (batched) {
+      batched.forEach(function(c){ allCars.push(c) })
     } else if (batchErr) {
       // Not a rate limit — the batch shape itself failed (bad JSON, model
       // hiccup). Fall back to the old per-photo path so one awkward photo
