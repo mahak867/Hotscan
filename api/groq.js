@@ -233,11 +233,14 @@ async function handleRequest(req) {
 
     const data = await groqRes.text()
     if (!groqRes.ok && groqRes.status === 429) {
-      // All keys exhausted
+      // All keys exhausted. Pass Groq's own Retry-After through so the client
+      // waits the amount the upstream actually asks for instead of guessing —
+      // guessing short is what turns one rate limit into a retry storm.
+      const retryAfter = groqRes.headers.get('retry-after') || '60'
       return json(
         { error: 'All shared AI keys are rate-limited right now. Add your own free key at console.groq.com, or try again in a minute.' },
         429,
-        cors
+        { ...cors, 'Retry-After': retryAfter }
       )
     }
     if (!groqRes.ok) {

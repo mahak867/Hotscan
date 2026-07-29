@@ -601,9 +601,44 @@ export async function scanBarcode() {
   }
 }
 
+// Builds the multimodal user message. Each image is preceded by a PHOTO label
+// so the model can attribute cars back to the photo they came from.
+function _visionContent(parts, usr, multi) {
+  var content = []
+  parts.forEach(function(p, i) {
+    if (multi) content.push({type:'text', text:'PHOTO ' + (i+1) + ':'})
+    content.push({type:'image_url', image_url:{url:'data:'+p.mime+';base64,'+p.b64}})
+  })
+  content.push({type:'text', text:usr})
+  return content
+}
+
+// True when a failure is the shared key pool being exhausted rather than a bad
+// image or a broken model — the two need very different handling and very
+// different messages to the user.
+export function isRateLimitError(e) {
+  if (!e) return false
+  if (e.rateLimited) return true
+  var m = e.message || ''
+  return m.indexOf('rate-limited') > -1 || m.indexOf('Rate limit') > -1 ||
+         m.indexOf('rate limit') > -1 || m.indexOf('Too many') > -1 ||
+         m.indexOf('AI is busy') > -1
+}
+
+// Accepts one data URL (single scan) or an array of them (batch scan).
+//
+// Batching is what keeps multi-photo scans under the rate limit. Every call
+// re-sends the ~1,000-token system prompt, so five separate photo calls cost
+// roughly 10,500 tokens against the vision model's 8,000 tokens-per-minute
+// ceiling — which drained the whole shared key pool and 429'd every photo.
+// One call carrying five images pays the prompt once and lands near 6,000,
+// under the ceiling, as one request instead of five.
 export async function identifyMultipleCars(imageData) {
-  var b64 = imageData.split(',')[1]
-  var mime = imageData.split(';')[0].split(':')[1]
+  var images = Array.isArray(imageData) ? imageData : [imageData]
+  var multi = images.length > 1
+  var parts = images.map(function(d) {
+    return { b64: d.split(',')[1], mime: d.split(';')[0].split(':')[1] }
+  })
 
   var sys = [
     'You are a Hot Wheels multi-car identification expert.',
@@ -650,18 +685,28 @@ export async function identifyMultipleCars(imageData) {
     'TH: india_retail_inr=500-800 india_collector_inr=1200-3500',
     'STH: india_retail_inr=700-1000 india_collector_inr=4000-15000',
     'Vintage: india_retail_inr=500-3000 india_collector_inr=2000-20000'
-  ].join('\n')
+  ].concat(multi ? [
+    '',
+    'MULTIPLE PHOTOS — the user sent ' + images.length + ' separate photos, labelled PHOTO 1 through PHOTO ' + images.length + '.',
+    'Treat each photo independently and identify the cars in every one of them.',
+    'A photo containing no Hot Wheels car simply contributes no entries — that does NOT make the whole set invalid.',
+    'Every car entry MUST carry "image_index": the 1-based number of the PHOTO it came from.',
+    'Set is_hot_wheels to false ONLY if none of the photos contain any Hot Wheels car.'
+  ] : []).join('\n')
 
   var usr = [
-    'Examine this image carefully.',
+    multi ? 'Examine all ' + images.length + ' photos carefully, one at a time.' : 'Examine this image carefully.',
     'STEP 1: Are there any Mattel Hot Wheels die-cast cars? If not, return {"total_cars_found":0,"is_hot_wheels":false,"scan_notes":"describe what you see","cars":[]}.',
-    'STEP 2: Count and identify each Hot Wheels car you can CLEARLY see. Do not include partially visible or unidentifiable objects.',
+    multi
+      ? 'STEP 2: Go through PHOTO 1 to PHOTO ' + images.length + ' in order and identify every Hot Wheels car you can CLEARLY see in each. Do not include partially visible or unidentifiable objects.'
+      : 'STEP 2: Count and identify each Hot Wheels car you can CLEARLY see. Do not include partially visible or unidentifiable objects.',
     'Only describe what you can actually observe — do not invent details.',
     'Return ONLY valid JSON:',
     '{"total_cars_found":N,"is_hot_wheels":true,',
     '"scan_notes":"brief note about image quality and cars visible",',
     '"cars":[{',
     '"car_number":1,',
+    multi ? '"image_index":1,' : '',
     '"name":"EXACT model name or Unknown casting if unsure",',
     '"series":"series name and year or Unknown",',
     '"casting_year":"year first made or Unknown",',
@@ -704,8 +749,10 @@ export async function identifyMultipleCars(imageData) {
         method: 'POST', headers: hdrs2, signal: ctrl2.signal,
         body: JSON.stringify({
           model: model,
-          messages: [{role:'system',content:sys},{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:usr}]}],
-          temperature: 0.1, max_tokens: 2500
+          messages: [{role:'system',content:sys},{role:'user',content:_visionContent(parts, usr, multi)}],
+          // Room for one car set per photo — a five-photo batch can legitimately
+          // return several times the JSON a single photo does.
+          temperature: 0.1, max_tokens: Math.min(6000, 2500 + (images.length - 1) * 700)
         })
       })
     } catch (e) {
@@ -717,7 +764,16 @@ export async function identifyMultipleCars(imageData) {
     if (!res.ok) {
       var e = await res.json().catch(function(){return{}})
       if (res.status === 401) throw new Error('Invalid API key')
-      if (res.status === 429) throw new Error('AI is busy right now 🔄 — wait 30 seconds and try again')
+      if (res.status === 429) {
+        // Prefer the server's own wording (it distinguishes "your personal
+        // limit" from "the shared pool is drained") and carry Retry-After
+        // through so the caller can wait the right amount rather than guess.
+        var wait = parseInt(res.headers.get('retry-after') || '', 10)
+        var rlErr = new Error(e.error || 'AI is busy right now 🔄 — wait 30 seconds and try again')
+        rlErr.rateLimited = true
+        if (wait > 0) rlErr.retryAfter = wait
+        throw rlErr
+      }
       if (res.status === 400 || res.status === 404) { var err = new Error((e.error&&e.error.message)||'Model not available'); err.modelError = true; throw err }
       throw new Error((e.error&&e.error.message)||'Vision error '+res.status)
     }
@@ -745,38 +801,60 @@ export async function analyzeMultiPhoto() {
 
   var allCars = []
   var failedCount = 0
+  var failMsg = ''
   try {
     var _imgs = state.multiImages
-    var _results = []
-    // Sequential, not parallel — this is the actual fix, not the earlier
-    // stagger. qwen/qwen3.6-27b's real limit is 8,000 TOKENS per minute
-    // (confirmed via the Groq dashboard), not just request count — each
-    // vision call here runs somewhere around 1,200-2,800 tokens between the
-    // system prompt, the image, and the JSON response. Firing several at
-    // once (even spaced a few hundred ms apart) still lands them all in the
-    // same rolling 60s window and blows past that ceiling. Only real
-    // elapsed time between requests actually helps, so this waits for each
-    // photo to fully finish — plus a fixed pause — before starting the next.
-    for (var idx = 0; idx < _imgs.length; idx++) {
-      window.startTimer('Scanning photo ' + (idx+1) + ' of ' + _imgs.length + '...')
-      try {
-        var r = await identifyMultipleCars(_imgs[idx].img64)
-        _results.push(r)
-      } catch(e) {
-        failedCount++
-        // Distinguish "this call actually failed" (rate limit, network, bad
-        // model response) from "the AI looked and found no Hot Wheels car" —
-        // the old catch treated both identically, so a rate-limited photo
-        // silently vanished with zero indication anything went wrong,
-        // indistinguishable from a genuinely car-less photo like a
-        // landscape shot.
-        _results.push({cars:[], total_cars_found:0, is_hot_wheels:false, _failed:true, _errorMsg: e && e.message})
-      }
-      if (idx < _imgs.length - 1) await new Promise(function(r){ setTimeout(r, 1200) })
+    // ONE call for the whole batch. The previous approach sent one request per
+    // photo, sequentially with a 1.2s pause. That was still ~10,500 tokens for
+    // five photos against an 8,000 tokens-per-minute ceiling, because each
+    // request re-paid the full system prompt — so the shared key pool drained
+    // and every photo came back 429. Sending all the images in a single request
+    // pays the prompt once (~6,000 tokens for five photos) and is one request
+    // instead of five, which is what actually keeps this under the limit.
+    window.startTimer('Scanning ' + _imgs.length + ' photos...')
+    var batched = null
+    var batchErr = null
+    try {
+      batched = await identifyMultipleCars(_imgs.map(function(m){ return m.img64 }))
+    } catch(e) {
+      // A drained pool will drain again on the very next call, so falling back
+      // to per-photo requests here would guarantee N more failures and make the
+      // shortage worse. Surface it instead.
+      if (isRateLimitError(e)) throw e
+      batchErr = e
     }
-    for (var i = 0; i < _results.length; i++) {
-      var result = _results[i]
-      if (result && result.cars) result.cars.forEach(function(c){ c._sourceImage = _imgs[i]&&_imgs[i].thumb; allCars.push(c) })
+
+    if (batched && batched.cars) {
+      batched.cars.forEach(function(c) {
+        // image_index is 1-based and model-supplied, so treat it as untrusted.
+        var srcIdx = (parseInt(c.image_index, 10) || 0) - 1
+        if (!(srcIdx >= 0 && srcIdx < _imgs.length)) srcIdx = 0
+        c._sourceImage = _imgs[srcIdx] && _imgs[srcIdx].thumb
+        allCars.push(c)
+      })
+    } else if (batchErr) {
+      // Not a rate limit — the batch shape itself failed (bad JSON, model
+      // hiccup). Fall back to the old per-photo path so one awkward photo
+      // can't cost the user the whole scan.
+      var _results = []
+      for (var idx = 0; idx < _imgs.length; idx++) {
+        window.startTimer('Scanning photo ' + (idx+1) + ' of ' + _imgs.length + '...')
+        try {
+          _results.push(await identifyMultipleCars(_imgs[idx].img64))
+        } catch(e2) {
+          failedCount++
+          if (!failMsg) failMsg = e2 && e2.message
+          // Stop the moment the pool goes: the remaining photos cannot succeed
+          // and each attempt digs the hole deeper.
+          if (isRateLimitError(e2)) { failedCount = _imgs.length - idx; break }
+          _results.push({cars:[], total_cars_found:0, is_hot_wheels:false, _failed:true, _errorMsg: e2 && e2.message})
+        }
+        if (idx < _imgs.length - 1) await new Promise(function(r){ setTimeout(r, 1200) })
+      }
+      for (var i = 0; i < _results.length; i++) {
+        var result = _results[i]
+        if (result && result.cars) result.cars.forEach(function(c){ c._sourceImage = _imgs[i]&&_imgs[i].thumb; allCars.push(c) })
+      }
     }
     window.setStep(2, 'active')
     document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Fetching prices for ' + allCars.length + ' cars...')
@@ -791,21 +869,32 @@ export async function analyzeMultiPhoto() {
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()
     window.incScans()
-    showMultiResults(allCars, failedCount)
+    showMultiResults(allCars, failedCount, failMsg)
   } catch(err) {
     window.stopTimer(); window.setStep(1, 'err')
     var eb2 = document.getElementById('err-box')
-    eb2.textContent = '⚠️ ' + (err.message || '')
+    // Say what actually went wrong. "Try again" is the wrong advice for a rate
+    // limit — retrying immediately is what keeps the pool drained.
+    eb2.textContent = '⚠️ ' + (err.message || 'Scan failed — try again')
     eb2.style.display = 'block'
+    window.showToast(err.message || 'Scan failed — try again', 'error')
   } finally {
     btn.disabled = false; btn.textContent = '🔎 Identify All Cars (' + state.multiImages.length + ' photos)'
     document.getElementById('pipeline').style.display = 'none'
   }
 }
 
-export function showMultiResults(cars, failedCount) {
+export function showMultiResults(cars, failedCount, failMsg) {
   if (!cars || cars.length === 0) {
-    window.showToast(failedCount > 0 ? failedCount + ' photo(s) failed to process — try again' : 'No Hot Wheels cars identified in these images', 'error')
+    // failMsg is the real reason the call failed. It used to be collected and
+    // then dropped here, leaving users with "try again" for a rate limit —
+    // advice that makes the problem worse.
+    window.showToast(
+      failedCount > 0
+        ? (failMsg || failedCount + ' photo(s) failed to process — try again')
+        : 'No Hot Wheels cars identified in these images',
+      'error'
+    )
     return
   }
   var resultEl = document.getElementById('result')
