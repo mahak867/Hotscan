@@ -211,21 +211,79 @@ export async function handleMultiFiles(files) {
     var compressed = await compress(raw, 768)
     var thumb = await compressThumb(raw)
     state.multiImages.push({img64: compressed, thumb: thumb})
-    var thumbEl = document.createElement('div')
-    thumbEl.style.cssText = 'width:60px;height:60px;border-radius:8px;overflow:hidden;border:2px solid var(--border2);position:relative'
-    var img = document.createElement('img'); img.src = thumb; img.style.cssText = 'width:100%;height:100%;object-fit:cover'
-    thumbEl.appendChild(img)
-    document.getElementById('multi-thumbs').appendChild(thumbEl)
   }
 
-  document.getElementById('multi-count').textContent = state.multiImages.length + ' image' + (state.multiImages.length===1?'':'s') + ' selected — AI will identify all cars'
-  document.getElementById('analyze-btn').style.display = 'block'
-  document.getElementById('analyze-btn').textContent = '🔎 Identify All Cars (' + state.multiImages.length + ' photos)'
+  renderMultiThumbs()
   document.getElementById('result').style.display = 'none'
   document.getElementById('err-box').style.display = 'none'
+}
 
-  state.img64 = state.multiImages[0].img64
-  state.imgThumb = state.multiImages[0].thumb
+// Rebuilt from state on every change rather than appended to, so removing a
+// photo cannot leave the thumbnails and state.multiImages disagreeing about
+// which index is which — that mismatch would attach the wrong photo to a car.
+export function renderMultiThumbs() {
+  var wrap = document.getElementById('multi-thumbs')
+  if (!wrap) return
+  wrap.innerHTML = ''
+  state.multiImages.forEach(function(m, i) {
+    var cell = document.createElement('div')
+    cell.style.cssText = 'width:60px;height:60px;border-radius:8px;overflow:hidden;border:2px solid var(--border2);position:relative'
+    var img = document.createElement('img')
+    img.src = m.thumb
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover'
+    cell.appendChild(img)
+
+    var x = document.createElement('button')
+    x.type = 'button'
+    x.textContent = '✕'
+    x.title = 'Remove this photo'
+    x.setAttribute('aria-label', 'Remove photo ' + (i+1))
+    // Always visible, not hover-revealed: this is a phone-first flow and touch
+    // has no hover state to reveal it with.
+    x.style.cssText = 'position:absolute;top:1px;right:1px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0'
+    x.onclick = (function(idx){ return function(ev){ ev.stopPropagation(); removeMultiImage(idx) } })(i)
+    cell.appendChild(x)
+    wrap.appendChild(cell)
+  })
+
+  var n = state.multiImages.length
+  var countEl = document.getElementById('multi-count')
+  if (countEl) countEl.textContent = n + ' image' + (n===1?'':'s') + ' selected — AI will identify all cars'
+  var btn = document.getElementById('analyze-btn')
+  if (btn) {
+    btn.style.display = 'block'
+    // One photo left is a single scan, not a batch — say so rather than
+    // offering to "identify all cars" in one picture.
+    btn.textContent = n === 1
+      ? '🔎 Identify & Get Live Prices'
+      : '🔎 Identify All Cars (' + n + ' photos)'
+  }
+  // The rest of the app reads img64/imgThumb for the "current" photo, so it
+  // must always track the first remaining image.
+  if (n) {
+    state.img64 = state.multiImages[0].img64
+    state.imgThumb = state.multiImages[0].thumb
+  }
+}
+
+export function removeMultiImage(i) {
+  if (i < 0 || i >= state.multiImages.length) return
+  state.multiImages.splice(i, 1)
+  if (!state.multiImages.length) {
+    // Last photo removed — return the scanner to its empty state instead of
+    // leaving an "0 images selected" panel with a dead Identify button.
+    state.img64 = null
+    state.imgThumb = null
+    var prev = document.getElementById('multi-preview'); if (prev) prev.style.display = 'none'
+    var thumbs = document.getElementById('multi-thumbs'); if (thumbs) thumbs.innerHTML = ''
+    var cnt = document.getElementById('multi-count'); if (cnt) cnt.textContent = '0 images selected'
+    var ph = document.getElementById('scan-ph'); if (ph) ph.style.display = ''
+    var area = document.getElementById('scan-area'); if (area) area.classList.remove('has-img')
+    var btn2 = document.getElementById('analyze-btn'); if (btn2) btn2.style.display = 'none'
+    showToast('All photos removed', 'info')
+    return
+  }
+  renderMultiThumbs()
 }
 
 // ── Timer/pipeline ──

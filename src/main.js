@@ -202,12 +202,17 @@ document.addEventListener('DOMContentLoaded', function () {
   if (fcFake) fcFake.addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0], 'fake') })
   if (fgFake) fgFake.addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0], 'fake') })
   if (fgMulti) fgMulti.addEventListener('change', function (e) {
-    if (e.target.files && e.target.files.length === 1) {
+    // Copy the list, then clear the input. Without the reset, picking the same
+    // files again fires no change event — so a user who removed a photo by
+    // mistake could not re-add it without reloading the page.
+    var files = Array.prototype.slice.call(e.target.files || [])
+    e.target.value = ''
+    if (files.length === 1) {
       state.multiImages = []
       var mp = document.getElementById('multi-preview'); if(mp) mp.style.display = 'none'
-      handleFile(e.target.files[0], 'photo')
-    } else if (e.target.files && e.target.files.length > 1) {
-      handleMultiFiles(e.target.files)
+      handleFile(files[0], 'photo')
+    } else if (files.length > 1) {
+      handleMultiFiles(files)
     }
   })
 

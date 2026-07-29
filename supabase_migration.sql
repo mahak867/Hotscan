@@ -429,7 +429,12 @@ grant select on seller_stats to anon, authenticated;
 -- public_listings must expose seller_id so the client can join reputation and
 -- open a seller profile. seller_id is an opaque uuid, not contact information -
 -- seller_phone stays excluded exactly as before.
-create or replace view public_listings as
+--
+-- Must DROP, not CREATE OR REPLACE: replace cannot insert a column in the
+-- middle of an existing view, it reads that as renaming seller_name to
+-- seller_id and fails with 42P16. Dropping a view touches no table data.
+drop view if exists public_listings;
+create view public_listings as
   select
     id, seller_id, seller_name, name, rarity, condition,
     price, city, notes, image_thumb, is_active, listed_at
