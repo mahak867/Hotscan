@@ -479,3 +479,60 @@ do $$ begin
       and auth.uid()::text = (storage.foldername(name))[1]
     );
 exception when duplicate_object then null; end $$;
+
+-- ── 16. Remove SECURITY DEFINER from the marketplace views ─────────────
+-- Supabase's linter flags public_listings and seller_stats as CRITICAL: a view
+-- without security_invoker runs with its creator's rights and bypasses RLS on
+-- the tables underneath.
+--
+-- Simply flipping the flag would break both views, because listings only has an
+-- own-rows SELECT policy — anonymous visitors would see an empty marketplace.
+-- The reason the views existed at all was that Postgres has no column-level
+-- RLS, so a view was used to hide seller_phone.
+--
+-- Postgres does, however, have column-level GRANTs. Rows are handled by RLS and
+-- columns by privileges, which together do the job honestly and let both views
+-- run as the caller.
+
+-- Rows: anyone may read an active listing.
+do $$ begin
+  create policy "listings_select_active" on listings
+    for select using (is_active = true);
+exception when duplicate_object then null; end $$;
+
+-- Columns: seller_phone is not selectable by anyone, through the view or by
+-- querying the table directly. Buyers get it via get_listing_contact() below.
+revoke select on listings from anon, authenticated;
+grant select (
+  id, seller_id, seller_name, name, rarity, condition,
+  price, city, notes, image_thumb, is_active, listed_at
+) on listings to anon, authenticated;
+
+-- Both views now run with the caller's own permissions.
+alter view public_listings set (security_invoker = on);
+alter view seller_stats   set (security_invoker = on);
+
+-- ── 17. Contact-seller RPC ─────────────────────────────────────────────
+-- The client reads listing.seller_phone to build the WhatsApp link, but
+-- public_listings has never returned that column, so the Contact button has
+-- always failed with "Seller has not shared a contact number".
+--
+-- SECURITY DEFINER is correct here in a way it was not for the views: this is a
+-- narrow function that returns exactly one field, for one active listing, only
+-- to a signed-in caller. Requiring sign-in means phone numbers cannot be
+-- harvested anonymously.
+create or replace function get_listing_contact(p_listing_id uuid)
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select l.seller_phone
+  from listings l
+  where l.id = p_listing_id
+    and l.is_active = true
+    and auth.uid() is not null
+$$;
+
+revoke execute on function get_listing_contact(uuid) from anon;
+grant execute on function get_listing_contact(uuid) to authenticated;

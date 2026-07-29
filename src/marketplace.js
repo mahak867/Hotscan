@@ -171,10 +171,20 @@ export function renderListings(arr) {
     if (l.notes) { var noteEl = document.createElement('div'); noteEl.style.cssText = 'font-size:11px;color:var(--text2);margin-top:3px;white-space:pre-wrap'; noteEl.textContent = l.notes; info.appendChild(noteEl) }
     var acts = document.createElement('div'); acts.className = 'listing-acts'
     var waBtn = document.createElement('button'); waBtn.className = 'l-btn l-btn-wa'; waBtn.textContent = '💬 Contact'
-    waBtn.onclick = (function(listing) { return function() {
-      if (!listing.seller_phone) { showToast('Seller has not shared a contact number', 'error'); return }
+    waBtn.onclick = (function(listing) { return async function() {
+      // seller_phone is deliberately absent from public_listings, so reading it
+      // off the listing always failed — this button never worked. The number now
+      // comes from get_listing_contact(), which returns it only to a signed-in
+      // caller so phone numbers cannot be harvested anonymously.
+      if (!state.currentUser) { showToast('Sign in to contact the seller', 'error'); return }
+      var phone = null
+      try {
+        var r = await state._sb.rpc('get_listing_contact', { p_listing_id: listing.id })
+        if (!r.error) phone = r.data
+      } catch(e) { captureException(e) }
+      if (!phone) { showToast('Seller has not shared a contact number', 'error'); return }
       var msg = 'Hi! I saw your Hot Wheels listing on HotScan India.\nCar: ' + listing.name + '\nAsking price: ₹' + listing.price + '\nIs it still available?'
-      window.open('https://wa.me/91' + listing.seller_phone + '?text=' + encodeURIComponent(msg), '_blank')
+      window.open('https://wa.me/91' + String(phone).replace(/\D/g, '') + '?text=' + encodeURIComponent(msg), '_blank')
     }})(l)
     var shBtn = document.createElement('button'); shBtn.className = 'l-btn l-btn-share'; shBtn.textContent = '📤 Share'
     shBtn.onclick = (function(listing) { return function() {
