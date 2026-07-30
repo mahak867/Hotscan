@@ -110,6 +110,30 @@ async function handler(req) {
     const paymentId = payment.id
     const userId = payment.notes?.user_id
 
+    // Verify what was actually PAID, not just that Razorpay signed the event.
+    //
+    // The signature check above only proves the message came from Razorpay — it
+    // says nothing about the amount. src/auth.js builds the checkout options in
+    // the browser with no server-created order, so a user could open the console
+    // and launch Razorpay with amount:100 and notes.user_id set to any uuid, pay
+    // ₹1, and receive a genuinely signed payment.captured event. This handler
+    // would then have granted Pro — to them, or to any account they named.
+    //
+    // Amounts are in paise. This is the minimum viable check; the complete fix
+    // is a server-created order (see PRO_PRICE_PAISE usage note below) so that
+    // neither the amount nor the target user is ever client-supplied.
+    const PRO_PRICE_PAISE = 9900
+    if (payment.amount !== PRO_PRICE_PAISE || payment.currency !== 'INR' || payment.status !== 'captured') {
+      captureServerException(
+        new Error('Razorpay payment rejected: expected ' + PRO_PRICE_PAISE + ' INR captured, got ' +
+                  payment.amount + ' ' + payment.currency + ' ' + payment.status),
+        { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId, userId } }
+      )
+      // 200 so Razorpay stops retrying — the payment is real, it just does not
+      // entitle anyone to Pro. Refunds are handled out of band.
+      return new Response('Amount mismatch — not upgraded', { status: 200 })
+    }
+
     if (!userId) {
       console.error('No user_id in payment notes — payment:', paymentId)
       captureServerException(new Error('Razorpay payment captured with no user_id in notes'), { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId } })
