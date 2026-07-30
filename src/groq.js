@@ -1,6 +1,27 @@
 import { state } from './state.js'
 import { VISION_MODEL, VISION_FALLBACK, CODEX_MODEL, HAIKU_MODEL } from './config.js'
 
+// Headers for an AI call: the user's own Groq key when they have one, otherwise
+// their Supabase session token so /api/groq can identify them.
+//
+// This replaces two copies of a mangled expression that read
+// `{...}.valueOf().replace("}", ...)`. valueOf() returns the object, objects
+// have no .replace, so both threw a TypeError before the fetch ever happened —
+// every groqText/groqJSON call was broken for anyone not on a personal key. The
+// token it was reaching for, window._userToken, was never set anywhere either.
+export async function proxyHeaders() {
+  if (state.KEY) {
+    return { 'Authorization': 'Bearer ' + state.KEY, 'Content-Type': 'application/json' }
+  }
+  var h = { 'Content-Type': 'application/json' }
+  try {
+    var sess = await state._sb.auth.getSession()
+    var tok = sess && sess.data && sess.data.session && sess.data.session.access_token
+    if (tok) h['x-user-token'] = tok
+  } catch(e) { /* proxy will answer 401 and the caller surfaces it */ }
+  return h
+}
+
 export function parseJSON(raw) {
   if (!raw) throw new Error('No response from AI. Try again.')
   raw = raw.trim().replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim()
@@ -27,10 +48,8 @@ async function callVision(model, imageData, systemPrompt, userPrompt) {
     temperature: 0.02, max_tokens: 1400
   }
   var url     = state.KEY ? 'https://api.groq.com/openai/v1/chat/completions' : '/api/groq'
-  var headers = state.KEY
-    ? { 'Authorization': 'Bearer ' + state.KEY, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json', 'x-user-token': (typeof window._userToken !== 'undefined' ? window._userToken : '') }.valueOf().replace("}", ", 'x-user-token': window._userToken||'' }")
-  
+  var headers = await proxyHeaders()
+
   var controller = new AbortController()
   var timeoutId = setTimeout(function() { controller.abort() }, 45000)  // 45 second timeout for vision
   
@@ -81,9 +100,7 @@ export async function groqText(prompt, model) {
   var chosenModel = model || CODEX_MODEL
   var useProxy = !state.KEY
   var url = useProxy ? '/api/groq' : 'https://api.groq.com/openai/v1/chat/completions'
-  var headers = state.KEY
-    ? { 'Authorization': 'Bearer ' + state.KEY, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json', 'x-user-token': (window._userToken||'') }.valueOf().replace("}", ", 'x-user-token': window._userToken||'' }")
+  var headers = await proxyHeaders()
   var res = await fetch(url, {
     method: 'POST', headers: headers,
     body: JSON.stringify({ model: chosenModel, messages: [{ role: 'user', content: prompt }], temperature: 0.1, max_tokens: 900 })

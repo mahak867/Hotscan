@@ -42,6 +42,9 @@ function isAllowedOrigin(o) { return !o ? false : ALLOWED_ORIGINS.includes(o) ||
 // integration named the vars UPSTASH_KV_* rather than UPSTASH_REDIS_REST_*.
 const IP_WINDOW_S   = 60
 const IP_MAX_REQS   = 25
+// Free scans per signed-in user per day. Kept here rather than inlined so the
+// gate and the message quoting it can never drift apart.
+const FREE_SCANS_PER_DAY = 5
 const UPSTASH_URL   = process.env.UPSTASH_KV_REST_API_URL
 const UPSTASH_TOKEN = process.env.UPSTASH_KV_REST_API_TOKEN
 
@@ -140,55 +143,80 @@ async function handleRequest(req) {
 
   // Server-side scan limit for free users
   // Reads Authorization header set by client — verifies with Supabase
-  const authHeader = req.headers.get('authorization') || ''
+  // Identity comes from x-user-token only.
+  //
+  // The Authorization header used to be a fallback, with a `Bearer gsk_` special
+  // case that blanked the token — so a free user past their five scans could
+  // re-enable themselves just by prefixing the header. Reading identity from one
+  // place removes that, and removes the ambiguity that created it.
   const xToken = req.headers.get('x-user-token') || ''
-  const userToken = (authHeader.startsWith('Bearer gsk_') ? '' : authHeader.replace('Bearer ', '').trim()) || xToken
+  const userToken = xToken.trim()
   // Hoisted so the scan_logs insert after a successful Groq call (below) can
   // reuse them — this is what makes the count and the gate the same request,
   // instead of relying on the client to separately call incScans() afterward.
   const SUPA_URL = process.env.VITE_SUPA_URL || process.env.SUPA_URL
   const SUPA_KEY = process.env.VITE_SUPA_KEY || process.env.SUPA_KEY
   let scanUserId = null
-  if (userToken && userToken.length > 20) {
-    try {
-      if (SUPA_URL && SUPA_KEY) {
-        // Get user from token
-        const userRes = await fetch(SUPA_URL + '/auth/v1/user', {
-          headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
-        })
-        if (userRes.ok) {
-          const userData = await userRes.json()
-          const userId = userData.id
-          if (userId) {
-            scanUserId = userId
-            // Check profile for Pro status
-            const profileRes = await fetch(SUPA_URL + '/rest/v1/profiles?id=eq.' + userId + '&select=is_pro,is_developer', {
-              headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
-            })
-            if (profileRes.ok) {
-              const profiles = await profileRes.json()
-              const profile = profiles && profiles[0]
-              const isPro = profile && (profile.is_pro || profile.is_developer)
-              if (!isPro) {
-                // Count today's scans
-                const today = new Date().toISOString().split('T')[0]
-                const logsRes = await fetch(
-                  SUPA_URL + '/rest/v1/scan_logs?user_id=eq.' + userId + '&scanned_at=gte.' + today + 'T00:00:00Z&select=id',
-                  { headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY } }
-                )
-                if (logsRes.ok) {
-                  const logs = await logsRes.json()
-                  if (logs && logs.length >= 5) {
-                    return json({ error: 'Daily scan limit reached — upgrade to Pro for unlimited scans', limitReached: true }, 429, cors)
-                  }
-                }
-              }
-            }
+
+  // Authentication is REQUIRED, not opportunistic.
+  //
+  // The whole quota block below used to be wrapped in `if (userToken)`. Omitting
+  // the header skipped the daily limit AND the scan_logs insert, so an anonymous
+  // caller got unlimited vision completions on the shared paid key pool and was
+  // never counted — bounded only by the per-IP limiter. That made the free tier,
+  // and the Pro upgrade it funds, unenforceable by anyone willing to use curl.
+  //
+  // Users on their own Groq key are unaffected: the client calls Groq directly
+  // in that case and never reaches this proxy.
+  if (!userToken || userToken.length < 20) {
+    return json({ error: 'Sign in to scan — free accounts get ' + FREE_SCANS_PER_DAY + ' scans a day.' }, 401, cors)
+  }
+  if (!SUPA_URL || !SUPA_KEY) {
+    return json({ error: 'Server auth not configured' }, 503, cors)
+  }
+  let userId = null
+  try {
+    const userRes = await fetch(SUPA_URL + '/auth/v1/user', {
+      headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
+    })
+    if (userRes.ok) {
+      const userData = await userRes.json()
+      userId = userData && userData.id
+    }
+  } catch (e) { /* handled immediately below */ }
+
+  // Fail CLOSED on identity — an unverifiable token is exactly the case this
+  // gate exists for. The quota check below still fails open, so a transient
+  // Supabase blip degrades to "scan allowed" for a real signed-in user rather
+  // than breaking the product for everyone.
+  if (!userId) {
+    return json({ error: 'Session expired — sign in again to scan.' }, 401, cors)
+  }
+  scanUserId = userId
+
+  try {
+    const profileRes = await fetch(SUPA_URL + '/rest/v1/profiles?id=eq.' + userId + '&select=is_pro,is_developer', {
+      headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
+    })
+    if (profileRes.ok) {
+      const profiles = await profileRes.json()
+      const profile = profiles && profiles[0]
+      const isPro = profile && (profile.is_pro || profile.is_developer)
+      if (!isPro) {
+        const today = new Date().toISOString().split('T')[0]
+        const logsRes = await fetch(
+          SUPA_URL + '/rest/v1/scan_logs?user_id=eq.' + userId + '&scanned_at=gte.' + today + 'T00:00:00Z&select=id',
+          { headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY } }
+        )
+        if (logsRes.ok) {
+          const logs = await logsRes.json()
+          if (logs && logs.length >= FREE_SCANS_PER_DAY) {
+            return json({ error: 'Daily scan limit reached — upgrade to Pro for unlimited scans', limitReached: true }, 429, cors)
           }
         }
       }
-    } catch(e) { /* fail open — don't block scan if check errors */ }
-  }
+    }
+  } catch(e) { /* fail open — don't block a verified user if the count errors */ }
 
   // Key pool
   const pool = buildKeyPool()

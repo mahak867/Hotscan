@@ -1,7 +1,7 @@
 import { state } from './state.js'
 import { dbLookup } from './pricedb.js'
 import { VISION_MODEL, VISION_FALLBACK, CODEX_MODEL, HAIKU_MODEL } from './config.js'
-import { groqVision, groqJSON, parseJSON } from './groq.js'
+import { groqVision, groqJSON, parseJSON, proxyHeaders } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
 import { addCarToCollection } from './collection.js'
 
@@ -762,9 +762,9 @@ export async function identifyMultipleCars(imageData) {
   ].join('')
 
   var url2 = state.KEY ? 'https://api.groq.com/openai/v1/chat/completions' : '/api/groq'
-  var hdrs2 = state.KEY
-    ? {'Authorization':'Bearer '+state.KEY, 'Content-Type':'application/json'}
-    : {'Content-Type':'application/json'}
+  // Was sending no token at all, so the multi-car path skipped the server-side
+  // quota entirely — the single biggest hole in the free-tier gate.
+  var hdrs2 = await proxyHeaders()
 
   async function tryModel(model) {
     // No timeout existed here at all before — if the server (or the
