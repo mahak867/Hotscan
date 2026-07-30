@@ -29,7 +29,7 @@ import {
   submitPrice, addAlert, delAlert, clearAlerts,
   showShare, closeShare, shareWA, shareNative, shareApp, shareResultToGroup,
   copyShareText, shareInstagram,
-  submitEvent, renderEvents, selectSeries, toggleHunt,
+  submitEvent, renderEvents, renderTrends, selectSeries, toggleHunt,
   showProModal, closeProModal, isPro, getTodayScans, incScans, updateScanCounter,
   checkLimit, syncScanCountFromServer,
   renderProfilePage, saveProfilePhone, saveProfileUsername, saveOLXAccount,
@@ -85,7 +85,7 @@ Object.assign(window, {
   submitPrice, addAlert, delAlert, clearAlerts, renderAlerts,
   showShare, closeShare, shareWA, shareNative, shareApp, shareResultToGroup,
   copyShareText, shareInstagram,
-  submitEvent, renderEvents, selectSeries, toggleHunt,
+  submitEvent, renderEvents, renderTrends, selectSeries, toggleHunt,
   showProModal, closeProModal, isPro, checkLimit,
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
   openSellerSheet, closeSellerSheet, submitSellerRating,
@@ -265,6 +265,7 @@ window.addEventListener('load', function () {
   renderCol()
   renderAlerts()
   renderEvents()
+  renderTrends()
   renderHunt('mainline')
   renderProfilePage()
   initAuth()

@@ -817,6 +817,81 @@ export function submitEvent() {
   showToast('Event submitted! We\'ll review and list it ✅', 'success')
 }
 
+// Real trend data for the Trends page, derived from community_prices.
+//
+// The page was named Trends and contained no trends — a condition guide, an
+// events list and a WhatsApp link. This is the one dataset that is genuinely
+// ours and genuinely Indian, so it belongs at the top of it.
+//
+// Grouping is done client-side rather than with a SQL aggregate so it needs no
+// new view or migration; the row cap keeps that honest.
+export async function renderTrends() {
+  var wrap = document.getElementById('trends-list')
+  if (!wrap) return
+  var rows = []
+  if (state._sb) {
+    try {
+      var since = new Date(Date.now() - 60 * 86400000).toISOString()
+      var res = await state._sb.from('community_prices')
+        .select('car_name,price_inr,created_at')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(500)
+      if (!res.error && res.data) rows = res.data
+    } catch(e) { /* empty state below */ }
+  }
+
+  var byCar = {}
+  rows.forEach(function(r) {
+    var key = (r.car_name || '').trim()
+    if (!key) return
+    var k = key.toLowerCase()
+    if (!byCar[k]) byCar[k] = { name: key, prices: [] }
+    var p = Number(r.price_inr)
+    if (p > 0) byCar[k].prices.push(p)
+  })
+
+  var cars = Object.keys(byCar).map(function(k) { return byCar[k] })
+    .filter(function(c) { return c.prices.length > 0 })
+    .map(function(c) {
+      var sorted = c.prices.slice().sort(function(a,b){ return a-b })
+      var mid = Math.floor(sorted.length / 2)
+      // Median, not mean — one mis-typed ₹99,999 would drag an average badly,
+      // and submissions are unmoderated.
+      var median = sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid-1] + sorted[mid]) / 2)
+      return { name: c.name, n: c.prices.length, median: median }
+    })
+    .sort(function(a,b){ return b.n - a.n })
+    .slice(0, 8)
+
+  if (!cars.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:18px 12px;color:var(--text3)">' +
+      '<div style="font-size:24px;margin-bottom:6px">📊</div>' +
+      '<div style="font-size:12.5px;font-weight:600;margin-bottom:3px">Not enough data yet</div>' +
+      '<div style="font-size:11.5px;line-height:1.6">Submit what you paid after a scan — the more collectors report real prices, the sharper this gets for everyone.</div>' +
+      '</div>'
+    return
+  }
+
+  var max = cars[0].n || 1
+  wrap.innerHTML = cars.map(function(c, i) {
+    var pct = Math.max(6, Math.round((c.n / max) * 100))
+    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="font-size:11px;font-weight:800;color:var(--text3);width:16px;flex-shrink:0">' + (i+1) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(c.name) + '</div>' +
+          '<div style="height:3px;background:var(--surface3);border-radius:2px;margin-top:4px;overflow:hidden">' +
+            '<div style="height:100%;width:' + pct + '%;background:var(--gold);border-radius:2px"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0">' +
+          '<div style="font-size:12.5px;font-weight:800;color:var(--gold)">₹' + c.median.toLocaleString('en-IN') + '</div>' +
+          '<div style="font-size:9.5px;color:var(--text3)">' + c.n + ' report' + (c.n === 1 ? '' : 's') + '</div>' +
+        '</div>' +
+      '</div>'
+  }).join('')
+}
+
 // Renders approved, still-upcoming events from the database.
 //
 // The events list used to be four entries hardcoded in index.html, which went
