@@ -543,7 +543,7 @@
       <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:4px">⭐ Upgrade to Pro</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Unlimited scans · Cloud collection · Price alerts · Priority AI</div>
       <div style="font-size:26px;font-weight:800;color:var(--gold);margin-bottom:12px">₹99<span style="font-size:13px;font-weight:400;color:var(--text2)">/month</span></div>
-      <button class="btn-gold" onclick="startPayment()">Get Pro Now →</button>
+      <button class="btn-gold" onclick="startPayment(this)">Get Pro Now →</button>
     </div>
     <!-- Scan usage -->
     <div class="card">
@@ -795,7 +795,7 @@
       <div style="font-size:11px;color:var(--text3);margin-top:4px" id="acc-since"></div>
     </div>
     <div id="acc-upgrade" style="display:none;margin-bottom:10px">
-      <button class="btn-gold" onclick="startPayment()">⭐ Get Pro — ₹99/month</button>
+      <button class="btn-gold" onclick="startPayment(this)">⭐ Get Pro — ₹99/month</button>
     </div>
     <button onclick="goPage('profile');closeAccountModal()" style="background:var(--surface2);color:#fff;border:1px solid var(--border2);padding:11px;border-radius:10px;font-size:13px;cursor:pointer;width:100%;margin-bottom:8px">👤 View Full Profile</button>
     <button class="auth-btn auth-btn-secondary" onclick="signOutUser()" style="background:#1a0808;color:#ff8080;margin-bottom:8px">🚪 Sign Out</button>

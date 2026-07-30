@@ -580,16 +580,55 @@ export async function loadRazorpay(){
   })
 }
 
-export async function startPayment() {
-  await loadRazorpay()
-  if(!window.Razorpay){ showToast('Payment unavailable. Try again.', 'error'); return }
+export async function startPayment(btn) {
   if (!state.currentUser) { closeAccountModal(); openAuth(); return }
+  // Visible progress while the SDK loads and the order is created. This used to
+  // be a dead button for a second or two on a slow connection, which reads as a
+  // broken upgrade — the worst possible moment to look broken.
+  var _label = btn && btn.textContent
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Opening secure checkout…' }
+  var _restore = function() { if (btn) { btn.disabled = false; btn.textContent = _label } }
+
+  await loadRazorpay()
+  if(!window.Razorpay){ _restore(); showToast('Payment unavailable. Try again.', 'error'); return }
+
+  // Create the order server-side. The amount and the user it is for are set
+  // there from a verified session, so neither can be edited in the console —
+  // previously both were client-supplied and a ₹1 payment bought Pro.
+  var order = null
+  try {
+    var tok = ''
+    try {
+      var sess = await state._sb.auth.getSession()
+      tok = (sess && sess.data && sess.data.session && sess.data.session.access_token) || ''
+    } catch(e) {}
+    var ores = await fetch('/api/razorpay-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-user-token': tok },
+    })
+    order = await ores.json()
+    if (!ores.ok || !order.order_id) throw new Error(order && order.error ? order.error : 'Could not start checkout')
+  } catch(e) {
+    _restore()
+    showToast((e && e.message) || 'Could not start checkout — try again', 'error')
+    captureException(e)
+    return
+  }
+  _restore()
+
   var options = {
-    key: RZP_KEY, amount: 9900, currency: 'INR',
-    name: 'HotScan India', description: 'Pro Subscription — Unlimited Scans',
+    key: RZP_KEY,
+    order_id: order.order_id,
+    amount: order.amount, currency: order.currency || 'INR',
+    name: 'HotScan India', description: 'Pro — Unlimited scans, no daily limit',
+    image: '/icon-192.png',
     prefill: {email: state.currentUser.email},
-    notes: {user_id: state.currentUser.id},
     theme: {color: '#e63946'},
+    modal: {
+      // Without this the button stays disabled and the user is stuck if they
+      // dismiss the sheet.
+      ondismiss: function() { showToast('Checkout closed — you have not been charged', 'info') }
+    },
     handler: async function(response) {
       // Pro status is granted server-side via the Razorpay webhook (/api/razorpay-webhook).
       // The webhook verifies the HMAC signature and uses the Supabase service role key

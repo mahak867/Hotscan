@@ -697,3 +697,131 @@ create view seller_stats as
 
 alter view seller_stats set (security_invoker = on);
 grant select on seller_stats to anon, authenticated;
+
+-- ── 21. Rate-limit contact lookups, close the email oracle ─────────────
+-- Both found by an adversarial audit of the RLS and RPC surface.
+
+-- get_listing_contact runs SECURITY DEFINER, so it bypasses both RLS and the
+-- column-level revoke on listings.seller_phone. Its only check was "are you
+-- signed in", which meant one free account could walk every listing id from
+-- public_listings and harvest the entire seller phone book — precisely the PII
+-- that sections 5 and 16 were written to protect. Indian mobile numbers paired
+-- with name, city and asking price is a ready-made scam target list.
+--
+-- The limit lives inside the function body because that is the only place it
+-- cannot be bypassed: the caller never touches the table directly.
+create or replace function get_listing_contact(p_listing_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_phone  text;
+  v_seller uuid;
+  v_recent int;
+begin
+  if auth.uid() is null then
+    return null;
+  end if;
+
+  select l.seller_phone, l.seller_id into v_phone, v_seller
+  from listings l
+  where l.id = p_listing_id and l.is_active = true;
+
+  if v_seller is null then
+    return null;
+  end if;
+
+  -- Own listing: no limit, no contact row (you cannot rate yourself anyway).
+  if v_seller = auth.uid() then
+    return v_phone;
+  end if;
+
+  -- Re-opening a seller you already contacted is free; only NEW sellers count
+  -- against the limit, so a genuine buyer revisiting a chat is never blocked
+  -- while bulk enumeration is.
+  if not exists (
+    select 1 from listing_contacts
+    where buyer_id = auth.uid() and listing_id = p_listing_id
+  ) then
+    select count(*) into v_recent
+    from listing_contacts
+    where buyer_id = auth.uid()
+      and contacted_at > now() - interval '24 hours';
+
+    if v_recent >= 8 then
+      raise exception 'Contact limit reached — you can view up to 8 new sellers per day.'
+        using errcode = 'P0001';
+    end if;
+  end if;
+
+  insert into listing_contacts (listing_id, buyer_id, seller_id)
+  values (p_listing_id, auth.uid(), v_seller)
+  on conflict (buyer_id, listing_id) do nothing;
+
+  return v_phone;
+end;
+$$;
+
+revoke execute on function get_listing_contact(uuid) from anon;
+grant execute on function get_listing_contact(uuid) to authenticated;
+
+-- get_email_by_username was granted to anon, making it a username-to-email
+-- oracle: anyone with the public anon key could run a wordlist against it and
+-- read back real addresses, bypassing profiles_select_own entirely. It also
+-- confirms which usernames exist, which is the first half of credential
+-- stuffing.
+--
+-- The login flow genuinely needs this before authentication, so it cannot
+-- simply be revoked. Instead it now returns nothing unless the username is an
+-- exact match, and logs lookups so abuse is at least visible.
+create table if not exists username_lookups (
+  id         uuid primary key default gen_random_uuid(),
+  username   text not null,
+  looked_up_at timestamptz not null default now()
+);
+alter table username_lookups enable row level security;
+-- Written only by the definer function below; nobody may read it from the client.
+revoke all on username_lookups from anon, authenticated;
+
+create or replace function get_email_by_username(p_username text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text;
+  v_recent int;
+begin
+  if p_username is null or length(trim(p_username)) < 3 then
+    return null;
+  end if;
+
+  -- Global brake. A real login flow does a handful of these; a wordlist does
+  -- thousands. This does not identify the caller (they are anonymous by
+  -- definition here) but it does cap the blast radius of enumeration.
+  select count(*) into v_recent
+  from username_lookups
+  where looked_up_at > now() - interval '1 minute';
+
+  if v_recent >= 60 then
+    return null;
+  end if;
+
+  insert into username_lookups (username) values (lower(trim(p_username)));
+
+  select email into v_email
+  from profiles
+  where lower(username) = lower(trim(p_username))
+  limit 1;
+
+  return v_email;
+end;
+$$;
+
+grant execute on function get_email_by_username(text) to anon, authenticated;
+
+-- Housekeeping: the lookup log is a rate-limit ledger, not history.
+delete from username_lookups where looked_up_at < now() - interval '1 day';

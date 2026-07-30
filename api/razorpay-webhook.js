@@ -123,6 +123,16 @@ async function handler(req) {
     // is a server-created order (see PRO_PRICE_PAISE usage note below) so that
     // neither the amount nor the target user is ever client-supplied.
     const PRO_PRICE_PAISE = 9900
+    // order_id is present only for payments created through /api/razorpay-order,
+    // where the amount and notes.user_id were set server-side from a verified
+    // session. A payment without one was assembled in the browser.
+    if (!payment.order_id) {
+      captureServerException(
+        new Error('Razorpay payment has no order_id — checkout was not server-initiated'),
+        { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId, userId } }
+      )
+      return new Response('No order_id — not upgraded', { status: 200 })
+    }
     if (payment.amount !== PRO_PRICE_PAISE || payment.currency !== 'INR' || payment.status !== 'captured') {
       captureServerException(
         new Error('Razorpay payment rejected: expected ' + PRO_PRICE_PAISE + ' INR captured, got ' +
