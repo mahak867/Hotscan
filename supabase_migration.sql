@@ -710,12 +710,16 @@ grant select on seller_stats to anon, authenticated;
 --
 -- The limit lives inside the function body because that is the only place it
 -- cannot be bypassed: the caller never touches the table directly.
+-- Dollar-quote tags below are NAMED rather than anonymous. The Supabase SQL
+-- editor splits input on semicolons, and an anonymously quoted function body
+-- full of them gets cut mid-function with "unterminated dollar-quoted string".
+-- A named tag is unambiguous and survives the split.
 create or replace function get_listing_contact(p_listing_id uuid)
 returns text
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $fn_contact$
 declare
   v_phone  text;
   v_seller uuid;
@@ -762,7 +766,7 @@ begin
 
   return v_phone;
 end;
-$$;
+$fn_contact$;
 
 revoke execute on function get_listing_contact(uuid) from anon;
 grant execute on function get_listing_contact(uuid) to authenticated;
@@ -790,7 +794,7 @@ returns text
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $fn_email$
 declare
   v_email text;
   v_recent int;
@@ -819,7 +823,7 @@ begin
 
   return v_email;
 end;
-$$;
+$fn_email$;
 
 grant execute on function get_email_by_username(text) to anon, authenticated;
 
