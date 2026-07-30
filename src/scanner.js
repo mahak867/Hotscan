@@ -1,7 +1,7 @@
 import { state } from './state.js'
 import { dbLookup } from './pricedb.js'
 import { VISION_MODEL, VISION_FALLBACK, CODEX_MODEL, HAIKU_MODEL } from './config.js'
-import { groqVision, groqJSON, parseJSON, proxyHeaders } from './groq.js'
+import { groqVision, groqJSON, parseJSON, proxyHeaders, sessionHeaders } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
 import { addCarToCollection } from './collection.js'
 
@@ -170,9 +170,12 @@ async function searchPrices(carName, rarity, castingYear) {
   try {
     var ctrl = new AbortController()
     var t = setTimeout(function(){ ctrl.abort() }, 6000)
+    // /api/prices now requires a signed-in caller: it fires two Groq
+    // completions per request and sometimes a billed Apify run, and previously
+    // had no auth, no rate limit and no budget cap at all.
     var res = await fetch('/api/prices', {
       method: 'POST', signal: ctrl.signal,
-      headers: {'Content-Type':'application/json'},
+      headers: await sessionHeaders(),
       body: JSON.stringify({carName:carName, rarity:rarity, castingYear:castingYear})
     })
     clearTimeout(t)

@@ -13,12 +13,19 @@ export async function proxyHeaders() {
   if (state.KEY) {
     return { 'Authorization': 'Bearer ' + state.KEY, 'Content-Type': 'application/json' }
   }
+  return sessionHeaders()
+}
+
+// Always the Supabase session token, never a Groq key. /api/prices authenticates
+// the user but does not accept a personal Groq key — it runs its own pipeline —
+// so sending proxyHeaders() there would 401 anyone who had set a personal key.
+export async function sessionHeaders() {
   var h = { 'Content-Type': 'application/json' }
   try {
     var sess = await state._sb.auth.getSession()
     var tok = sess && sess.data && sess.data.session && sess.data.session.access_token
     if (tok) h['x-user-token'] = tok
-  } catch(e) { /* proxy will answer 401 and the caller surfaces it */ }
+  } catch(e) { /* server answers 401 and the caller surfaces it */ }
   return h
 }
 

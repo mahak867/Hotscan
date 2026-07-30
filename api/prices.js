@@ -266,15 +266,94 @@ async function handler(req) {
   }
 }
 
+// Per-IP limiter, same Upstash fixed-window approach as api/groq.js but much
+// tighter: a price check costs two Groq completions and sometimes a billed
+// Apify run, so it is several times more expensive than a scan.
+const PRICE_WINDOW_S = 60
+const PRICE_MAX_REQS = 8
+async function isPriceRateLimited(ip) {
+  var url = process.env.UPSTASH_KV_REST_API_URL
+  var token = process.env.UPSTASH_KV_REST_API_TOKEN
+  // Fail OPEN when Redis is unconfigured: the auth check below is the real gate,
+  // and a missing cache should not take pricing down for everyone.
+  if (!url || !token) return false
+  try {
+    var key = 'hs:price:' + ip
+    var res = await fetch(url + '/pipeline', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['INCR', key], ['EXPIRE', key, String(PRICE_WINDOW_S), 'NX']]),
+    })
+    if (!res.ok) return false
+    var out = await res.json()
+    var count = out && out[0] && Number(out[0].result)
+    return count > PRICE_MAX_REQS
+  } catch (e) { return false }
+}
+
+// Resolves the caller from their Supabase JWT. Identity must come from the
+// token, never the body.
+async function verifyPriceUser(token) {
+  var supaUrl = process.env.VITE_SUPA_URL || process.env.SUPA_URL
+  var supaKey = process.env.VITE_SUPA_KEY || process.env.SUPA_KEY
+  if (!token || token.length < 20 || !supaUrl || !supaKey) return null
+  try {
+    var res = await fetch(supaUrl + '/auth/v1/user', {
+      headers: { Authorization: 'Bearer ' + token, apikey: supaKey },
+    })
+    if (!res.ok) return null
+    var u = await res.json()
+    return u && u.id ? u.id : null
+  } catch (e) { return null }
+}
+
 async function handleRequest(req) {
   var origin=req.headers.get('origin')||''
   var co=isAllowedOrigin(origin)?origin:ALLOWED_ORIGINS[0]
-  var cors={'Access-Control-Allow-Origin':co,'Access-Control-Allow-Methods':'POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type'}
+  var cors={'Access-Control-Allow-Origin':co,'Access-Control-Allow-Methods':'POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type, x-user-token'}
   if (req.method==='OPTIONS') return new Response(null,{status:204,headers:cors})
   if (req.method!=='POST') return new Response(JSON.stringify({error:'POST only'}),{status:405,headers:{...cors,'Content-Type':'application/json'}})
   var body; try { body=await req.json() } catch { return new Response(JSON.stringify({error:'Invalid JSON'}),{status:400,headers:{...cors,'Content-Type':'application/json'}}) }
   var {carName,rarity,castingYear}=body
   if (!carName) return new Response(JSON.stringify({error:'carName required'}),{status:400,headers:{...cors,'Content-Type':'application/json'}})
+
+  // ── Gate ──────────────────────────────────────────────────────────────
+  // This endpoint had no authentication, no rate limit and no budget cap, and
+  // it is the most expensive one in the app: every POST fires two Groq
+  // completions unconditionally (neither is cached), and a high-value rarity
+  // additionally triggers a BILLED Apify actor run.
+  //
+  // The origin check above is not a gate — it only chooses which value to echo
+  // in the CORS header and never rejects. A browser discards a bad-origin
+  // response, but curl or any server-side caller receives the full payload,
+  // and the paid calls have already happened by then.
+  //
+  // Apify's 30-day de-dupe was the only brake, and it is trivially defeated:
+  // the cache key is the first three words of carName and `rarity` is
+  // caller-supplied, so a novel name plus rarity:'Error Car' forces a fresh
+  // billed run every single time.
+  var _ipRaw = req.headers.get('x-forwarded-for') || ''
+  var ip = _ipRaw.split(',')[0].trim() || 'unknown'
+  if (await isPriceRateLimited(ip)) {
+    return new Response(JSON.stringify({error:'Too many price checks — try again in a minute.'}),
+      {status:429,headers:{...cors,'Content-Type':'application/json'}})
+  }
+
+  var _tok = (req.headers.get('x-user-token')||'').trim()
+  var _uid = await verifyPriceUser(_tok)
+  if (!_uid) {
+    return new Response(JSON.stringify({error:'Sign in to fetch live prices.'}),
+      {status:401,headers:{...cors,'Content-Type':'application/json'}})
+  }
+
+  // carName reaches Groq prompts, URL query strings and a DB write. Unbounded
+  // input there is both a cost lever and a prompt-injection surface.
+  if (typeof carName !== 'string' || carName.length > 120) {
+    return new Response(JSON.stringify({error:'Invalid carName'}),
+      {status:400,headers:{...cors,'Content-Type':'application/json'}})
+  }
+  carName = carName.replace(/[\r\n]+/g,' ').trim()
+
   var pool=buildPool()
   if (!pool.length) return new Response(JSON.stringify({error:'No API keys'}),{status:503,headers:{...cors,'Content-Type':'application/json'}})
 
