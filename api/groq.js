@@ -1,6 +1,30 @@
 // HotScan India — Groq API proxy  (Vercel Edge Function)
 //
 import { captureServerException } from './_sentry.js'
+import { callGemini, hasGeminiKey } from './_gemini.js'
+
+// Reported once per instance: if Gemini is misconfigured every request fails
+// identically, and a flood of identical Sentry events adds nothing.
+let _geminiWarned = false
+
+// Records a scan against the daily quota. Extracted so BOTH providers log it —
+// otherwise a scan served by Gemini would never count, and the free tier would
+// be unenforceable again through a different door.
+async function logScan(scanUserId, userToken, supaUrl, supaKey) {
+  if (!scanUserId || !supaUrl || !supaKey) return
+  try {
+    await fetch(supaUrl + '/rest/v1/scan_logs', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + userToken,
+        'apikey': supaKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ user_id: scanUserId, scanned_at: new Date().toISOString() }),
+    })
+  } catch (e) { /* never fail the response because logging failed */ }
+}
 // Rate-limit strategy:
 //   1. Reads a POOL of up to 5 Groq keys:  GROQ_API_KEY_1 … GROQ_API_KEY_5
 //      (GROQ_API_KEY is also accepted as a single-key shorthand)
@@ -310,6 +334,35 @@ async function handleRequest(req) {
     return json({ error: 'Invalid JSON body' }, 400, cors)
   }
 
+  // ── Gemini first ──────────────────────────────────────────────────────
+  // Groq's free tier is 8,000 tokens/minute shared across every user of the
+  // app — about four scans a minute in total, and every code-side optimisation
+  // for it is already spent. Gemini's free tier is far larger, so it serves as
+  // primary and Groq becomes the fallback rather than the other way round.
+  //
+  // Groq is deliberately kept rather than removed: it is materially faster, and
+  // two independent free tiers means one provider's outage or exhausted quota
+  // is not an outage of the product. Set GEMINI_PRIMARY=0 to flip the order
+  // back without a deploy of new code.
+  const geminiFirst = hasGeminiKey() && process.env.GEMINI_PRIMARY !== '0'
+  if (geminiFirst) {
+    const g = await callGemini(body, 45000)
+    if (g.ok) {
+      await logScan(scanUserId, userToken, SUPA_URL, SUPA_KEY)
+      return json(g.data, 200, cors)
+    }
+    // Quota exhausted or transient failure — fall through to Groq rather than
+    // failing the scan. Reported once so a persistent Gemini problem is visible
+    // instead of silently costing Groq quota forever.
+    if (!_geminiWarned) {
+      _geminiWarned = true
+      captureServerException(
+        new Error('Gemini failed (' + g.status + '), falling back to Groq: ' + String(g.error).slice(0, 200)),
+        { tags: { endpoint: 'groq', provider: 'gemini' } }
+      )
+    }
+  }
+
   // Try each key in round-robin order; on 429 move to the next key
   const startIdx = rrIndex % pool.length
   for (let attempt = 0; attempt < pool.length; attempt++) {
@@ -356,19 +409,8 @@ async function handleRequest(req) {
     // same request. Previously this only happened client-side via incScans(),
     // which anyone calling this endpoint directly (bypassing the frontend)
     // could skip entirely — letting the daily-limit counter never increment.
-    if (groqRes.ok && scanUserId && SUPA_URL && SUPA_KEY) {
-      try {
-        await fetch(SUPA_URL + '/rest/v1/scan_logs', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + userToken,
-            'apikey': SUPA_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify({ user_id: scanUserId, scanned_at: new Date().toISOString() }),
-        })
-      } catch (e) { /* don't fail the response if logging errors */ }
+    if (groqRes.ok) {
+      await logScan(scanUserId, userToken, SUPA_URL, SUPA_KEY)
     }
 
     return new Response(data, {
