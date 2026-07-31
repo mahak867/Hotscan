@@ -1,10 +1,12 @@
 // HotScan India — Service Worker v5.0
 // Provides offline support (cache-first for static assets) and deal-alert notifications.
 
-const CACHE = 'hotscan-v8'
+const CACHE = 'hotscan-v9'
+// index.html is deliberately NOT precached — see the fetch handler. It is the
+// only file that names the current hashed asset bundles, so serving a stale copy
+// points the browser at JS filenames that no longer exist on the server, which
+// surfaces to the user as "Failed to fetch" on the next action they take.
 const PRECACHE = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
@@ -49,6 +51,40 @@ self.addEventListener('fetch', function (e) {
       host === 'plausible.io' || host.endsWith('.plausible.io')
     ) return
   } catch (ex) { return }
+
+  // The app shell must be NETWORK-FIRST.
+  //
+  // It was cache-first, with '/' and '/index.html' precached under a cache name
+  // that is only bumped by hand. So once a browser cached the shell it kept that
+  // copy indefinitely — and that copy names the hashed JS bundles of the build it
+  // came from. After a few deploys those filenames are gone from the server, the
+  // request for them fails, and the user sees "Failed to fetch" with no way out
+  // short of clearing site data. It also meant no fix could ever reach an
+  // existing user, which for a live product is worse than the stale asset.
+  //
+  // Hashed assets stay cache-first below: their filenames change per build, so a
+  // cached one is never wrong.
+  var isShell = e.request.mode === 'navigate' ||
+                url.endsWith('/') ||
+                url.indexOf('/index.html') > -1
+
+  if (isShell) {
+    e.respondWith(
+      fetch(e.request).then(function (res) {
+        if (res && res.ok) {
+          var clone = res.clone()
+          caches.open(CACHE).then(function (c) { c.put(e.request, clone) })
+        }
+        return res
+      }).catch(function () {
+        // Offline: a stale shell beats no app at all.
+        return caches.match(e.request).then(function (c) {
+          return c || caches.match('/index.html')
+        })
+      })
+    )
+    return
+  }
 
   e.respondWith(
     caches.match(e.request).then(function (cached) {
