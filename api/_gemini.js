@@ -12,10 +12,20 @@
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/'
 
-// Kept as a constant rather than inlined: Gemini deprecates model IDs on a
-// schedule (2.5 Flash goes on 2026-10-16), and a silently dead model ID is
-// exactly the failure that broke scanning here once before.
-export const GEMINI_VISION_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+// Candidate models, tried in order. A 404 means the ID is retired — Google
+// closed gemini-2.5-flash to new projects, and the first deploy of this
+// integration failed on exactly that. Retrying the next candidate turns a
+// deprecation from an outage into a log line.
+//
+// Order: an explicit GEMINI_MODEL override wins, then the current GA flash
+// model, then the lighter one as a floor.
+export const GEMINI_MODELS = [
+  process.env.GEMINI_MODEL,
+  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
+].filter(Boolean)
+
+export const GEMINI_VISION_MODEL = GEMINI_MODELS[0]
 
 export function hasGeminiKey() {
   return !!process.env.GEMINI_API_KEY
@@ -96,29 +106,22 @@ export function fromGeminiResponse(g) {
 
 // Calls Gemini and returns a fetch-like { ok, status, json, text } so the proxy
 // can treat it interchangeably with the Groq path.
-export async function callGemini(openaiBody, timeoutMs) {
-  const key = process.env.GEMINI_API_KEY
-  if (!key) return { ok: false, status: 503, error: 'No Gemini key configured' }
-
-  const model = openaiBody.model && openaiBody.model.startsWith('gemini')
-    ? openaiBody.model
-    : GEMINI_VISION_MODEL
-
+async function callGeminiModel(model, key, geminiBody, timeoutMs) {
   const ctrl = new AbortController()
   const timer = setTimeout(function () { ctrl.abort() }, timeoutMs || 45000)
   try {
     const res = await fetch(GEMINI_BASE + model + ':generateContent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify(toGeminiBody(openaiBody)),
+      body: JSON.stringify(geminiBody),
       signal: ctrl.signal,
     })
     clearTimeout(timer)
     const raw = await res.text()
     if (!res.ok) {
-      // 429 and RESOURCE_EXHAUSTED both mean "out of quota" here; the proxy
-      // maps them onto the same handling as a Groq 429 so the client sees one
-      // consistent rate-limit story regardless of provider.
+      // 429 / RESOURCE_EXHAUSTED means out of quota; the proxy maps it onto the
+      // same handling as a Groq 429 so the client sees one consistent
+      // rate-limit story regardless of which provider answered.
       return { ok: false, status: res.status, error: raw.slice(0, 400) }
     }
     let parsed
@@ -131,4 +134,33 @@ export async function callGemini(openaiBody, timeoutMs) {
     if (e.name === 'AbortError') return { ok: false, status: 504, error: 'Gemini request timed out' }
     return { ok: false, status: 502, error: (e && e.message) || 'Gemini request failed' }
   }
+}
+
+// Calls Gemini and returns a fetch-like result so the proxy can treat it
+// interchangeably with the Groq path.
+//
+// Walks GEMINI_MODELS on a 404 only. A 404 means the model ID is retired, which
+// no amount of retrying the same ID will fix — every other status (quota,
+// timeout, malformed request) is returned immediately so the caller falls back
+// to Groq rather than burning time on models that will fail the same way.
+export async function callGemini(openaiBody, timeoutMs) {
+  const key = process.env.GEMINI_API_KEY
+  if (!key) return { ok: false, status: 503, error: 'No Gemini key configured' }
+
+  // An explicit gemini-* model in the request wins outright.
+  const candidates = (openaiBody.model && openaiBody.model.startsWith('gemini'))
+    ? [openaiBody.model]
+    : GEMINI_MODELS
+
+  const geminiBody = toGeminiBody(openaiBody)
+  let last = { ok: false, status: 503, error: 'No Gemini model configured' }
+  for (const model of candidates) {
+    last = await callGeminiModel(model, key, geminiBody, timeoutMs)
+    if (last.ok) {
+      if (model !== candidates[0]) last.data._model_fallback = model
+      return last
+    }
+    if (last.status !== 404) return last
+  }
+  return last
 }
