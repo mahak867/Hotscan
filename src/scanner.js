@@ -321,7 +321,16 @@ export async function analyzePhoto() {
   } catch(err) {
     window.stopTimer(); window.setStep(1, 'err')
     var isRateLimit = err.message && (err.message.includes('rate-limit') || err.message.includes('Rate limit') || err.message.includes('Too many') || err.message.includes('rate limit'))
-    if (isRateLimit) {
+    if (err.signUpRequired) {
+      // The guest trial is spent. This is the conversion moment, so make the
+      // next step a button rather than an error message to read.
+      document.getElementById('err-box').innerHTML =
+        '🚗 <strong>That\'s your free scans used.</strong><br>' +
+        '<span style="font-size:12px;color:var(--text2)">Create a free account to keep scanning — ' +
+        'you also get a synced collection and live valuation.</span><br>' +
+        '<button onclick="openAuth()" style="margin-top:9px;background:linear-gradient(90deg,#e63946,#ff6b35);color:#fff;border:none;padding:8px 20px;border-radius:9px;font-size:13px;font-weight:800;cursor:pointer">Create free account →</button>'
+      document.getElementById('err-box').style.cssText = 'display:block;background:#12080a;border:1px solid rgba(230,57,70,.4);color:var(--text);border-radius:12px;padding:14px;margin-bottom:11px;font-size:13px;line-height:1.7'
+    } else if (isRateLimit) {
       document.getElementById('err-box').innerHTML = '⚡ <strong>Shared scan limit reached.</strong><br><span style="font-size:12px;color:#cc9900">Add your own free key at <a href="https://console.groq.com" target="_blank" style="color:#ffd60a">console.groq.com</a> for unlimited personal access, or upgrade to Pro.</span><br><button onclick="startPayment(this)" style="margin-top:8px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;border:none;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer">⭐ Get Pro — ₹99/month</button>'
       document.getElementById('err-box').style.cssText = 'display:block;background:#1a1000;border:1px solid rgba(255,214,10,.4);color:var(--gold);border-radius:12px;padding:14px;margin-bottom:11px;font-size:13px;line-height:1.7'
     } else {
@@ -803,7 +812,15 @@ export async function identifyMultipleCars(imageData) {
     }
     if (!res.ok) {
       var e = await res.json().catch(function(){return{}})
-      if (res.status === 401) throw new Error('Invalid API key')
+      if (res.status === 401) {
+        // A 401 from our own proxy is almost never a bad key — it is a guest
+        // who has used their trial scans, or an expired session. Saying
+        // "Invalid API key" to someone who never entered one is nonsense.
+        var msg401 = (e && e.error) || 'Session expired — sign in again to scan.'
+        var authErr = new Error(state.KEY ? 'Invalid API key' : msg401)
+        if (e && e.signUpRequired) authErr.signUpRequired = true
+        throw authErr
+      }
       if (res.status === 429) {
         // Prefer the server's own wording (it distinguishes "your personal
         // limit" from "the shared pool is drained") and carry Retry-After

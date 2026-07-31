@@ -1,0 +1,59 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/src/style.css">
+<link rel="stylesheet" href="header.css">
+</head><body>
+
+<div class="app-header">
+  <div class="app-header-left">
+    <a class="cmd-mark" href="#" onclick="goPage('scan');return false" aria-label="HotScan home">
+      <img src="/icon-192.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <span class="cmd-mark-fb" aria-hidden="true">HS</span>
+    </a>
+    <span class="cmd-wordmark">HOT<i>SCAN</i></span>
+  </div>
+
+  <div class="cmd" id="hs-cmd" role="search">
+    <svg class="cmd-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+    <input id="hs-cmd-input" class="cmd-input" type="search" placeholder="Search cars, listings" autocomplete="off" autocorrect="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="hs-cmd-panel" aria-autocomplete="list" aria-label="Search your collection and the marketplace">
+    <span class="cmd-end">
+      <kbd class="cmd-kbd" aria-hidden="true">/</kbd>
+      <button class="cmd-clear" id="hs-cmd-clear" type="button" aria-label="Clear search" tabindex="-1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </span>
+  </div>
+
+  <div class="profile-dd">
+    <div id="user-hdr-btn" class="app-user-btn"></div>
+    <div id="profile-dd-menu" class="profile-dd-menu"></div>
+  </div>
+
+  <div class="cmd-panel" id="hs-cmd-panel" role="listbox" aria-label="Search results">
+    <div class="cmd-scroll" id="hs-cmd-scroll"></div>
+    <div class="cmd-foot"><span><kbd>↑↓</kbd>navigate</span><span><kbd>↵</kbd>open</span><span><kbd>esc</kbd>close</span></div>
+  </div>
+</div>
+<div class="cmd-scrim" id="hs-cmd-scrim"></div>
+
+<div class="hs-content"><div class="page active" style="padding-top:20px">
+<p style="color:var(--text2);font-size:13px">Body content behind the header.</p>
+</div></div>
+
+<script>
+// ── stub the app globals the header talks to ───────────────────────────
+window.goPage=function(p){console.log('goPage',p)}
+localStorage.setItem('hs_col',JSON.stringify([
+ {id:1,name:'Nissan Skyline GT-R (BNR34)',series:'Fast & Furious',rarity:'Premium',color:'Blue',casting_year:2023,india_collector_inr:'₹2,400'},
+ {id:2,name:'Datsun 510',series:'HW Speed Graphics',rarity:'Treasure Hunt',color:'Green',casting_year:2019,india_collector_inr:'₹1,850'},
+ {id:3,name:'Custom Datsun 240Z',series:'Car Culture',rarity:'Super Treasure Hunt',color:'Orange',casting_year:2021,india_collector_inr:'₹6,200'},
+ {id:4,name:"'71 Datsun Bluebird 510 Wagon",series:'Mainline',rarity:'Common',color:'White',casting_year:2022,india_collector_inr:'₹180'}
+]))
+window.__hsListings=[
+ {id:'a',name:'Datsun 510 — Treasure Hunt',rarity:'Treasure Hunt',condition:'Mint',city:'Mumbai',price:2100,seller_name:'rohan_hw'},
+ {id:'b',name:'Nissan Skyline RS Turbo',rarity:'Premium',condition:'Good',city:'Bengaluru',price:1450,seller_name:'diecast_dilip'}
+]
+// stub the profile chip exactly as src/auth.js renders it
+document.getElementById('user-hdr-btn').innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#e63946,#ff6b35);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden">M</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">mahakfahad</span><span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span></div>'
+</script>
+
+<script src="cmd.js"></script>
+</body></html>

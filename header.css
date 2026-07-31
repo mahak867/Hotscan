@@ -1,0 +1,243 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   COMMAND BAR HEADER  (Direction A — search-first)
+   Append to the END of src/style.css so these rules win over the original
+   .app-header block at line 88 without needing !important.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Shell: three-track grid so the bar can be optically centred ──────────
+   auto | 1fr | auto on phones (search takes every leftover pixel)
+   1fr | 620px | 1fr on desktop (search sits dead-centre in the viewport,
+   because the header spans the full body grid at >=768px).            */
+.app-header{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:0 12px;
+  height:52px;                 /* unchanged — .hs-content sizing depends on it */
+  position:sticky;top:0;
+}
+@media(min-width:768px){
+  .app-header{
+    grid-template-columns:1fr minmax(0,620px) 1fr;
+    gap:16px;
+    padding:0 20px;
+  }
+}
+
+.app-header-left{
+  display:flex;align-items:center;gap:9px;
+  min-width:0;justify-self:start;
+}
+.profile-dd{justify-self:end}
+
+/* ── Logo, compressed to a mark ──────────────────────────────────────────
+   The 42px wordmark PNG becomes a 30px square mark. The full wordmark
+   returns as live text only when there is room for it (>=1024px).      */
+.cmd-mark{
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;flex-shrink:0;
+  border-radius:9px;overflow:hidden;
+  cursor:pointer;text-decoration:none;
+  background:var(--surface2);
+  box-shadow:0 2px 10px rgba(42,79,212,.35);
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1);
+}
+.cmd-mark:active{transform:scale(.93)}
+.cmd-mark img{width:100%;height:100%;object-fit:cover;display:block}
+.cmd-mark-fb{
+  display:none;width:100%;height:100%;
+  align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--blue-brand),var(--red));
+  color:#fff;font-size:11px;font-weight:900;letter-spacing:-.02em;
+}
+.cmd-wordmark{
+  display:none;white-space:nowrap;
+  font-size:15px;font-weight:900;letter-spacing:-.4px;color:var(--text);
+}
+.cmd-wordmark i{font-style:normal;color:var(--blue-brand)}
+@media(min-width:1024px){.cmd-wordmark{display:inline}}
+
+/* ── The command bar itself ──────────────────────────────────────────────
+   No size change on focus — only colour, ring and the panel. Growing the
+   bar would reflow the header on every focus, which is exactly the kind
+   of jank a fixed 52px bar on a mid-range Android cannot afford.        */
+.cmd{
+  position:relative;
+  display:flex;align-items:center;gap:7px;
+  height:36px;min-width:0;
+  padding:0 5px 0 9px;
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.cmd:focus-within{
+  background:var(--surface3);
+  border-color:rgba(42,79,212,.55);
+  box-shadow:0 0 0 3px rgba(42,79,212,.14);
+}
+.cmd-ico{
+  flex-shrink:0;color:var(--text3);
+  transition:color .16s ease;
+}
+.cmd:focus-within .cmd-ico{color:var(--blue-brand)}
+
+.cmd-input{
+  flex:1 1 auto;min-width:0;height:100%;
+  background:none;border:0;outline:0;padding:0;
+  color:var(--text);font-family:inherit;font-weight:500;letter-spacing:-.01em;
+}
+.cmd-input::placeholder{color:var(--text3);font-weight:500}
+.cmd-input::-webkit-search-cancel-button,
+.cmd-input::-webkit-search-decoration{-webkit-appearance:none;display:none}
+
+/* Trailing slot — fixed 24px so swapping the kbd hint for the clear button
+   never reflows the input. Both are stacked and cross-faded on opacity.  */
+.cmd-end{position:relative;flex:0 0 24px;width:24px;height:24px}
+.cmd-kbd,.cmd-clear{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .14s ease;
+}
+.cmd-kbd{
+  opacity:0;pointer-events:none;
+  font:700 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:var(--text3);
+  background:var(--surface);border:1px solid var(--border2);border-radius:5px;
+}
+@media(min-width:768px){.cmd-kbd{opacity:1}}
+.cmd-clear{
+  opacity:0;pointer-events:none;
+  background:none;border:0;padding:0;cursor:pointer;color:var(--text2);
+  border-radius:6px;
+}
+.cmd-clear:hover{color:var(--text);background:var(--surface4)}
+.cmd.has-text .cmd-kbd{opacity:0}
+.cmd.has-text .cmd-clear{opacity:1;pointer-events:auto}
+
+/* ── Results panel ───────────────────────────────────────────────────────
+   Direct child of .app-header on purpose: .app-header has backdrop-filter,
+   which makes it the containing block for fixed-position descendants, so
+   position:fixed inside it would NOT resolve against the viewport.
+   Absolute against the sticky header is the only reliable option.       */
+.cmd-panel{
+  position:absolute;top:calc(100% + 8px);left:10px;right:10px;z-index:2;
+  background:rgba(18,18,18,.97);
+  backdrop-filter:blur(24px) saturate(1.6);
+  -webkit-backdrop-filter:blur(24px) saturate(1.6);
+  border:1px solid var(--border2);
+  border-radius:16px;
+  box-shadow:0 18px 50px rgba(0,0,0,.62),0 0 0 1px rgba(42,79,212,.10);
+  overflow:hidden;
+  opacity:0;transform:translateY(-8px);pointer-events:none;
+  transition:opacity .16s ease,transform .16s cubic-bezier(.32,.72,0,1);
+}
+.cmd-panel.open{opacity:1;transform:translateY(0);pointer-events:auto}
+@media(min-width:768px){
+  .cmd-panel{
+    left:50%;right:auto;
+    width:min(620px,calc(100vw - 48px));
+    transform:translate(-50%,-8px);
+  }
+  .cmd-panel.open{transform:translate(-50%,0)}
+}
+
+.cmd-scroll{
+  max-height:52vh;max-height:52dvh;
+  overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:4px;
+}
+@media(min-width:768px){.cmd-scroll{max-height:min(58vh,440px)}}
+
+.cmd-sec{
+  font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text3);padding:11px 10px 5px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.cmd-sec b{color:var(--text2);font-weight:700;letter-spacing:0;text-transform:none;font-size:10px}
+
+.cmd-row{
+  display:flex;align-items:center;gap:11px;
+  width:100%;padding:8px 10px;
+  background:none;border:0;border-radius:11px;
+  color:var(--text);font-family:inherit;font-size:14px;font-weight:600;
+  text-align:left;cursor:pointer;
+}
+.cmd-row+.cmd-row{margin-top:2px}
+.cmd-row:hover{background:var(--surface3)}
+.cmd-row.sel{background:var(--surface3);box-shadow:inset 2px 0 0 var(--red)}
+.cmd-row:active{background:var(--surface4)}
+
+.cmd-thumb{
+  width:34px;height:34px;flex-shrink:0;
+  border-radius:8px;overflow:hidden;
+  background:var(--surface3);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--text2);
+}
+.cmd-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.cmd-body{flex:1;min-width:0}
+.cmd-t{
+  font-size:13.5px;font-weight:700;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cmd-s{
+  font-size:11px;font-weight:500;color:var(--text2);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cmd-v{
+  flex-shrink:0;font-size:12.5px;font-weight:800;
+  font-variant-numeric:tabular-nums;color:var(--gold);
+}
+.cmd-v.mp{color:var(--green)}
+.cmd-t mark,.cmd-s mark{background:none;color:var(--blue);font-weight:800;padding:0}
+.cmd-empty{padding:26px 16px;text-align:center;color:var(--text2);font-size:13px;font-weight:600}
+.cmd-empty span{display:block;font-size:26px;margin-bottom:8px;opacity:.65}
+
+/* Footer key hints — desktop only, there is no physical keyboard on a phone */
+.cmd-foot{
+  display:none;align-items:center;gap:14px;
+  padding:8px 14px;border-top:1px solid var(--border);
+  font-size:11px;font-weight:600;color:var(--text3);
+}
+@media(min-width:768px){.cmd-foot{display:flex}}
+.cmd-foot kbd{
+  font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:var(--surface2);border:1px solid var(--border2);border-radius:4px;
+  padding:3px 5px;margin-right:4px;color:var(--text2);
+}
+
+/* Scrim. Sits under the header in both layouts — the header's z-index is
+   300 on mobile but only 100 at >=768px, so the scrim has to drop too. */
+.cmd-scrim{
+  position:fixed;inset:0;z-index:299;
+  background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;
+  transition:opacity .18s ease;
+}
+.cmd-scrim.open{opacity:1;pointer-events:auto}
+@media(min-width:768px){.cmd-scrim{z-index:99;background:rgba(0,0,0,.38)}}
+
+/* ── 375px: what gives ───────────────────────────────────────────────────
+   The username text drops out of the profile chip; the avatar and the
+   Pro/Dev badge both stay, and the full name is already the first line of
+   the dropdown. That buys the search bar ~70px it would not otherwise
+   have. The chip's markup is built in src/auth.js: the name is the first
+   <span>, the badge is the second, so this targets the name only.      */
+@media(max-width:520px){
+  #user-hdr-btn>div>span:first-of-type{display:none}
+  .app-header{gap:8px}
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────
+   The global rule already flattens durations; these keep the panel's
+   centring transform intact while removing the travel.                 */
+@media(prefers-reduced-motion:reduce){
+  .cmd-panel,.cmd-panel.open{transform:none}
+  .cmd-mark:active{transform:none}
+}
+@media(prefers-reduced-motion:reduce) and (min-width:768px){
+  .cmd-panel,.cmd-panel.open{transform:translateX(-50%)}
+}

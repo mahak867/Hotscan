@@ -74,6 +74,39 @@ async function isRateLimited(ip) {
   }
 }
 
+// Guest trial. Someone arriving from a WhatsApp collector group should be able
+// to scan a car before being asked to sign up — that first scan IS the pitch,
+// and demanding an account before showing any value is the surest way to lose
+// them. Capped hard, because these scans are unattributable and therefore the
+// abuse surface: 2 per IP per day is enough to prove the product works and far
+// too few to be worth farming.
+const GUEST_SCANS_PER_DAY = 2
+
+async function guestScanCount(ip) {
+  // Fail CLOSED when Redis is unconfigured: without a counter there is no cap,
+  // and an uncapped anonymous path is exactly the hole this whole change exists
+  // to close. Signed-in users are unaffected.
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) return Infinity
+  try {
+    // Date-stamped key gives a natural daily reset without needing a cron.
+    const key = 'guest:groq:' + new Date().toISOString().slice(0, 10) + ':' + ip
+    const res = await fetch(UPSTASH_URL + '/pipeline', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + UPSTASH_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify([
+        ['INCR', key],
+        ['EXPIRE', key, 172800, 'NX'], // 48h, comfortably past any timezone edge
+      ]),
+    })
+    if (!res.ok) return Infinity
+    const data = await res.json()
+    const count = data && data[0] && data[0].result
+    return typeof count === 'number' ? count : Infinity
+  } catch (e) {
+    return Infinity
+  }
+}
+
 // ── Key pool builder ─────────────────────────────────────────────────────────
 function buildKeyPool() {
   const pool = []
@@ -158,43 +191,52 @@ async function handleRequest(req) {
   const SUPA_KEY = process.env.VITE_SUPA_KEY || process.env.SUPA_KEY
   let scanUserId = null
 
-  // Authentication is REQUIRED, not opportunistic.
+  // Every scan is now accounted for, as either a guest trial or a signed-in
+  // user. The quota block used to be wrapped in `if (userToken)`, so omitting
+  // the header skipped both the daily limit and the scan_logs insert — unlimited
+  // vision completions on the shared paid key pool, uncounted. That made the
+  // free tier, and the Pro upgrade it funds, unenforceable by anyone with curl.
   //
-  // The whole quota block below used to be wrapped in `if (userToken)`. Omitting
-  // the header skipped the daily limit AND the scan_logs insert, so an anonymous
-  // caller got unlimited vision completions on the shared paid key pool and was
-  // never counted — bounded only by the per-IP limiter. That made the free tier,
-  // and the Pro upgrade it funds, unenforceable by anyone willing to use curl.
-  //
-  // Users on their own Groq key are unaffected: the client calls Groq directly
-  // in that case and never reaches this proxy.
-  if (!userToken || userToken.length < 20) {
-    return json({ error: 'Sign in to scan — free accounts get ' + FREE_SCANS_PER_DAY + ' scans a day.' }, 401, cors)
-  }
-  if (!SUPA_URL || !SUPA_KEY) {
-    return json({ error: 'Server auth not configured' }, 503, cors)
-  }
-  let userId = null
-  try {
-    const userRes = await fetch(SUPA_URL + '/auth/v1/user', {
-      headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
-    })
-    if (userRes.ok) {
-      const userData = await userRes.json()
-      userId = userData && userData.id
+  // Users on their own Groq key never reach this proxy at all.
+  const isGuest = !userToken || userToken.length < 20
+
+  if (isGuest) {
+    // Let a newcomer actually try the product before asking for an account —
+    // the first scan is the pitch. Capped hard because guest scans cannot be
+    // attributed to anyone.
+    const used = await guestScanCount(ip)
+    if (used > GUEST_SCANS_PER_DAY) {
+      return json({
+        error: 'You have used your ' + GUEST_SCANS_PER_DAY + ' free scans. Create a free account for ' + FREE_SCANS_PER_DAY + ' scans every day.',
+        signUpRequired: true,
+      }, 401, cors)
     }
-  } catch (e) { /* handled immediately below */ }
+  } else {
+    if (!SUPA_URL || !SUPA_KEY) {
+      return json({ error: 'Server auth not configured' }, 503, cors)
+    }
+    let userId = null
+    try {
+      const userRes = await fetch(SUPA_URL + '/auth/v1/user', {
+        headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
+      })
+      if (userRes.ok) {
+        const userData = await userRes.json()
+        userId = userData && userData.id
+      }
+    } catch (e) { /* handled immediately below */ }
 
-  // Fail CLOSED on identity — an unverifiable token is exactly the case this
-  // gate exists for. The quota check below still fails open, so a transient
-  // Supabase blip degrades to "scan allowed" for a real signed-in user rather
-  // than breaking the product for everyone.
-  if (!userId) {
-    return json({ error: 'Session expired — sign in again to scan.' }, 401, cors)
+    // Fail CLOSED on identity: a token that will not verify is exactly what this
+    // gate exists for. The quota check below still fails open, so a transient
+    // Supabase blip degrades to "scan allowed" for a real signed-in user rather
+    // than breaking scanning for everyone.
+    if (!userId) {
+      return json({ error: 'Session expired — sign in again to scan.' }, 401, cors)
+    }
+    scanUserId = userId
   }
-  scanUserId = userId
 
-  try {
+  if (!isGuest) try {
     const profileRes = await fetch(SUPA_URL + '/rest/v1/profiles?id=eq.' + userId + '&select=is_pro,is_developer', {
       headers: { 'Authorization': 'Bearer ' + userToken, 'apikey': SUPA_KEY }
     })
