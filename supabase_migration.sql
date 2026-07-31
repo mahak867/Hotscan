@@ -544,23 +544,23 @@ grant execute on function get_listing_contact(uuid) to authenticated;
 -- so scans could be attributed to someone else.
 drop policy if exists "scan_logs_select" on scan_logs;
 drop policy if exists "scan_logs_insert" on scan_logs;
-do $$ begin
+do $blk$ begin
   create policy "scan_logs_select_own" on scan_logs
     for select using (auth.uid() = user_id);
-exception when duplicate_object then null; end $$;
-do $$ begin
+exception when duplicate_object then null; end $blk$;
+do $blk$ begin
   -- user_id IS NULL is a guest scan, which nobody can later claim.
   create policy "scan_logs_insert_own" on scan_logs
     for insert with check (user_id is null or auth.uid() = user_id);
-exception when duplicate_object then null; end $$;
+exception when duplicate_object then null; end $blk$;
 
 -- referrals: `insert with check (true)` let anyone POST arbitrary rows and farm
 -- referral rewards. A referral may now only be recorded for yourself.
 drop policy if exists "referrals_insert" on referrals;
-do $$ begin
+do $blk$ begin
   create policy "referrals_insert_self" on referrals
     for insert with check (auth.uid() = referred_user_id);
-exception when duplicate_object then null; end $$;
+exception when duplicate_object then null; end $blk$;
 
 -- community_prices: this is the dataset the whole price guide depends on, so it
 -- is the most valuable thing to poison. Previously any authenticated user could
@@ -568,7 +568,7 @@ exception when duplicate_object then null; end $$;
 -- inflate the "community verified" price on a casting they are about to list.
 -- Submissions are now attributable and rate limited.
 drop policy if exists "community_prices_insert" on community_prices;
-do $$ begin
+do $blk$ begin
   create policy "community_prices_insert_own" on community_prices
     for insert with check (
       auth.uid() is not null
@@ -579,14 +579,14 @@ do $$ begin
           and c.created_at > now() - interval '1 hour'
       ) < 10
     );
-exception when duplicate_object then null; end $$;
+exception when duplicate_object then null; end $blk$;
 
 -- events: anonymous inserts allowed unlimited spam into a moderation queue.
 drop policy if exists "events_insert" on events;
-do $$ begin
+do $blk$ begin
   create policy "events_insert_auth" on events
     for insert with check (auth.uid() is not null and auth.uid() = submitted_by);
-exception when duplicate_object then null; end $$;
+exception when duplicate_object then null; end $blk$;
 
 -- ── 19. Gate seller ratings behind a real interaction ──────────────────
 -- Ratings previously required nothing but an account: a competitor could sink a
@@ -604,10 +604,10 @@ create table if not exists listing_contacts (
 alter table listing_contacts enable row level security;
 
 -- Buyers see their own contact history; sellers see who asked about their cars.
-do $$ begin
+do $blk$ begin
   create policy "listing_contacts_select" on listing_contacts
     for select using (auth.uid() = buyer_id or auth.uid() = seller_id);
-exception when duplicate_object then null; end $$;
+exception when duplicate_object then null; end $blk$;
 
 create index if not exists idx_listing_contacts_pair
   on listing_contacts(buyer_id, seller_id);
@@ -616,7 +616,7 @@ create index if not exists idx_listing_contacts_pair
 revoke insert, update, delete on listing_contacts from anon, authenticated;
 
 drop policy if exists "seller_ratings_insert" on seller_ratings;
-do $$ begin
+do $blk$ begin
   create policy "seller_ratings_insert_after_contact" on seller_ratings
     for insert with check (
       auth.uid() = rater_id
@@ -627,7 +627,7 @@ do $$ begin
           and lc.seller_id = seller_ratings.seller_id
       )
     );
-exception when duplicate_object then null; end $$;
+exception when duplicate_object then null; end $blk$;
 
 -- get_listing_contact now records the interaction as well as returning the
 -- number, which is what makes the rating gate above enforceable.
@@ -636,7 +636,7 @@ returns text
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $fn_contact0$
 declare
   v_phone  text;
   v_seller uuid;
@@ -659,7 +659,7 @@ begin
 
   return v_phone;
 end;
-$$;
+$fn_contact0$;
 
 revoke execute on function get_listing_contact(uuid) from anon;
 grant execute on function get_listing_contact(uuid) to authenticated;
