@@ -394,13 +394,21 @@ export function updateHeaderUI(){
   var isProUser=!isDev&&!!(state.userProfile&&state.userProfile.is_pro)
   var bg=isDev?'linear-gradient(135deg,#7c3aed,#4f46e5)':isProUser?'linear-gradient(135deg,#e63946,#ff6b35)':(prefs.avatarColor||'linear-gradient(135deg,#374151,#4b5563)')
   var badge=isDev?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap">&#x1F451; Dev</span>':isProUser?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span>':''
-  // An uploaded picture replaces the initial; everything else about the chip
-  // (size, ring, Pro/Dev badge) stays identical so the header doesn't shift.
+  // Just the avatar. The old chip stacked three things — gradient circle, the
+  // truncated username, and a loud Pro/Dev pill — which read as cluttered and
+  // ate ~90px of a header where the search field only has ~215px to work with.
+  //
+  // Plan is now a ring colour rather than a text badge: gold for Pro, violet for
+  // Dev, neutral otherwise. The name, email and plan are all one tap away in the
+  // dropdown, which already shows them, so nothing is actually lost.
   var av=avatarUrl()
   var avInner=av
     ? '<img src="'+escHtml(av)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block">'
     : initial
-  btn.innerHTML='<div style="display:flex;align-items:center;gap:6px;cursor:pointer"><div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden">'+avInner+'</div><span style="font-size:12px;font-weight:600;color:var(--text);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>'+badge+'</div>'
+  var ring=isDev?'#7c3aed':isProUser?'var(--gold)':'rgba(255,255,255,.18)'
+  var planLabel=isDev?'Developer':isProUser?'Pro':'Free'
+  btn.innerHTML='<button type="button" class="hs-avatar-btn'+(isDev||isProUser?' is-plan':'')+'" style="--ring:'+ring+';background:'+bg+'" '+
+    'aria-label="'+safeName+' — '+planLabel+' account. Open account menu" title="'+safeName+' · '+planLabel+'">'+avInner+'</button>'
   btn.onclick=function(e){ e.stopPropagation(); if(dd) dd.classList.toggle('open') }
   if(dd){
     dd.innerHTML =

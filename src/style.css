@@ -1484,3 +1484,26 @@ input, select, textarea { font-size:16px !important; }
 /* Collection valuation roll-up. The number is the reason people reopen the app;
    counting to it reads as the figure being calculated rather than just printed. */
 .val-total.hs-rolling { will-change: contents; }
+
+/* ── Header avatar button ─────────────────────────────────────────────────
+   Replaces the old avatar + username + Pro/Dev pill chip. That stacked three
+   elements and consumed roughly 90px of a header whose search field only has
+   ~215px at 375px wide. Plan is signalled by the ring colour instead: gold for
+   Pro, violet for Developer, neutral for free. Name, email and plan all remain
+   one tap away in the dropdown. */
+.hs-avatar-btn{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--ring,rgba(255,255,255,.18));
+  padding:0;overflow:hidden;flex-shrink:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:900;color:#fff;
+  transition:transform .15s ease,box-shadow .2s ease;
+}
+.hs-avatar-btn:hover{transform:scale(1.06)}
+.hs-avatar-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* Paid and developer accounts get a faint halo so the ring reads as deliberate
+   rather than as an arbitrary border colour. */
+.hs-avatar-btn.is-plan{box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 10px -2px var(--ring)}
+/* The tap target must clear 44px even though the visual is 32px. */
+.hs-avatar-btn::after{content:'';position:absolute;inset:-6px;border-radius:50%}
+.profile-dd{position:relative;display:flex;align-items:center}
