@@ -1507,3 +1507,27 @@ input, select, textarea { font-size:16px !important; }
 /* The tap target must clear 44px even though the visual is 32px. */
 .hs-avatar-btn::after{content:'';position:absolute;inset:-6px;border-radius:50%}
 .profile-dd{position:relative;display:flex;align-items:center}
+
+/* ── Touch target sizing ──────────────────────────────────────────────────
+   The collection sort/filter chips render at 24px tall, well under the ~44px
+   both Apple's HIG and Material specify for touch. They are the primary way to
+   browse a collection on a phone, which is the primary way this app is used.
+
+   Scoped to coarse pointers so desktop keeps the compact original: a mouse is
+   precise enough that the extra height would only waste vertical space. */
+@media (pointer: coarse) {
+  .chips { gap: 7px; padding-bottom: 5px; }
+  .chip {
+    padding: 10px 14px;
+    font-size: 12px;
+    border-radius: 22px;
+    /* Keeps the row from growing when a chip wraps to two lines of text. */
+    line-height: 1.15;
+  }
+  /* Collection view toggle sits in the same row and should match. */
+  .col-viewbtn { width: 38px; height: 34px; }
+  /* Small circular controls on cards: grow the hit area without growing the
+     visual, so card layout is unaffected. */
+  .col-gcard-del { width: 30px; height: 30px; }
+  .flip-card-btn { width: 30px; height: 30px; }
+}
