@@ -383,10 +383,41 @@ export function showResult(d) {
   window._checkAchievements && window._checkAchievements(d)
   if (window.updateStreak) window.updateStreak()
   // #1 — color-coded confidence bar: red <50%, gold 50-79%, green ≥80%
-  var conf = d.confidence || 75
+  // Show the model's real confidence, or an explicit unknown — never a default.
+  // This used to read `d.confidence || 75`, which drew a confident 75% bar for a
+  // result that carried no confidence at all: a number the app invented and then
+  // presented as a measurement.
+  var hasConf = typeof d.confidence === 'number' && d.confidence > 0
+  var conf = hasConf ? d.confidence : 0
   var confFill = document.getElementById('r-conf')
-  confFill.style.width = conf + '%'
-  confFill.style.background = conf >= 80 ? 'var(--green)' : conf >= 50 ? 'var(--gold)' : 'var(--red)'
+  confFill.style.width = (hasConf ? conf : 100) + '%'
+  confFill.style.background = !hasConf ? 'var(--surface3)'
+    : conf >= 80 ? 'var(--green)' : conf >= 50 ? 'var(--gold)' : 'var(--red)'
+
+  // A low-confidence or unevidenced-rarity result needs to say so in words. The
+  // bar colour alone is not a warning — most people do not read a bar as doubt,
+  // and this is precisely where acting on a wrong answer costs real money.
+  var warnEl = document.getElementById('r-confidence-warn')
+  if (!warnEl) {
+    warnEl = document.createElement('div')
+    warnEl.id = 'r-confidence-warn'
+    var confBar = document.getElementById('r-conf')
+    var anchor = confBar && confBar.parentElement ? confBar.parentElement : null
+    if (anchor && anchor.parentElement) anchor.parentElement.insertBefore(warnEl, anchor.nextSibling)
+  }
+  if (warnEl) {
+    var warnings = []
+    if (!hasConf) warnings.push('The AI did not report how sure it is about this identification.')
+    else if (d._lowConfidence || conf < 75) warnings.push('Low confidence (' + conf + '%) — check the casting name against the base before trusting the price.')
+    if (d._needsVerification) warnings.push('This rarity was claimed without stating visible evidence. Verify the TH logo and wheels yourself before paying a premium.')
+    if (warnings.length) {
+      warnEl.style.cssText = 'margin:8px 0 0;padding:9px 11px;border-radius:9px;background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.28);font-size:11.5px;line-height:1.6;color:var(--text2)'
+      warnEl.innerHTML = warnings.map(function(w){ return '⚠️ ' + escHtml(w) }).join('<br>')
+      warnEl.style.display = 'block'
+    } else {
+      warnEl.style.display = 'none'
+    }
+  }
   var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
   var rb = document.getElementById('r-rar')
   var rarLabel = d.rarity || 'Common'

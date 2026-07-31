@@ -145,6 +145,19 @@ async function identifyCar(imageData) {
     }
     throw new Error('Could not identify. Try: white surface · bright light · side view · include card')
   }
+  return gateCarQuality(d)
+}
+
+// Quality gates for an identified car.
+//
+// These previously lived only inside identifyCar(), which is the FALLBACK path —
+// reached only when the multi-car call returns zero cars. The primary path
+// (identifyMultipleCars with exactly one car) skipped every one of them, so a
+// 40%-confidence "Unknown casting" was presented as a definitive answer with a
+// price attached. For an app whose whole pitch is not getting scammed, that is
+// the credibility bug that matters most. Both paths now share this.
+export function gateCarQuality(d) {
+  if (!d) throw new Error('Could not identify this car. Try: white background, bright light, close-up side view')
   if (!d.name || d.name.toLowerCase().indexOf('unknown') > -1 || d.name.toLowerCase().indexOf('generic') > -1) {
     throw new Error('Could not identify this car. Try: white background, bright light, close-up side view')
   }
@@ -154,7 +167,8 @@ async function identifyCar(imageData) {
   if (d.confidence && d.confidence < 75) {
     d._lowConfidence = true
   }
-  // Validate rarity assessment
+  // A high-value rarity claimed with no stated visible evidence is exactly the
+  // claim a buyer would act on, so flag it rather than presenting it flatly.
   if (!d.rarity_reason && (d.rarity === 'Treasure Hunt' || d.rarity === 'Super Treasure Hunt' || d.rarity === 'Error Car')) {
     d._needsVerification = true
   }
@@ -284,7 +298,7 @@ export async function analyzePhoto() {
     }
 
     carData = (multiResult && multiResult.cars && multiResult.cars.length === 1)
-      ? Object.assign({ identified: true }, multiResult.cars[0])
+      ? gateCarQuality(Object.assign({ identified: true }, multiResult.cars[0]))
       : await identifyCar(state.img64)  // fallback only when multi-car returned 0
 
     window.setStep(1, 'done'); window.setStep(2, 'active')
