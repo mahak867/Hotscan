@@ -133,7 +133,22 @@
         <div class="scan-btns">
           <button class="btn-red" onclick="openCam()">📷 Camera</button>
           <button class="btn-dark" onclick="openGal()">🖼 Gallery</button>
+          <!-- Multi-photo scanning is HIDDEN, not removed. The whole feature —
+               openMulti / handleMultiFiles / analyzeMultiPhoto, thumbnail
+               removal, and the batching in identifyMultipleCars — is intact and
+               reachable; only this entry point is withdrawn.
+               Why: it is the least-verified path in the app. Every scan bug this
+               cycle came from it (429 pool exhaustion, then a 413 from batching,
+               then max_tokens reservation, then image sizing), and none of that
+               logic has ever run against Gemini — the batching, image_index
+               attribution and 413 split-retry were all built and tuned for
+               Groq's 8,000 TPM ceiling. A five-photo batch also costs roughly
+               4-5x a single scan, which on a shared free tier is one person
+               consuming what several others' scans would.
+               BEFORE RESTORING: send a real 5-photo batch through Gemini and
+               confirm each car comes back attributed to the right source photo.
           <button class="btn-dark" onclick="openMulti()">📁 Multiple</button>
+          -->
         </div>
         <div style="margin-top:14px;font-size:11px;color:var(--text3)">Tip: white surface + bright light = best results</div>
       </div>
