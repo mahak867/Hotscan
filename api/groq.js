@@ -80,27 +80,55 @@ async function isRateLimited(ip) {
 // them. Capped hard, because these scans are unattributable and therefore the
 // abuse surface: 2 per IP per day is enough to prove the product works and far
 // too few to be worth farming.
-const GUEST_SCANS_PER_DAY = 2
+const GUEST_SCANS_PER_DAY = 3
+// Backstop against one actor farming the guest tier by clearing storage for a
+// fresh device id. Deliberately generous: on Indian mobile networks a single
+// public IP can front a very large number of unrelated people.
+const GUEST_SCANS_PER_IP_PER_DAY = 60
 
-async function guestScanCount(ip) {
+// Counts a guest's scans, keyed on device id where available and IP otherwise.
+//
+// IP alone is the wrong key in this market. Jio and Tata have run carrier-grade
+// NAT from the start and Airtel has migrated to it, so thousands of unrelated
+// mobile users share one public address. An IP-keyed allowance of a few scans
+// means the first couple of people on a carrier IP consume it and everyone
+// behind them is told they have used up scans they never made — which, for a
+// launch into a WhatsApp group of collectors on mobile data, is every user
+// after the first two.
+//
+// A localStorage device id is spoofable by clearing storage. That is an
+// acceptable trade: it raises the effort of farming while not punishing
+// legitimate users, and the per-IP ceiling below catches bulk abuse.
+async function guestScanCount(ip, deviceId) {
   // Fail CLOSED when Redis is unconfigured: without a counter there is no cap,
   // and an uncapped anonymous path is exactly the hole this whole change exists
   // to close. Signed-in users are unaffected.
   if (!UPSTASH_URL || !UPSTASH_TOKEN) return Infinity
   try {
+    const day = new Date().toISOString().slice(0, 10)
     // Date-stamped key gives a natural daily reset without needing a cron.
-    const key = 'guest:groq:' + new Date().toISOString().slice(0, 10) + ':' + ip
+    const key = deviceId
+      ? 'guest:groq:' + day + ':d:' + deviceId
+      : 'guest:groq:' + day + ':' + ip
+    const ipKey = 'guest:groq:' + day + ':ip:' + ip
     const res = await fetch(UPSTASH_URL + '/pipeline', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + UPSTASH_TOKEN, 'Content-Type': 'application/json' },
       body: JSON.stringify([
         ['INCR', key],
         ['EXPIRE', key, 172800, 'NX'], // 48h, comfortably past any timezone edge
+        ['INCR', ipKey],
+        ['EXPIRE', ipKey, 172800, 'NX'],
       ]),
     })
     if (!res.ok) return Infinity
     const data = await res.json()
     const count = data && data[0] && data[0].result
+    const ipCount = data && data[2] && data[2].result
+    // Either ceiling can stop a guest, but they are wildly different sizes: a
+    // few per device, many per IP. Report whichever has been breached so the
+    // caller's message stays accurate.
+    if (typeof ipCount === 'number' && ipCount > GUEST_SCANS_PER_IP_PER_DAY) return Infinity
     return typeof count === 'number' ? count : Infinity
   } catch (e) {
     return Infinity
@@ -152,7 +180,7 @@ async function handleRequest(req) {
   const cors = {
     'Access-Control-Allow-Origin':  corsOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, x-user-token, x-device-id',
   }
 
   // CORS pre-flight
@@ -204,7 +232,11 @@ async function handleRequest(req) {
     // Let a newcomer actually try the product before asking for an account —
     // the first scan is the pitch. Capped hard because guest scans cannot be
     // attributed to anyone.
-    const used = await guestScanCount(ip)
+    // Device id is client-supplied, so treat it as untrusted: constrain it hard
+    // before it becomes part of a Redis key.
+    const rawDevice = (req.headers.get('x-device-id') || '').trim()
+    const deviceId = /^[a-zA-Z0-9-]{8,64}$/.test(rawDevice) ? rawDevice : ''
+    const used = await guestScanCount(ip, deviceId)
     if (used > GUEST_SCANS_PER_DAY) {
       return json({
         error: 'You have used your ' + GUEST_SCANS_PER_DAY + ' free scans. Create a free account for ' + FREE_SCANS_PER_DAY + ' scans every day.',

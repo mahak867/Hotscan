@@ -21,12 +21,35 @@ export async function proxyHeaders() {
 // so sending proxyHeaders() there would 401 anyone who had set a personal key.
 export async function sessionHeaders() {
   var h = { 'Content-Type': 'application/json' }
+  h['x-device-id'] = deviceId()
   try {
     var sess = await state._sb.auth.getSession()
     var tok = sess && sess.data && sess.data.session && sess.data.session.access_token
     if (tok) h['x-user-token'] = tok
   } catch(e) { /* server answers 401 and the caller surfaces it */ }
   return h
+}
+
+// Stable per-browser id so the guest trial can be counted per device rather than
+// per IP. Jio and Tata run carrier-grade NAT and Airtel has migrated to it, so a
+// single public IP fronts thousands of unrelated people here — an IP-keyed guest
+// allowance would tell almost everyone in a group launch that they had used up
+// scans they never made.
+//
+// Clearing storage resets it, which is fine: this raises the effort of farming
+// the free tier without penalising real users, and the server keeps a much
+// larger per-IP ceiling behind it to catch bulk abuse.
+export function deviceId() {
+  try {
+    var id = localStorage.getItem('hs_device_id')
+    if (!id) {
+      id = (crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'd-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
+      localStorage.setItem('hs_device_id', id)
+    }
+    return id
+  } catch (e) { return '' }
 }
 
 export function parseJSON(raw) {
