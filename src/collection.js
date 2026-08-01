@@ -1,5 +1,8 @@
 import { state } from './state.js'
-import { cleanINR, parseINR, escHtml, showToast, rcls, captureException } from './utils.js'
+// hsConfirm was used in addToCol() without ever being imported, so scanning a
+// car already in the collection threw ReferenceError instead of offering to add
+// a second copy — the duplicate flow was dead for every user.
+import { cleanINR, parseINR, escHtml, showToast, rcls, hsConfirm, captureException } from './utils.js'
 
 // Prevents concurrent fullCloudSync() calls racing against Supabase.
 // Both onAuthStateChange(INITIAL_SESSION) and getSession() fire on page load,

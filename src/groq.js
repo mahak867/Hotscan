@@ -1,5 +1,9 @@
 import { state } from './state.js'
 import { VISION_MODEL, VISION_FALLBACK, CODEX_MODEL, HAIKU_MODEL } from './config.js'
+// Was referenced below behind a `typeof captureException === 'function'` guard
+// but never imported, so the guard was always false and the vision-model
+// fallback has never once been reported. Safe, but silent.
+import { captureException } from './utils.js'
 
 // Headers for an AI call: the user's own Groq key when they have one, otherwise
 // their Supabase session token so /api/groq can identify them.
