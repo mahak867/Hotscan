@@ -374,8 +374,18 @@ async function handleRequest(req) {
   var band=BANDS[rarity]||BANDS['Common']
 
   var result={
-    india_retail_inr:    sanityClamp((final&&final.india_retail_inr)||band.r, band.r, 1, 6),
-    india_collector_inr: sanityClamp((final&&final.india_collector_inr)||band.c, band.c, 1, 8),
+    // Multipliers were 6x retail and 8x collector, which made the clamp
+    // meaningless: Common's collector band is 200-350, so 8x allowed the model
+    // to price a Common car up to 2,800. A real scan came back "Common ·
+    // 600-1800" — contradicting the app's own Rarity Guide, which states
+    // 200-350 for Common, on a car whose actual Indian price was around 300.
+    //
+    // 2.5x still lets a genuinely sought-after casting price above its band (a
+    // mint '94 Supra really does carry a premium over a typical mainline) while
+    // keeping the number recognisably in the same conversation as the tier the
+    // app just assigned it.
+    india_retail_inr:    sanityClamp((final&&final.india_retail_inr)||band.r, band.r, 1, 2.5),
+    india_collector_inr: sanityClamp((final&&final.india_collector_inr)||band.c, band.c, 1, 2.5),
     us_retail_usd:       (final&&final.us_retail_usd)||band.ur,
     us_collector_usd:    (final&&final.us_collector_usd)||band.uc,
     price_trend:         (final&&final.price_trend)||'Stable',
