@@ -854,13 +854,32 @@ export async function identifyMultipleCars(imageData) {
       throw new Error((e.error&&e.error.message)||'Vision error '+res.status)
     }
     var data = await res.json()
-    return parseJSON(data.choices[0].message.content)
+    try {
+      return parseJSON(data.choices[0].message.content)
+    } catch(pe) {
+      // Mark parse failures so the caller can retry. On some photos the model
+      // answers in prose instead of JSON — image-specific, not systemic, and it
+      // usually succeeds on a second attempt.
+      pe.parseError = true
+      throw pe
+    }
   }
 
   try {
     return await tryModel(VISION_MODEL)
   } catch(e) {
     if (e.modelError) return await tryModel(VISION_FALLBACK)
+    // Retry once on a parse failure rather than telling the user to do by hand
+    // exactly what the app could do itself. Telling someone "try again" while
+    // declining to try again is a poor trade for one extra call.
+    if (e.parseError) {
+      try {
+        return await tryModel(VISION_MODEL)
+      } catch(e2) {
+        // Second failure is a real one — surface the original message.
+        throw e
+      }
+    }
     throw e
   }
 }
