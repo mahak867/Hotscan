@@ -737,10 +737,23 @@ async function _doFullCloudSync(retryCount) {
       return isLocalId && !cloudKeys.includes(dupeKey(c))
     })
 
-    // 3. Upload local-only items to cloud
+    // 3. Upload local-only items to cloud, TRACKING which ones failed.
+    //
+    // This used to discard saveToCloud's return value. Step 4 then replaced
+    // state.collection wholesale with cloud rows and rewrote localStorage — so
+    // an item whose upload failed was erased from the device having never
+    // reached the cloud. Silent, permanent data loss.
+    //
+    // It fires because the client and the database disagree about what a
+    // duplicate is: saveToCloud checks name + series + colour, while
+    // idx_collection_user_name is unique on (user_id, lower(name)) alone. A
+    // second car sharing a name but not a colour looks new to the client and is
+    // rejected by the index.
+    var failedUploads = []
     for (var i = 0; i < localOnly.length; i++) {
       var item = localOnly[i]
-      await saveToCloud(item)
+      var savedId = await saveToCloud(item)
+      if (!savedId) failedUploads.push(item)
     }
 
     // 4. Merge: cloud items + any local-only items not yet uploaded
@@ -794,6 +807,18 @@ async function _doFullCloudSync(retryCount) {
     // a car added on another device, or a fresh session. Fetch just those thumbs
     // by id so the saving above doesn't cost us missing artwork.
     if (!withThumbs) await _backfillThumbs(cloudItems)
+
+    // Carry forward anything that could not be uploaded. These cars exist only
+    // on this device, so dropping them here is what destroyed them before.
+    // They stay local and will retry on the next sync; a car that never syncs
+    // is a far smaller problem than a car that silently disappears.
+    if (failedUploads.length > 0) {
+      cloudItems = cloudItems.concat(failedUploads)
+      captureException(new Error(
+        'fullCloudSync: kept ' + failedUploads.length + ' local car(s) that failed to upload — ' +
+        'likely the name-only unique index rejecting a second car with the same name'
+      ))
+    }
 
     // never wipe existing collection on empty sync
     if (cloudItems.length > 0) {

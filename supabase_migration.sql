@@ -822,3 +822,27 @@ grant execute on function get_email_by_username(text) to anon, authenticated;
 
 -- Housekeeping: the lookup log is a rate-limit ledger, not history.
 delete from username_lookups where looked_up_at < now() - interval '1 day';
+
+-- ── 22. The collection unique index contradicts the app ────────────────
+-- idx_collection_user_name is unique on (user_id, lower(name)), so a user may
+-- hold only ONE car of any given name. Two things conflict with that:
+--
+--   1. addToCol() explicitly offers "Add another copy?" when you scan a car you
+--      already own. The UI invites exactly what the index forbids.
+--   2. saveToCloud() treats a car as new when name + series + colour differ, so
+--      a second casting sharing a name but not a colour looks new to the client
+--      and is then rejected by the index with a 409.
+--
+-- The consequence was silent data loss: fullCloudSync uploaded local-only cars,
+-- ignored the failures, then replaced state.collection with cloud rows and
+-- rewrote localStorage — erasing from the device a car that had never reached
+-- the cloud. The client now carries failed uploads forward, but they can never
+-- sync while this index stands.
+--
+-- Replaced with a NON-unique index. It still serves the lookup the sync does,
+-- without asserting a uniqueness rule the product does not actually have.
+-- Deduplication belongs in the client, which already does it on name + colour +
+-- series and asks the user before adding a genuine second copy.
+drop index if exists idx_collection_user_name;
+create index if not exists idx_collection_user_name
+  on collection(user_id, lower(name));
