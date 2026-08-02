@@ -451,6 +451,15 @@ insert into storage.buckets (id, name, public)
   values ('car-images', 'car-images', true)
   on conflict (id) do nothing;
 
+-- The SELECT policy below is NOT optional, and not only about reading images.
+--
+-- uploadImageToStorage() calls .upload(..., { upsert: true }), which compiles to
+-- INSERT ... ON CONFLICT DO UPDATE, and Postgres requires SELECT permission to
+-- read the conflicting row. Without this policy every upload fails with "new row
+-- violates row-level security policy" — which points at the INSERT check and
+-- sends you hunting in the wrong place entirely. Diagnosed in production after
+-- a wide-open INSERT policy changed nothing: the avatars bucket had a SELECT
+-- policy and worked, car-images did not and did not.
 do $$ begin
   create policy "car_images_public_read" on storage.objects
     for select using (bucket_id = 'car-images');
