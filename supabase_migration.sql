@@ -855,3 +855,18 @@ delete from username_lookups where looked_up_at < now() - interval '1 day';
 drop index if exists idx_collection_user_name;
 create index if not exists idx_collection_user_name
   on collection(user_id, lower(name));
+
+-- ── 23. Drop the OTHER name-only unique index ──────────────────────────
+-- Migration 22 dropped idx_collection_user_name, but production was actually
+-- enforcing idx_col_user_name — a differently-named index that exists in the
+-- database and appears nowhere in this file, so it was created outside it.
+-- Inserts kept failing with 409 after 22 ran, because 22 dropped an index that
+-- was not the one doing the work.
+--
+-- Run the SELECT below afterwards to confirm nothing else unique remains on
+-- collection; guessing at index names once was enough.
+drop index if exists idx_col_user_name;
+
+-- Verification — expect no rows marked unique on (user_id, name):
+--   select indexname, indexdef from pg_indexes
+--   where tablename = 'collection' and indexdef ilike '%unique%';

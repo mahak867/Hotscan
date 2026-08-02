@@ -813,12 +813,47 @@ async function _doFullCloudSync(retryCount) {
     // They stay local and will retry on the next sync; a car that never syncs
     // is a far smaller problem than a car that silently disappears.
     if (failedUploads.length > 0) {
-      cloudItems = cloudItems.concat(failedUploads)
-      captureException(new Error(
-        'fullCloudSync: kept ' + failedUploads.length + ' local car(s) that failed to upload — ' +
-        'likely the name-only unique index rejecting a second car with the same name'
-      ))
+      // Only carry forward cars the cloud does not already have. The first
+      // version of this appended unconditionally, which produced a visible
+      // duplicate: a car that failed to upload was kept locally, then uploaded
+      // successfully on a later sync, and the stale local copy was re-appended
+      // alongside the new cloud row.
+      var haveKeys = {}
+      cloudItems.forEach(function(c){ haveKeys[dupeKey(c)] = true })
+      var stillMissing = failedUploads.filter(function(c){ return !haveKeys[dupeKey(c)] })
+      if (stillMissing.length > 0) {
+        cloudItems = cloudItems.concat(stillMissing)
+        captureException(new Error(
+          'fullCloudSync: kept ' + stillMissing.length + ' local car(s) that failed to upload'
+        ))
+      }
     }
+
+    // Collapse any duplicate that already exists.
+    //
+    // Migration 22 dropped the unique index on (user_id, lower(name)) because it
+    // contradicted the "Add another copy?" flow — but it was also the last thing
+    // stopping a re-upload from creating a genuine second row. Deduplication is
+    // now entirely the client's job, so it has to actually happen here rather
+    // than be assumed.
+    //
+    // Cloud rows win over local ones: a uuid id means the row is real and
+    // synced, so keeping it preserves the id that edits and deletes reference.
+    var seenKeys = {}
+    cloudItems = cloudItems.filter(function(c) {
+      var k = dupeKey(c)
+      if (!seenKeys[k]) { seenKeys[k] = c; return true }
+      var kept = seenKeys[k]
+      var keptIsCloud = String(kept.id).indexOf('-') > -1
+      var thisIsCloud = String(c.id).indexOf('-') > -1
+      // Swap in the cloud copy if the one already kept is only local.
+      if (thisIsCloud && !keptIsCloud) {
+        var at = cloudItems.indexOf(kept)
+        if (at > -1) cloudItems[at] = c
+        seenKeys[k] = c
+      }
+      return false
+    })
 
     // never wipe existing collection on empty sync
     if (cloudItems.length > 0) {
