@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, hsPromptPrice, captureException } from './utils.js'
+import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, hsPromptPrice, compress, captureException } from './utils.js'
 import { groqText, groqJSON } from './groq.js'
 import { HAIKU_MODEL } from './config.js'
 
@@ -493,7 +493,11 @@ export async function submitListing() {
   var _listed = false
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Listing…' }
   try {
-    var imgThumb = window._slImgThumb || (state.imgThumb ? state.imgThumb.substring(0, 8000) : null)
+    // state.imgThumb is already a 120px compressed thumbnail from compressThumb,
+    // so it needs no truncation — and truncating it was the same corruption bug
+    // as above, just hit less often because a 120px thumb usually lands under
+    // 8000 characters. image_thumb is a text column with no length limit.
+    var imgThumb = window._slImgThumb || state.imgThumb || null
     await state._sb.from('listings').insert({
       seller_id:    state.currentUser.id,
       seller_name:  (state.userProfile && state.userProfile.display_name) || state.currentUser.name || state.currentUser.email.split('@')[0],
@@ -646,7 +650,17 @@ export function slPhotoSelected(input) {
     if (wrap && img) {
       img.src = e.target.result
       wrap.style.display = 'block'
-      window._slImgThumb = e.target.result.substring(0, 8000)
+      // Compress, never truncate. This used to store
+      // e.target.result.substring(0, 8000) — the raw file as a data URL is
+      // megabytes, so cutting it at 8000 characters produced a corrupt image
+      // that could never render. The preview above showed the FULL data, so it
+      // looked like it had worked right up until the listing appeared blank.
+      compress(e.target.result, 400).then(function(small) {
+        window._slImgThumb = small
+      }).catch(function(err) {
+        window._slImgThumb = null
+        captureException(err)
+      })
     }
     var label = document.getElementById('sl-photo-label')
     if (label) label.style.display = 'none'
