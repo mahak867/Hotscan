@@ -870,3 +870,21 @@ drop index if exists idx_col_user_name;
 -- Verification — expect no rows marked unique on (user_id, name):
 --   select indexname, indexdef from pg_indexes
 --   where tablename = 'collection' and indexdef ilike '%unique%';
+
+-- ── 24. seller_stats needs a grant on sold_at ──────────────────────────
+-- Migration 16 revoked blanket SELECT on listings and granted only a named
+-- column list, so that seller_phone could not be read. Migration 20 then
+-- rebuilt seller_stats to count completed sales via l.sold_at — a column that
+-- list does not include.
+--
+-- Because the view runs with security_invoker = on, it executes as the caller,
+-- and every seller_stats query fails with 42501 permission denied for table
+-- listings. loadSellerStats() swallows the error, so seller ratings and the
+-- Verified Seller badge simply never appeared, with nothing logged.
+--
+-- sold_at is a timestamp, not contact information, so granting it costs nothing
+-- that migration 16 was protecting.
+grant select (sold_at) on listings to anon, authenticated;
+
+-- Verification — should return a row per seller with sales_count present:
+--   select * from seller_stats limit 5;
