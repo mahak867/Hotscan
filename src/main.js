@@ -228,6 +228,17 @@ document.addEventListener('DOMContentLoaded', function () {
 })
 
 // window.load: app init
+// Collection search. index.html called searchCol() from an inline oninput, but
+// searchCol is a module import and was never put on window, so every keystroke
+// threw "searchCol is not defined" and the list never filtered. A listener
+// bound here needs no global at all.
+function _bindColSearch() {
+  var cs = document.getElementById('col-search')
+  if (cs) cs.addEventListener('input', function () { searchCol(cs.value) })
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _bindColSearch)
+else _bindColSearch()
+
 window.addEventListener('load', function () {
   // Restore cached profile for instant header UI
   try {

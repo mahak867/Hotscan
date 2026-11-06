@@ -446,23 +446,31 @@ export async function markListingSold(id, carName) {
   if (!state.currentUser || !state._sb) return
   var price = await hsPromptPrice('Mark as Sold', 'What did "' + carName + '" actually sell for? This helps keep prices accurate for every collector.')
   if (!price) return
+  // Recorded as seller-reported: the seller typed this number and nothing
+  // confirms a buyer paid it. It used to be tagged "Verified Sale", which the
+  // pricing API trusted enough to override every other estimate.
   try {
-    await state._sb.from('community_prices').insert({
+    var cp = await state._sb.from('community_prices').insert({
       car_name: carName,
       price_inr: price,
-      platform: 'Hotscan Marketplace (Verified Sale)',
+      platform: 'Hotscan Marketplace (Seller-reported)',
       user_id: state.currentUser.id,
       user_name: state.currentUser.name || state.currentUser.email.split('@')[0],
     })
+    if (cp && cp.error) captureException(new Error('markListingSold price insert: ' + cp.error.message))
   } catch(e) { captureException(e) }
+  var soldOk = false
   try {
     // sold_at distinguishes a completed sale from a quiet delisting. Previously
     // is_active=false meant both, so sales could not be counted — and seller
     // standing is only meaningful if it counts sales rather than listings.
-    await state._sb.from('listings')
+    var up = await state._sb.from('listings')
       .update({ is_active: false, sold_at: new Date().toISOString() })
       .eq('id', id).eq('seller_id', state.currentUser.id)
+    soldOk = !(up && up.error)
+    if (!soldOk) captureException(new Error('markListingSold update: ' + up.error.message))
   } catch(e) { captureException(e) }
+  if (!soldOk) { showToast('Could not mark as sold — check your connection and try again', 'error'); return }
   showToast('Marked as sold — thanks for keeping prices accurate! 🎉', 'success')
   renderMyListings()
   _mpListings = null

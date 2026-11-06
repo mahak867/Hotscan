@@ -466,10 +466,13 @@ export function showResult(d) {
   if (!d.data_quality || d.data_quality === 'Estimated') {
     _dqEl.textContent = '⚠️ Estimated — verify on OLX'
     _dqEl.style.color = 'var(--gold)'
-  } else if (d.data_quality.indexOf('Verified Sale') === 0) {
-    _dqEl.textContent = '✅ ' + d.data_quality
-    _dqEl.style.color = 'var(--green)'
-  } else if (d.data_quality.indexOf('Community Verified') === 0) {
+  } else if (d.data_quality.indexOf('Reference') === 0 || d.data_quality === 'Database') {
+    _dqEl.textContent = '📚 Reference price from built-in catalog — not live. Check OLX for current listings.'
+    _dqEl.style.color = 'var(--gold)'
+  } else if (d.data_quality.indexOf('Community') === 0 || d.data_quality.indexOf('Verified Sale') === 0) {
+    // 'Verified Sale' / 'Community Verified' can still arrive from cached scans
+    // made before those labels were withdrawn; show them as reports.
+    if (d.data_quality.indexOf('Community reports') !== 0) d.data_quality = 'Community reports (unverified)'
     _dqEl.textContent = '👥 ' + d.data_quality
     _dqEl.style.color = 'var(--blue)'
   } else {

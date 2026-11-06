@@ -172,13 +172,27 @@ export function dbLookup(carName) {
     }
   }
 
-  // 4. Partial match — DB key contains query or query contains DB key
+  // 4. Partial match. This used to accept the first key where either string
+  // contained the other, so a short or generic model answer ("GT", "Truck")
+  // landed on whichever unrelated casting came first and was shown as a
+  // database price. Now both sides must be specific enough, and an ambiguous
+  // query (several keys match) returns nothing rather than a guess.
+  if (lower.length < 6) return null
   var keys = Object.keys(DB)
-  for (var i = 0; i < keys.length; i++) {
-    var kl = keys[i].toLowerCase()
-    if (lower.includes(kl) || kl.includes(lower)) return _fmt(DB[keys[i]], keys[i])
+  var hits = keys.filter(function(k) {
+    var kl = k.toLowerCase()
+    return kl.length >= 6 && (lower.includes(kl) || kl.includes(lower))
+  })
+  if (hits.length > 1) {
+    // Prefer the single longest key the query fully contains (most specific).
+    var contained = hits.filter(function(k) { return lower.includes(k.toLowerCase()) })
+      .sort(function(a, b) { return b.length - a.length })
+    if (contained.length && (contained.length === 1 || contained[0].length > contained[1].length)) {
+      return _fmt(DB[contained[0]], contained[0])
+    }
+    return null
   }
-
+  if (hits.length === 1) return _fmt(DB[hits[0]], hits[0])
   return null
 }
 
@@ -193,7 +207,8 @@ function _fmt(row, key) {
     demand:              demand,
     _dbHit:              true,
     _dbKey:              key,
-    data_quality:        'Database',
+    // Undated reference figures, not a live market read — say so.
+    data_quality:        'Reference (built-in catalog, not live)',
     price_trend_reason:  row[4] === 'Rising'  ? 'Growing collector demand in India' :
                          row[4] === 'Falling' ? 'Market softening' :
                          'Consistent demand from Indian collectors',

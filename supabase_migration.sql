@@ -923,3 +923,13 @@ create policy "profiles_update_safe" on profiles
 --   select id, is_pro, pro_until from profiles where is_pro;      -- every row has pro_until
 --   -- as a normal signed-in user, this must fail with an RLS error:
 --   update profiles set pro_until = now() + interval '1 year' where id = auth.uid();
+
+-- ── 26. Withdraw the "Verified Sale" label ─────────────────────────────
+-- markListingSold tagged a seller-typed price "Hotscan Marketplace (Verified
+-- Sale)" and api/prices.js weighted it 3x and let a single one override the
+-- estimate. platform is free text that any signed-in user can insert, and a
+-- seller marking a listing sold proves no payment. The API no longer treats
+-- any row as verified; this relabels history so the data says the same.
+update community_prices
+   set platform = 'Hotscan Marketplace (Seller-reported)'
+ where platform ilike '%verified sale%';
