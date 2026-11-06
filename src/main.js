@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
 import { VISION_MODEL } from './config.js'
 import { SUPA_URL, SUPA_KEY, FREE_SCANS } from './config.js'
-import { ol, showToast, checkAndEarnAchievements } from './utils.js'
+import { ol, showToast, checkAndEarnAchievements, isProActive } from './utils.js'
 import {
   openAuth, closeAuth, toggleAuthMode, authContinue, signInWithGoogle,
   sendPasswordReset, openAccountModal, closeAccountModal, signOutUser,
@@ -234,7 +234,7 @@ window.addEventListener('load', function () {
     var _cp = JSON.parse(localStorage.getItem('hs_profile_cache') || 'null')
     if (_cp && _cp.data && (Date.now() - _cp.ts) < 3600000) {
       state.userProfile = _cp.data
-      if (_cp.data.is_pro || _cp.data.is_developer) localStorage.setItem('hs_pro', 'true')
+      if (isProActive(_cp.data)) localStorage.setItem('hs_pro', 'true')
     }
   } catch (e) {}
 

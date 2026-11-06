@@ -47,27 +47,78 @@ function timingSafeEqualHex(a, b) {
   return diff === 0
 }
 
-async function markUserPro(userId, paymentId) {
+const PRO_TERM_DAYS = 30
+const RZP_KEY_ID     = process.env.RZP_KEY_ID || process.env.VITE_RZP_KEY
+const RZP_KEY_SECRET = process.env.RZP_KEY_SECRET
+
+// Fetches the order this payment belongs to straight from Razorpay. Its notes
+// were written by /api/razorpay-order from a verified Supabase session, so the
+// beneficiary comes from there — never from the payment's own notes, which are
+// one hop further from anything we created.
+async function fetchOrder(orderId) {
+  if (!RZP_KEY_ID || !RZP_KEY_SECRET) return { error: 'Razorpay API keys not configured' }
+  try {
+    const res = await fetch('https://api.razorpay.com/v1/orders/' + encodeURIComponent(orderId), {
+      headers: { Authorization: 'Basic ' + btoa(RZP_KEY_ID + ':' + RZP_KEY_SECRET) },
+    })
+    if (!res.ok) return { error: 'order fetch ' + res.status, retryable: res.status >= 500 }
+    return { order: await res.json() }
+  } catch (e) {
+    return { error: 'order fetch network error', retryable: true }
+  }
+}
+
+function serviceHeaders(serviceKey) {
+  return {
+    'Content-Type': 'application/json',
+    'apikey': serviceKey,
+    'Authorization': `Bearer ${serviceKey}`,
+  }
+}
+
+// Grants (or extends) a 30-day Pro term. Idempotent per payment: Razorpay
+// retries webhooks, and a retry must not add another 30 days.
+// Returns 'ok' | 'duplicate' | 'error'.
+async function grantProTerm(userId, paymentId) {
   const serviceKey = process.env.SUPABASE_SERVICE_KEY
   if (!serviceKey) {
     console.error('SUPABASE_SERVICE_KEY not set')
-    return false
+    return 'error'
   }
-  const res = await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${userId}`, {
+  const uid = encodeURIComponent(userId)
+  const cur = await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${uid}&select=pro_until,razorpay_payment_id`, {
+    headers: serviceHeaders(serviceKey),
+  })
+  if (!cur.ok) return 'error'
+  const rows = await cur.json()
+  const profile = rows && rows[0]
+  if (!profile) return 'error'
+  if (profile.razorpay_payment_id === paymentId) return 'duplicate'
+
+  // Renewing early stacks onto the remaining term instead of discarding it.
+  const now = Date.now()
+  const existing = Date.parse(profile.pro_until || '') || 0
+  const base = Math.max(now, existing)
+  const proUntil = new Date(base + PRO_TERM_DAYS * 86400000).toISOString()
+
+  // The razorpay_payment_id filter makes this a compare-and-set, so two
+  // concurrent deliveries of the same event cannot both extend the term.
+  const filter = profile.razorpay_payment_id
+    ? `&razorpay_payment_id=eq.${encodeURIComponent(profile.razorpay_payment_id)}`
+    : '&razorpay_payment_id=is.null'
+  const res = await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${uid}${filter}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
-      'Prefer': 'return=minimal'
-    },
+    headers: { ...serviceHeaders(serviceKey), 'Prefer': 'return=representation' },
     body: JSON.stringify({
       is_pro: true,
-      pro_since: new Date().toISOString(),
+      pro_since: new Date(now).toISOString(),
+      pro_until: proUntil,
       razorpay_payment_id: paymentId,
-    })
+    }),
   })
-  return res.ok
+  if (!res.ok) return 'error'
+  const updated = await res.json().catch(() => [])
+  return Array.isArray(updated) && updated.length ? 'ok' : 'duplicate'
 }
 
 async function handler(req) {
@@ -144,24 +195,46 @@ async function handler(req) {
       return new Response('Amount mismatch — not upgraded', { status: 200 })
     }
 
-    if (!userId) {
-      console.error('No user_id in payment notes — payment:', paymentId)
-      captureServerException(new Error('Razorpay payment captured with no user_id in notes'), { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId } })
-      return new Response('No user_id in notes', { status: 400 })
+    // Bind the payment to the order WE created. Without this, the beneficiary
+    // was read from payment.notes, which is not an explicit server-side binding.
+    const { order, error: orderErr, retryable } = await fetchOrder(payment.order_id)
+    if (!order) {
+      captureServerException(new Error('Razorpay order lookup failed: ' + orderErr), { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId, orderId: payment.order_id } })
+      // 500 on transient failures so Razorpay retries; 200 otherwise.
+      return new Response('Order lookup failed', { status: retryable ? 500 : 200 })
+    }
+    const orderUserId = order.notes && order.notes.user_id
+    const orderPlan   = order.notes && order.notes.plan
+    if (
+      order.id !== payment.order_id ||
+      order.amount !== PRO_PRICE_PAISE ||
+      order.currency !== 'INR' ||
+      orderPlan !== 'pro_monthly' ||
+      !orderUserId ||
+      (userId && userId !== orderUserId)
+    ) {
+      captureServerException(
+        new Error('Razorpay payment does not match its server-created order — not upgraded'),
+        { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId, orderId: payment.order_id, orderAmount: order.amount, orderPlan } }
+      )
+      return new Response('Order mismatch — not upgraded', { status: 200 })
     }
 
-    const success = await markUserPro(userId, paymentId)
-    if (!success) {
+    const outcome = await grantProTerm(orderUserId, paymentId)
+    if (outcome === 'duplicate') {
+      return new Response('Already processed', { status: 200 })
+    }
+    if (outcome !== 'ok') {
       // This means someone was actually charged money and their Pro upgrade
       // failed to apply — the single most business-critical silent failure
-      // this webhook could have, and previously it only logged to Vercel's
-      // console where nobody would see it until the customer complained.
-      console.error('Failed to update Supabase for user:', userId)
-      captureServerException(new Error('Payment captured but Supabase Pro upgrade failed — customer was charged without receiving Pro'), { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId, userId } })
+      // this webhook could have. 500 makes Razorpay retry; the payment-id
+      // compare-and-set keeps retries from double-extending.
+      console.error('Failed to update Supabase for user:', orderUserId)
+      captureServerException(new Error('Payment captured but Supabase Pro upgrade failed — customer was charged without receiving Pro'), { tags: { endpoint: 'razorpay-webhook' }, extra: { paymentId, userId: orderUserId } })
       return new Response('DB update failed', { status: 500 })
     }
 
-    console.log('Pro activated for user:', userId, 'payment:', paymentId)
+    console.log('Pro term granted for user:', orderUserId, 'payment:', paymentId)
     return new Response('OK', { status: 200 })
   }
 

@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { SUPA_URL, SUPA_KEY, RZP_KEY } from './config.js'
-import { escHtml, sanitize, showToast, captureException } from './utils.js'
+import { escHtml, sanitize, showToast, captureException, isProActive } from './utils.js'
 
 export var _authMode = 'signin'
 export var _authStep = 'email'
@@ -362,8 +362,10 @@ export async function loadProfile(){
       var q2=await state._sb.from('profiles').select('*').eq('id',state.currentUser.id).single()
       state.userProfile=q2.data||{id:state.currentUser.id,email:state.currentUser.email,is_pro:false,is_developer:false}
     }
-    if(state.userProfile&&state.userProfile.is_pro){
+    if(isProActive(state.userProfile)){
       localStorage.setItem('hs_pro','true')
+    } else {
+      localStorage.removeItem('hs_pro')
     }
     try{ localStorage.setItem('hs_profile_cache',JSON.stringify({data:state.userProfile,ts:Date.now()})) }catch(e){}
   }catch(e){
@@ -391,7 +393,7 @@ export function updateHeaderUI(){
   var initial=escHtml((name.length > 0 ? name[0] : '?').toUpperCase())
   var safeName=escHtml(name)
   var isDev=!!(state.userProfile&&state.userProfile.is_developer)
-  var isProUser=!isDev&&!!(state.userProfile&&state.userProfile.is_pro)
+  var isProUser=!isDev&&isProActive(state.userProfile)
   var bg=isDev?'linear-gradient(135deg,#7c3aed,#4f46e5)':isProUser?'linear-gradient(135deg,#e63946,#ff6b35)':(prefs.avatarColor||'linear-gradient(135deg,#374151,#4b5563)')
   var badge=isDev?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;margin-left:4px;white-space:nowrap">&#x1F451; Dev</span>':isProUser?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(90deg,#e63946,#ffd60a);color:#000;margin-left:4px;white-space:nowrap">&#x2B50; Pro</span>':''
   // Just the avatar. The old chip stacked three things — gradient circle, the
@@ -543,13 +545,15 @@ export function openAccountModal() {
   if (state.userProfile && state.userProfile.is_developer) {
     planEl.textContent = '👑 Developer — Lifetime Pro'; planEl.className = 'plan-badge plan-dev'
     upSec.style.display = 'none'; sinceEl.textContent = 'You built this app 🚗'
-  } else if (state.userProfile && state.userProfile.is_pro) {
+  } else if (isProActive(state.userProfile)) {
     planEl.textContent = '⭐ Pro Member'; planEl.className = 'plan-badge plan-pro'
     upSec.style.display = 'none'
-    if (state.userProfile.pro_since) sinceEl.textContent = 'Pro since ' + new Date(state.userProfile.pro_since).toLocaleDateString('en-IN')
+    sinceEl.textContent = 'Pro until ' + new Date(state.userProfile.pro_until).toLocaleDateString('en-IN')
   } else {
-    planEl.textContent = 'Free Plan'; planEl.className = 'plan-badge plan-free'
+    planEl.textContent = (state.userProfile && state.userProfile.is_pro) ? 'Pro expired' : 'Free Plan'
+    planEl.className = 'plan-badge plan-free'
     upSec.style.display = 'block'
+    if (state.userProfile && state.userProfile.pro_until) sinceEl.textContent = 'Pro ended ' + new Date(state.userProfile.pro_until).toLocaleDateString('en-IN')
   }
 }
 
@@ -644,14 +648,22 @@ export async function startPayment(btn) {
       // We poll the profile for up to 10 seconds to pick up the webhook update.
       closeAccountModal(); window.closeProModal(); updateHeaderUI(); window.renderProfilePage()
       showToast('⏳ Activating Pro — please wait…', 'success')
+      // Wait for pro_until to move forward, not just for is_pro — a renewing
+      // user already has is_pro=true, so that check passed before the webhook
+      // had extended anything.
+      var prevUntil = Date.parse((state.userProfile && state.userProfile.pro_until) || '') || 0
+      var activated = function() {
+        var u = Date.parse((state.userProfile && state.userProfile.pro_until) || '') || 0
+        return isProActive(state.userProfile) && u > prevUntil
+      }
       var attempts = 0
       var poll = setInterval(async function() {
         attempts++
         await loadProfile()
-        if ((state.userProfile && state.userProfile.is_pro) || attempts >= 10) {
+        if (activated() || attempts >= 10) {
           clearInterval(poll)
           updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
-          if (state.userProfile && state.userProfile.is_pro) {
+          if (activated()) {
             setTimeout(function() { showToast('🎉 Welcome to HotScan Pro! Unlimited scans activated.', 'success') }, 100)
           } else {
             showToast('Payment received — Pro will activate within 60 seconds. Refresh if needed.', 'success')

@@ -888,3 +888,38 @@ grant select (sold_at) on listings to anon, authenticated;
 
 -- Verification — should return a row per seller with sales_count present:
 --   select * from seller_stats limit 5;
+
+-- ── 25. Pro is a 30-day term, not a permanent flag ─────────────────────
+-- Pro is sold as ₹99/month, but the webhook only ever set is_pro=true, so one
+-- payment granted Pro forever. pro_until now carries the term; the webhook sets
+-- it to max(now, pro_until) + 30 days, and both the API quota and the client
+-- treat is_pro without a future pro_until as Free.
+alter table profiles add column if not exists pro_until timestamptz;
+
+-- Existing paying users get a fresh 30 days from the day this runs rather than
+-- being expired on the spot by pro_since + 30 (which, for anyone who paid more
+-- than a month ago, is already in the past).
+update profiles
+   set pro_until = now() + interval '30 days'
+ where is_pro = true and pro_until is null and coalesce(is_developer, false) = false;
+
+-- Freeze the new entitlement columns against client writes, same as is_pro.
+-- pro_until is what actually grants access now, so leaving it writable would
+-- reopen the exact self-upgrade hole section 4 closed. razorpay_payment_id is
+-- the webhook's idempotency key.
+drop policy if exists "profiles_update_safe" on profiles;
+create policy "profiles_update_safe" on profiles
+  for update
+  using (auth.uid() = id)
+  with check (
+    auth.uid() = id
+    AND is_pro       = (SELECT is_pro       FROM profiles WHERE id = auth.uid())
+    AND is_developer = (SELECT is_developer FROM profiles WHERE id = auth.uid())
+    AND pro_until           IS NOT DISTINCT FROM (SELECT pro_until           FROM profiles WHERE id = auth.uid())
+    AND razorpay_payment_id IS NOT DISTINCT FROM (SELECT razorpay_payment_id FROM profiles WHERE id = auth.uid())
+  );
+
+-- Verification:
+--   select id, is_pro, pro_until from profiles where is_pro;      -- every row has pro_until
+--   -- as a normal signed-in user, this must fail with an RLS error:
+--   update profiles set pro_until = now() + interval '1 year' where id = auth.uid();

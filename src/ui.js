@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
-import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException } from './utils.js'
+import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException, isProActive } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
 
 // ── Pro helpers ──
@@ -56,7 +56,7 @@ export function isPro() {
   if (!state.currentUser) return false
   // Brief race window: currentUser loaded but profile fetch not yet complete
   if (!state.userProfile) return state._profileLoading === true ? true : false
-  return !!(state.userProfile.is_pro || state.userProfile.is_developer)
+  return isProActive(state.userProfile)
 }
 export function checkLimit() {
   if (isPro()) return true
@@ -1059,10 +1059,10 @@ export function renderProfilePage() {
     upEl.style.display = 'none'; sinceEl.textContent = 'You built this app 🚗'
     // remove upgrade pill if exists
     var oldPill = document.getElementById('prof-upgrade-pill'); if(oldPill) oldPill.remove()
-  } else if (state.userProfile && state.userProfile.is_pro) {
+  } else if (isProActive(state.userProfile)) {
     planEl.textContent = '⭐ Pro Member'; planEl.className = 'plan-badge plan-pro'
     upEl.style.display = 'none'
-    if (state.userProfile.pro_since) sinceEl.textContent = 'Pro since ' + new Date(state.userProfile.pro_since).toLocaleDateString('en-IN')
+    sinceEl.textContent = 'Pro until ' + new Date(state.userProfile.pro_until).toLocaleDateString('en-IN')
     var oldPill2 = document.getElementById('prof-upgrade-pill'); if(oldPill2) oldPill2.remove()
   } else {
     planEl.textContent = 'Free Plan'; planEl.className = 'plan-badge plan-free'
