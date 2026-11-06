@@ -14,7 +14,7 @@ const GROQ_KEY = process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY
 const MODELS_TO_CHECK = [
   { name: 'openai/gpt-oss-20b', vision: false },
   { name: 'openai/gpt-oss-120b', vision: false },
-  { name: 'qwen/qwen3.6-27b', vision: true },
+  { name: 'qwen/qwen3.8-27b', vision: true },
 ]
 
 // A tiny but real 64x64 solid-color PNG — small enough to keep the request

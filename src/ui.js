@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
-import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException } from './utils.js'
+import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException, isProActive } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
 
 // ── Pro helpers ──
@@ -56,7 +56,7 @@ export function isPro() {
   if (!state.currentUser) return false
   // Brief race window: currentUser loaded but profile fetch not yet complete
   if (!state.userProfile) return state._profileLoading === true ? true : false
-  return !!(state.userProfile.is_pro || state.userProfile.is_developer)
+  return isProActive(state.userProfile)
 }
 export function checkLimit() {
   if (isPro()) return true
@@ -85,7 +85,13 @@ var _pageOrder = {scan:0,collection:1,marketplace:2,market:3,profile:4,more:5,al
 var _prevPageId = 'scan'
 export function goPage(id){
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active','slide-from-right','slide-from-left') })
-  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active') })
+  // Mobile dock and desktop sidebar share one current-page state. The sidebar
+  // used to keep "Scanner" highlighted whatever page was open.
+  document.querySelectorAll('.nav-item, .hs-sidebar-item').forEach(function(n){
+    n.classList.remove('active'); n.removeAttribute('aria-current')
+  })
+  var sbi = document.getElementById('sb-'+id)
+  if (sbi) { sbi.classList.add('active'); sbi.setAttribute('aria-current', 'page') }
   var pg = document.getElementById('page-'+id)
   if(pg){
     // #21 — directional slide
@@ -98,6 +104,7 @@ export function goPage(id){
   var ni = document.getElementById('nav-'+id)
   if(ni){
     ni.classList.add('active')
+    ni.setAttribute('aria-current', 'page')
     var svg = ni.querySelector('svg')
     if(svg){
       svg.style.transform = 'scale(1.3)'
@@ -130,7 +137,9 @@ export function setMode(mode) {
   state.currentMode = mode
   ;['photo','barcode','deal','fake'].forEach(function(m) {
     document.getElementById('mode-' + m).style.display = m === mode ? 'block' : 'none'
-    document.getElementById('tab-' + m).classList.toggle('active', m === mode)
+    var t = document.getElementById('tab-' + m)
+    t.classList.toggle('active', m === mode)
+    t.setAttribute('aria-selected', m === mode ? 'true' : 'false')
   })
   document.getElementById('analyze-btn').style.display = 'none'
   document.getElementById('result').style.display = 'none'
@@ -422,12 +431,14 @@ export function showResult(d) {
   var rb = document.getElementById('r-rar')
   var rarLabel = d.rarity || 'Common'
   rb.textContent = (rarIcons[rarLabel] ? rarIcons[rarLabel] + ' ' : '') + rarLabel; rb.className = 'rar ' + rcls(d.rarity)
+  // Identification is not authentication. This badge used to render whatever
+  // is_authentic the model returned — and the prompt's own JSON example set it
+  // to true — so a 128px side shot of a VW bus got a green "Authentic". The
+  // only authenticity verdict now lives in Fake Detector mode, which enforces
+  // evidence rules. Cached results from before this change may still carry the
+  // field, so it is ignored rather than trusted.
   var ab = document.getElementById('r-auth')
-  if (d.is_authentic !== undefined) {
-    ab.style.display = 'inline-flex'
-    ab.className = 'auth-badge ' + (d.is_authentic ? 'auth-y' : 'auth-n')
-    ab.textContent = d.is_authentic ? '✓ Authentic' : '⚠️ Possibly Fake'
-  } else ab.style.display = 'none'
+  if (ab) ab.style.display = 'none'
   
   // Show low confidence warning
   var lcw = document.getElementById('r-low-conf-warning')
@@ -464,10 +475,13 @@ export function showResult(d) {
   if (!d.data_quality || d.data_quality === 'Estimated') {
     _dqEl.textContent = '⚠️ Estimated — verify on OLX'
     _dqEl.style.color = 'var(--gold)'
-  } else if (d.data_quality.indexOf('Verified Sale') === 0) {
-    _dqEl.textContent = '✅ ' + d.data_quality
-    _dqEl.style.color = 'var(--green)'
-  } else if (d.data_quality.indexOf('Community Verified') === 0) {
+  } else if (d.data_quality.indexOf('Reference') === 0 || d.data_quality === 'Database') {
+    _dqEl.textContent = '📚 Reference price from built-in catalog — not live. Check OLX for current listings.'
+    _dqEl.style.color = 'var(--gold)'
+  } else if (d.data_quality.indexOf('Community') === 0 || d.data_quality.indexOf('Verified Sale') === 0) {
+    // 'Verified Sale' / 'Community Verified' can still arrive from cached scans
+    // made before those labels were withdrawn; show them as reports.
+    if (d.data_quality.indexOf('Community reports') !== 0) d.data_quality = 'Community reports (unverified)'
     _dqEl.textContent = '👥 ' + d.data_quality
     _dqEl.style.color = 'var(--blue)'
   } else {
@@ -1059,10 +1073,10 @@ export function renderProfilePage() {
     upEl.style.display = 'none'; sinceEl.textContent = 'You built this app 🚗'
     // remove upgrade pill if exists
     var oldPill = document.getElementById('prof-upgrade-pill'); if(oldPill) oldPill.remove()
-  } else if (state.userProfile && state.userProfile.is_pro) {
+  } else if (isProActive(state.userProfile)) {
     planEl.textContent = '⭐ Pro Member'; planEl.className = 'plan-badge plan-pro'
     upEl.style.display = 'none'
-    if (state.userProfile.pro_since) sinceEl.textContent = 'Pro since ' + new Date(state.userProfile.pro_since).toLocaleDateString('en-IN')
+    sinceEl.textContent = 'Pro until ' + new Date(state.userProfile.pro_until).toLocaleDateString('en-IN')
     var oldPill2 = document.getElementById('prof-upgrade-pill'); if(oldPill2) oldPill2.remove()
   } else {
     planEl.textContent = 'Free Plan'; planEl.className = 'plan-badge plan-free'

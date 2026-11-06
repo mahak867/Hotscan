@@ -60,43 +60,43 @@
 </div>
 <aside class="hs-sidebar" id="hs-sidebar">
   <div class="hs-sidebar-label">Scan</div>
-  <button class="hs-sidebar-item active" id="sb-scan" onclick="goPage('scan')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Scanner<span class="hs-kbd">S</span></button>
+  <button type="button" class="hs-sidebar-item active" aria-current="page" id="sb-scan" onclick="goPage('scan')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Scanner<span class="hs-kbd">S</span></button>
   <div class="hs-sidebar-divider"></div>
   <div class="hs-sidebar-label">My Collection</div>
-  <button class="hs-sidebar-item" id="sb-collection" onclick="goPage('collection')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Collection<span class="hs-kbd">C</span></button>
-  <button class="hs-sidebar-item" id="sb-market" onclick="goPage('market')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Trends<span class="hs-kbd">T</span></button>
+  <button type="button" class="hs-sidebar-item" id="sb-collection" onclick="goPage('collection')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Collection<span class="hs-kbd">C</span></button>
+  <button type="button" class="hs-sidebar-item" id="sb-market" onclick="goPage('market')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Trends<span class="hs-kbd">T</span></button>
   <div class="hs-sidebar-divider"></div>
   <div class="hs-sidebar-label">Community</div>
-  <button class="hs-sidebar-item" id="sb-marketplace" onclick="goPage('marketplace')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Marketplace<span class="hs-kbd">M</span></button>
+  <button type="button" class="hs-sidebar-item" id="sb-marketplace" onclick="goPage('marketplace')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Marketplace<span class="hs-kbd">M</span></button>
   <div class="hs-sidebar-divider"></div>
   <div class="hs-sidebar-label">Account</div>
-  <button class="hs-sidebar-item" id="sb-profile" onclick="goPage('profile')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile<span class="hs-kbd">P</span></button>
-  <button class="hs-sidebar-item" id="sb-more" onclick="goPage('more')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>More</button>
+  <button type="button" class="hs-sidebar-item" id="sb-profile" onclick="goPage('profile')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile<span class="hs-kbd">P</span></button>
+  <button type="button" class="hs-sidebar-item" id="sb-more" onclick="goPage('more')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>More</button>
 </aside>
 <div class="hs-content" id="hs-content">
-<div class="nav">
+<nav class="nav" aria-label="Main">
   <div class="nav-dock">
-    <div class="nav-item nav-scan-btn active" id="nav-scan" data-tip="Scan" onclick="goPage('scan')">
+    <button type="button" class="nav-item nav-scan-btn active" id="nav-scan" data-tip="Scan" aria-label="Scan" aria-current="page" onclick="goPage('scan')">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="M12 5v2M12 17v2M5 12H3M21 12h-2"/></svg>
-    </div>
-    <div class="nav-item" id="nav-collection" data-tip="Collection" onclick="goPage('collection')">
+    </button>
+    <button type="button" class="nav-item" id="nav-collection" data-tip="Collection" aria-label="Collection" onclick="goPage('collection')">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-    </div>
-    <div class="nav-item" id="nav-marketplace" data-tip="Market" onclick="goPage('marketplace')">
+    </button>
+    <button type="button" class="nav-item" id="nav-marketplace" data-tip="Market" aria-label="Marketplace" onclick="goPage('marketplace')">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-    </div>
+    </button>
     <div class="nav-divider"></div>
-    <div class="nav-item" id="nav-market" data-tip="Trends" onclick="goPage('market')">
+    <button type="button" class="nav-item" id="nav-market" data-tip="Trends" aria-label="Trends" onclick="goPage('market')">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-    </div>
-    <div class="nav-item" id="nav-profile" data-tip="Profile" onclick="goPage('profile')">
+    </button>
+    <button type="button" class="nav-item" id="nav-profile" data-tip="Profile" aria-label="Profile" onclick="goPage('profile')">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </div>
-    <div class="nav-item" id="nav-more" data-tip="More" onclick="goPage('more')">
+    </button>
+    <button type="button" class="nav-item" id="nav-more" data-tip="More" aria-label="More" onclick="goPage('more')">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-    </div>
+    </button>
   </div>
-</div>
+</nav>
 
 
 <!-- ═══ SCAN PAGE ═══ -->
@@ -117,11 +117,11 @@
     </div>
   </div>
   <!-- Mode tabs -->
-  <div class="mode-tabs">
-    <div class="mode-tab active" id="tab-photo" onclick="setMode('photo')"><span>📷</span>Photo</div>
-    <div class="mode-tab" id="tab-barcode" onclick="setMode('barcode')"><span>🔢</span>Barcode</div>
-    <div class="mode-tab" id="tab-deal" onclick="setMode('deal')"><span>💰</span>Deal?</div>
-    <div class="mode-tab" id="tab-fake" onclick="setMode('fake')"><span>🕵️</span>Fake?</div>
+  <div class="mode-tabs" role="tablist" aria-label="Scan mode">
+    <button type="button" role="tab" class="mode-tab active" id="tab-photo" aria-selected="true" aria-controls="mode-photo" onclick="setMode('photo')"><span aria-hidden="true">📷</span>Photo</button>
+    <button type="button" role="tab" class="mode-tab" id="tab-barcode" aria-selected="false" aria-controls="mode-barcode" onclick="setMode('barcode')"><span aria-hidden="true">🔢</span>Barcode</button>
+    <button type="button" role="tab" class="mode-tab" id="tab-deal" aria-selected="false" aria-controls="mode-deal" onclick="setMode('deal')"><span aria-hidden="true">💰</span>Deal?</button>
+    <button type="button" role="tab" class="mode-tab" id="tab-fake" aria-selected="false" aria-controls="mode-fake" onclick="setMode('fake')"><span aria-hidden="true">🕵️</span>Fake?</button>
   </div>
   <!-- Photo mode -->
   <div id="mode-photo">
@@ -255,7 +255,7 @@
         <div class="r-name" id="r-name">—</div>
         <div class="r-series" id="r-series">—</div>
         <div class="rar rc" id="r-rar">—</div>
-        <div class="auth-badge auth-y" id="r-auth" style="display:none">✓ Authentic</div>
+        <div class="auth-badge" id="r-auth" style="display:none" aria-hidden="true"></div>
         <div class="conf">AI Confidence<div class="conf-bar"><div class="conf-fill" id="r-conf" style="width:0%"></div></div></div>
       </div>
     </div>
@@ -314,7 +314,7 @@
 <!-- ═══ COLLECTION PAGE ═══ -->
 <div class="page" id="page-collection">
   <div class="page-hdr"><div class="page-title">Collection</div><button class="btn-red hs-slide-btn" onclick="goPage('scan')" style="padding:7px 14px;font-size:12px;min-width:110px;justify-content:center"><span class="hs-slide-label">+ Add</span><span class="hs-slide-label-hover">📷 Scan One</span></button></div>
-  <div style="position:relative;margin-bottom:10px"><input id="col-search" type="search" placeholder="🔍  Search your collection…" oninput="searchCol(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;font-size:14px;color:#fff;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"></div><div class="val-card">
+  <div style="position:relative;margin-bottom:10px"><label for="col-search" class="sr-only">Search your collection</label><input id="col-search" type="search" placeholder="🔍  Search your collection…" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;font-size:14px;color:#fff;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"></div><div class="val-card">
     <div style="font-size:11px;color:var(--text2)">📋 Collection Valuation</div>
     <div class="val-total" id="val-total">₹0</div>
     <!-- #7 — micro sparkline: monthly additions, rendered by JS -->

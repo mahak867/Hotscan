@@ -888,3 +888,72 @@ grant select (sold_at) on listings to anon, authenticated;
 
 -- Verification — should return a row per seller with sales_count present:
 --   select * from seller_stats limit 5;
+
+-- ── 25. Pro is a 30-day term, not a permanent flag ─────────────────────
+-- Pro is sold as ₹99/month, but the webhook only ever set is_pro=true, so one
+-- payment granted Pro forever. pro_until now carries the term; the webhook sets
+-- it to max(now, pro_until) + 30 days, and both the API quota and the client
+-- treat is_pro without a future pro_until as Free.
+alter table profiles add column if not exists pro_until timestamptz;
+
+-- Existing paying users get a fresh 30 days from the day this runs rather than
+-- being expired on the spot by pro_since + 30 (which, for anyone who paid more
+-- than a month ago, is already in the past).
+update profiles
+   set pro_until = now() + interval '30 days'
+ where is_pro = true and pro_until is null and coalesce(is_developer, false) = false;
+
+-- Freeze the new entitlement columns against client writes, same as is_pro.
+-- pro_until is what actually grants access now, so leaving it writable would
+-- reopen the exact self-upgrade hole section 4 closed. razorpay_payment_id is
+-- the webhook's idempotency key.
+drop policy if exists "profiles_update_safe" on profiles;
+create policy "profiles_update_safe" on profiles
+  for update
+  using (auth.uid() = id)
+  with check (
+    auth.uid() = id
+    AND is_pro       = (SELECT is_pro       FROM profiles WHERE id = auth.uid())
+    AND is_developer = (SELECT is_developer FROM profiles WHERE id = auth.uid())
+    AND pro_until           IS NOT DISTINCT FROM (SELECT pro_until           FROM profiles WHERE id = auth.uid())
+    AND razorpay_payment_id IS NOT DISTINCT FROM (SELECT razorpay_payment_id FROM profiles WHERE id = auth.uid())
+  );
+
+-- Bridge for grants that set is_pro without a term (the old webhook still
+-- running during deploy, or a manual service-role grant): default them to 30
+-- days instead of leaving pro_until null, which the new code treats as Free.
+create or replace function profiles_default_pro_term() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.is_pro and new.pro_until is null and not coalesce(new.is_developer, false) then
+    new.pro_until := now() + interval '30 days';
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_profiles_default_pro_term on profiles;
+create trigger trg_profiles_default_pro_term
+  before insert or update of is_pro, pro_until on profiles
+  for each row execute function profiles_default_pro_term();
+
+-- Verification:
+--   select id, is_pro, pro_until from profiles where is_pro;      -- every row has pro_until
+--   -- as a normal signed-in user, this must fail with an RLS error:
+--   update profiles set pro_until = now() + interval '1 year' where id = auth.uid();
+
+-- ── 26. Withdraw the "Verified Sale" label ─────────────────────────────
+-- markListingSold tagged a seller-typed price "Hotscan Marketplace (Verified
+-- Sale)" and api/prices.js weighted it 3x and let a single one override the
+-- estimate. platform is free text that any signed-in user can insert, and a
+-- seller marking a listing sold proves no payment. The API no longer treats
+-- any row as verified; this relabels history so the data says the same.
+update community_prices
+   set platform = 'Hotscan Marketplace (Seller-reported)'
+ where platform ilike '%verified sale%';
+
+-- ── 27. Lock down upsert_profile ───────────────────────────────────────
+-- upsert_profile(p_id, p_email, p_name) existed in production but not in this
+-- file. It is SECURITY DEFINER and was executable by anon: passing the owner's
+-- email granted is_pro + is_developer to any profile id the caller chose, and it
+-- could overwrite any user's email. Nothing in the app calls it. Applied to
+-- production 2026-11-06; no privileged profiles other than the owner existed.
+revoke execute on function public.upsert_profile(text, text, text) from public, anon, authenticated;

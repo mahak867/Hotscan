@@ -12,7 +12,7 @@ export var WA_COMMUNITY = 'https://chat.whatsapp.com/GCEONvdK5Vx1luFVcVD8QH'
 export var WA_SUPPORT   = '918089558314'
 export var FREE_SCANS = 5
 // Models — Groq deprecated Llama 4 Scout/Maverick (vision) and the old
-// llama-3.2-90b-vision-preview fallback; as of July 2026 qwen/qwen3.6-27b is
+// llama-3.2-90b-vision-preview fallback; as of Nov 2026 qwen/qwen3.8-27b (successor to qwen3.6-27b, shut down 2026-09-14) is
 // the ONLY vision-capable model Groq offers, so there's no real second model
 // to fall back to anymore — VISION_FALLBACK just retries the same model,
 // which still helps for transient errors/rate limits.
@@ -20,8 +20,8 @@ export var FREE_SCANS = 5
 // shutdown 08/16/26 — swapped proactively to Groq's recommended replacements.
 export var HAIKU_MODEL  = 'openai/gpt-oss-20b'
 export var CODEX_MODEL  = 'openai/gpt-oss-120b'
-export var VISION_MODEL = 'qwen/qwen3.6-27b'
-export var VISION_FALLBACK = 'qwen/qwen3.6-27b'
+export var VISION_MODEL = 'qwen/qwen3.8-27b'
+export var VISION_FALLBACK = 'qwen/qwen3.8-27b'
 
 export var HUNT_DATA = {
   mainline:[

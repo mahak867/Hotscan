@@ -131,10 +131,7 @@ async function identifyCar(imageData) {
     '"fun_fact":"one VERIFIED fact, certain knowledge only — never invent history",',
     '"india_insight":"specific Indian collector demand for this car",',
     '"us_retail_usd":"1.49",',
-    '"us_collector_usd":"5-12",',
-    '"is_authentic":true,',
-    '"authenticity_confidence":"High|Medium|Low",',
-    '"authenticity_notes":"specific observations about logo, base, paint, wheels"}'
+    '"us_collector_usd":"5-12"}'
   ].join('')
 
   var d = await groqVision(imageData, sys, usr)
@@ -161,12 +158,19 @@ export function gateCarQuality(d) {
   if (!d.name || d.name.toLowerCase().indexOf('unknown') > -1 || d.name.toLowerCase().indexOf('generic') > -1) {
     throw new Error('Could not identify this car. Try: white background, bright light, close-up side view')
   }
-  if (d.confidence && d.confidence < 50) {
-    throw new Error('Image too unclear (' + d.confidence + '% confidence). Try: brighter light, less blur, closer shot')
+  // Confidence must be a real 0-100 number. `d.confidence && d.confidence < 50`
+  // let 0 through (0 is falsy) and treated a missing or string value as fine.
+  var conf = typeof d.confidence === 'string' && d.confidence.trim() !== '' ? Number(d.confidence) : d.confidence
+  var confValid = typeof conf === 'number' && isFinite(conf) && conf >= 0 && conf <= 100
+  if (confValid && conf < 50) {
+    throw new Error('Image too unclear (' + Math.round(conf) + '% confidence). Try: brighter light, less blur, closer shot')
   }
-  if (d.confidence && d.confidence < 75) {
+  if (!confValid || conf < 75) {
+    // Unknown confidence is not high confidence: warn and keep it out of
+    // confident totals, same as a measured low score.
     d._lowConfidence = true
   }
+  d.confidence = confValid ? conf : null
   // A high-value rarity claimed with no stated visible evidence is exactly the
   // claim a buyer would act on, so flag it rather than presenting it flatly.
   if (!d.rarity_reason && (d.rarity === 'Treasure Hunt' || d.rarity === 'Super Treasure Hunt' || d.rarity === 'Error Car')) {
@@ -174,6 +178,21 @@ export function gateCarQuality(d) {
   }
   return d
 }
+
+// Runs every car from a multi-car or batch scan through the same gate the
+// single-car path uses. Those routes used to price and total cars the single
+// path would have rejected (unknown names, <50% confidence).
+export function partitionCars(cars) {
+  var ok = [], rejected = []
+  ;(cars || []).forEach(function(c) {
+    try { ok.push(gateCarQuality(Object.assign({ identified: true }, c))) }
+    catch (e) { rejected.push({ name: c && c.name, reason: e.message }) }
+  })
+  return { ok: ok, rejected: rejected }
+}
+
+// A car is counted in a headline total only when nothing about it is flagged.
+function isConfidentCar(c) { return c && !c._lowConfidence && !c._needsVerification }
 
 async function searchPrices(carName, rarity, castingYear) {
   // Stage 1: Built-in DB — instant, no API quota used
@@ -226,11 +245,27 @@ async function _fallbackPrices(carName, rarity, castingYear) {
 }
 
 
+// Cache key over the WHOLE image, versioned by scanner schema. The old key
+// sampled 120 characters, so two different photos could share a cached answer,
+// and a prompt change kept serving results produced under the old rules (e.g.
+// the removed Photo-mode authenticity field). Bump SCAN_CACHE_VERSION whenever
+// the prompt or result semantics change.
+var SCAN_CACHE_VERSION = 'v2'
+function scanCacheKey(img) {
+  var h1 = 0x811c9dc5, h2 = 0x01000193
+  for (var i = 0; i < img.length; i++) {
+    var c = img.charCodeAt(i)
+    h1 = Math.imul(h1 ^ c, 16777619)
+    h2 = Math.imul(h2 ^ c, 2246822507)
+  }
+  return SCAN_CACHE_VERSION + ':' + img.length + ':' + (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36)
+}
+
 export async function analyzePhoto() {
   if (!state.img64) return
   if (!window.checkLimit()) return
   try {
-    var _l=state.img64.length; var _imgKey=state.img64.substring(0,40)+state.img64.substring(Math.floor(_l/2)-20,Math.floor(_l/2)+20)+state.img64.substring(_l-40)
+    var _imgKey=scanCacheKey(state.img64)
     var _cache = JSON.parse(localStorage.getItem('hs_scan_cache') || '{}')
     if (_cache[_imgKey] && Date.now() - _cache[_imgKey].ts < 86400000) {
       var _cached = _cache[_imgKey].data
@@ -277,6 +312,14 @@ export async function analyzePhoto() {
       })
     }
 
+    var _multiRejected = 0
+    if (multiResult && multiResult.cars && multiResult.cars.length > 1) {
+      var _parts = partitionCars(multiResult.cars)
+      if (!_parts.ok.length) throw new Error(_parts.rejected[0].reason)
+      _multiRejected = _parts.rejected.length
+      multiResult.cars = _parts.ok
+    }
+
     if (multiResult && multiResult.cars && multiResult.cars.length > 1) {
       window.setStep(1, 'done'); window.setStep(2, 'active')
       document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Found ' + multiResult.cars.length + ' cars — fetching prices...')
@@ -293,7 +336,7 @@ export async function analyzePhoto() {
       window.stopTimer()
       window.incScans()
       allCars.forEach(function(c) { window.saveToHist(c) })
-      showMultiResults(allCars)
+      showMultiResults(allCars, 0, null, _multiRejected)
       return
     }
 
@@ -314,8 +357,9 @@ export async function analyzePhoto() {
     var skel2 = document.getElementById('result-skeleton'); if (skel2) skel2.style.display = 'none'
     if (navigator.vibrate) navigator.vibrate([30, 50, 30])
     try {
-      var _l2=state.img64.length; var _imgKey2=state.img64.substring(0,40)+state.img64.substring(Math.floor(_l2/2)-20,Math.floor(_l2/2)+20)+state.img64.substring(_l2-40)
+      var _imgKey2=scanCacheKey(state.img64)
       var _cache2 = JSON.parse(localStorage.getItem('hs_scan_cache') || '{}')
+      Object.keys(_cache2).forEach(function(k){ if (k.indexOf(SCAN_CACHE_VERSION + ':') !== 0) delete _cache2[k] })
       _cache2[_imgKey2] = { data: result, ts: Date.now() }
       var _keys = Object.keys(_cache2)
       if (_keys.length > 50) delete _cache2[_keys[0]]
@@ -466,6 +510,49 @@ export async function analyzeDeal() {
   }
 }
 
+// Turns the model's Fake Detector answer into something the UI may show.
+//
+// The prompt used to carry positive defaults ("is_authentic":true,
+// "base_visible":true), and the only downgrade fired on an exact
+// base_visible === false — so a missing, null or "unknown" value let an
+// Authentic verdict through, and an abstaining result could still list the
+// base text as "checked" when it was never in shot. Everything here fails
+// closed: absent or malformed evidence counts as not seen.
+const _BASE_FEATURE_RE = /base|mattel|underside|chassis|country|origin|made in/i
+function _yes(v) { return v === true || (typeof v === 'string' && /^\s*yes\b/i.test(v)) }
+function _strList(v) { return Array.isArray(v) ? v.filter(function(x){ return typeof x === 'string' && x.trim() }).slice(0, 12) : [] }
+export function enforceFakeEvidence(raw) {
+  var d = Object.assign({}, raw || {})
+  var allowed = ['Authentic','Likely Authentic','Cannot Determine','Likely Fake','Definitely Fake']
+  if (!allowed.includes(d.verdict)) d.verdict = 'Cannot Determine'
+  var baseSeen = _yes(d.base_visible)
+  var baseRead = baseSeen && _yes(d.base_text_readable)
+  var quality = typeof d.image_quality === 'string' ? d.image_quality : ''
+  var poor = !quality || /^\s*poor/i.test(quality)
+  d.good_signs = _strList(d.good_signs)
+  d.red_flags = _strList(d.red_flags)
+  d.features_checked = _strList(d.features_checked)
+  // Nothing about the base can have been "checked" unless the base was readable.
+  if (!baseRead) {
+    d.features_checked = d.features_checked.filter(function(f){ return !_BASE_FEATURE_RE.test(f) })
+    d.good_signs = d.good_signs.filter(function(f){ return !_BASE_FEATURE_RE.test(f) })
+  }
+  if (d.verdict === 'Authentic' && !(baseRead && !poor && d.good_signs.length >= 3)) {
+    d.verdict = 'Likely Authentic'
+  }
+  if (d.verdict === 'Likely Authentic' && (poor || d.good_signs.length < 2)) {
+    d.verdict = 'Cannot Determine'
+  }
+  // Rule 3: a fake verdict needs a visible red flag to stand on.
+  if ((d.verdict === 'Likely Fake' || d.verdict === 'Definitely Fake') && !d.red_flags.length) {
+    d.verdict = 'Cannot Determine'
+  }
+  if (d.verdict === 'Definitely Fake' && poor) d.verdict = 'Likely Fake'
+  d._baseConfirmed = baseRead
+  delete d.is_authentic
+  return d
+}
+
 export async function analyzeFake() {
   if (!state.fakeImg64) return
   var btn = document.getElementById('analyze-btn')
@@ -512,9 +599,10 @@ export async function analyzeFake() {
     'LIST only what you can ACTUALLY see — do not assume.',
     'If image quality is poor and you cannot clearly see key markers, return verdict "Cannot Determine".',
     'Return ONLY valid JSON:',
-    '{"identified":true,"is_authentic":true,',
+    '{"identified":true,',
     '"verdict":"Authentic|Likely Authentic|Cannot Determine|Likely Fake|Definitely Fake",',
-    '"base_visible":true,',
+    '"base_visible":"yes|no — is the underside of the car in the photo?",',
+    '"base_text_readable":"yes|no — can you actually read the Mattel base text?",',
     '"image_quality":"Good|Fair|Poor — affects confidence",',
     '"features_checked":["list each feature you could actually examine"],',
     '"good_signs":["only genuine markers you can clearly see"],',
@@ -529,12 +617,7 @@ export async function analyzeFake() {
     // 'Uncertain' was dropped: having two ways to say "I don't know" split the
     // signal and made the result harder to read, not more precise.
     var allowed = ['Authentic','Likely Authentic','Cannot Determine','Likely Fake','Definitely Fake']
-    if (!d.verdict || !allowed.includes(d.verdict)) d.verdict = 'Cannot Determine'
-    if (d.verdict === 'Uncertain') d.verdict = 'Cannot Determine'
-    // Enforce rule 6 client-side rather than trusting the model to obey it. A
-    // confident "Authentic" without the base in shot is the single most costly
-    // thing this screen can say — it is what a scammed buyer would rely on.
-    if (d.verdict === 'Authentic' && d.base_visible === false) d.verdict = 'Likely Authentic'
+    d = enforceFakeEvidence(d)
     var bg = {
       'Authentic':'vd-steal',
       'Likely Authentic':'vd-steal',
@@ -556,15 +639,15 @@ export async function analyzeFake() {
     // where a user is deciding whether to hand over money. The verdict already
     // carries the confidence; a fake precision number only adds false comfort.
     var qualNote = d.image_quality ? 'Image quality: ' + d.image_quality : ''
-    var baseNote = d.base_visible === false
+    var baseNote = !d._baseConfirmed
       ? '<div style="font-size:12px;color:var(--gold);margin-bottom:4px">📸 Base not visible — re-shoot the underside for a firmer answer</div>'
       : ''
     document.getElementById('dv-sub').innerHTML =
       baseNote + (qualNote ? '<span style="font-size:12px;color:#888">'+escHtml(qualNote)+'</span>' : '')
     var rows = []
-    var goodSigns = Array.isArray(d.good_signs) ? d.good_signs : []
-    var redFlags = Array.isArray(d.red_flags) ? d.red_flags : []
-    var featChecked = Array.isArray(d.features_checked) ? d.features_checked : []
+    var goodSigns = d.good_signs
+    var redFlags = d.red_flags
+    var featChecked = d.features_checked
     if (featChecked.length) rows.push(['🔍 Checked', featChecked.join(' · ')])
     if (goodSigns.length) rows.push(['✓ Genuine markers', goodSigns.join(' · ')])
     if (redFlags.length) rows.push(['⚠️ Red flags', redFlags.join(' · ')])
@@ -782,7 +865,6 @@ export async function identifyMultipleCars(imageData) {
     '"us_retail_usd":"1.49",',
     '"us_collector_usd":"5-12",',
     '"confidence":80,',
-    '"is_authentic":true,',
     '"fun_fact":"one interesting fact about this casting"',
     '}]}'
   ].join('')
@@ -975,6 +1057,12 @@ export async function analyzeMultiPhoto() {
         if (result && result.cars) result.cars.forEach(function(c){ c._sourceImage = _imgs[i]&&_imgs[i].thumb; allCars.push(c) })
       }
     }
+    // Gate every car before any price lookup. _sourceImage survives because
+    // gateCarQuality works on a copy that keeps every field.
+    var _batchParts = partitionCars(allCars)
+    var rejectedCount = _batchParts.rejected.length
+    allCars = _batchParts.ok
+    if (!allCars.length && rejectedCount && !failedCount) throw new Error(_batchParts.rejected[0].reason)
     window.setStep(2, 'active')
     document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Fetching prices for ' + allCars.length + ' cars...')
     allCars = allCars.map(function(car){ return applyKnownPremiumOverrides(car) })
@@ -988,7 +1076,7 @@ export async function analyzeMultiPhoto() {
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()
     window.incScans()
-    showMultiResults(allCars, failedCount, failMsg)
+    showMultiResults(allCars, failedCount, failMsg, rejectedCount)
   } catch(err) {
     window.stopTimer(); window.setStep(1, 'err')
     var eb2 = document.getElementById('err-box')
@@ -1003,7 +1091,7 @@ export async function analyzeMultiPhoto() {
   }
 }
 
-export function showMultiResults(cars, failedCount, failMsg) {
+export function showMultiResults(cars, failedCount, failMsg, rejectedCount) {
   if (!cars || cars.length === 0) {
     // failMsg is the real reason the call failed. It used to be collected and
     // then dropped here, leaving users with "try again" for a rate limit —
@@ -1038,11 +1126,22 @@ export function showMultiResults(cars, failedCount, failMsg) {
     resultEl.appendChild(warn)
   }
 
-  var totalVal = 0
-  cars.forEach(function(c) { totalVal += parseINR(c.india_collector_inr) })
+  if (rejectedCount > 0) {
+    var rej = document.createElement('div')
+    rej.style.cssText = 'margin:10px 14px 0;padding:10px 12px;background:rgba(230,57,70,.08);border:1px solid rgba(230,57,70,.25);border-radius:10px;font-size:12px;color:#ff8080'
+    rej.textContent = '⚠️ ' + rejectedCount + ' item' + (rejectedCount===1?'':'s') + " couldn't be identified clearly enough to price — retake " + (rejectedCount===1?'it':'them') + ' closer, in brighter light'
+    resultEl.appendChild(rej)
+  }
+
+  // Flagged cars (low/unknown confidence, unevidenced rare claim) stay visible
+  // but are kept out of the headline total so it never overstates certainty.
+  var totalVal = 0, confident = 0
+  cars.forEach(function(c) { if (isConfidentCar(c)) { totalVal += parseINR(c.india_collector_inr); confident++ } })
+  var unsure = cars.length - confident
   var valBar = document.createElement('div')
   valBar.style.cssText = 'padding:0 14px 12px;font-size:13px;color:var(--text2)'
-  valBar.innerHTML = 'Total estimated value: <strong style="color:var(--gold)">₹' + totalVal.toLocaleString('en-IN') + '</strong>'
+  valBar.innerHTML = 'Total estimated value: <strong style="color:var(--gold)">₹' + totalVal.toLocaleString('en-IN') + '</strong>' +
+    (unsure ? ' <span style="font-size:11px">(excludes ' + unsure + ' car' + (unsure===1?'':'s') + ' to verify)</span>' : '')
   resultEl.appendChild(valBar)
 
   var addAllBtn = document.createElement('button')
@@ -1083,6 +1182,11 @@ export function showMultiResults(cars, failedCount, failMsg) {
     var rarSpan = document.createElement('span'); rarSpan.className = 'rar ' + rcls(car.rarity); rarSpan.style.cssText='font-size:10px;padding:2px 7px'; rarSpan.textContent = car.rarity||'Common'
     var priceSpan = document.createElement('span'); priceSpan.className = 'multi-car-inr'; priceSpan.textContent = car.india_collector_inr ? '₹'+cleanINR(car.india_collector_inr) : ''
     prices.appendChild(rarSpan); prices.appendChild(priceSpan)
+    if (!isConfidentCar(car)) {
+      var vtag = document.createElement('span'); vtag.style.cssText = 'font-size:10px;color:var(--gold);margin-left:6px'
+      vtag.textContent = car._needsVerification ? '🔍 verify rarity' : '⚠️ low confidence'
+      prices.appendChild(vtag)
+    }
     info.appendChild(nm); info.appendChild(ser); info.appendChild(prices)
 
     var arrow = document.createElement('span'); arrow.className = 'multi-car-expand'; arrow.textContent = '▾'

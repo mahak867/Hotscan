@@ -232,3 +232,14 @@ export function checkAndEarnAchievements(result) {
   
   return earned
 }
+
+// Pro is a 30-day term recorded in profiles.pro_until (set server-side by the
+// Razorpay webhook). is_pro alone no longer means Pro — a ₹99/month purchase
+// used to grant access forever. Developers are always Pro.
+export function isProActive(profile) {
+  if (!profile) return false
+  if (profile.is_developer) return true
+  if (!profile.is_pro || !profile.pro_until) return false
+  var until = Date.parse(profile.pro_until)
+  return isFinite(until) && until > Date.now()
+}

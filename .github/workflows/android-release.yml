@@ -28,6 +28,16 @@ jobs:
           VITE_RZP_KEY: ${{ secrets.VITE_RZP_KEY }}
           VITE_DEV_EMAIL: ${{ secrets.VITE_DEV_EMAIL }}
       - run: npx cap sync android
+      - name: Check signing secrets are present
+        run: |
+          for v in ANDROID_KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret $v — refusing to build an unsigned release"; exit 1; fi
+          done
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       - run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/hotscan-release.keystore
       - run: ./gradlew bundleRelease assembleRelease
         working-directory: android
@@ -36,6 +46,22 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - name: Verify release artifacts are signed
+        run: |
+          set -e
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          shopt -s nullglob
+          apks=(android/app/build/outputs/apk/release/*.apk)
+          aabs=(android/app/build/outputs/bundle/release/*.aab)
+          [ ${#apks[@]} -gt 0 ] || { echo "::error::No release APK produced"; exit 1; }
+          [ ${#aabs[@]} -gt 0 ] || { echo "::error::No release AAB produced"; exit 1; }
+          for f in "${apks[@]}"; do
+            case "$f" in *unsigned*) echo "::error::$f is unsigned"; exit 1;; esac
+            "$APKSIGNER" verify --print-certs "$f"
+          done
+          for f in "${aabs[@]}"; do
+            jarsigner -verify "$f" | grep -q "jar verified" || { echo "::error::$f is not signed"; exit 1; }
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: hotscan-release-apk

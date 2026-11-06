@@ -160,7 +160,10 @@ export async function callGemini(openaiBody, timeoutMs) {
       if (model !== candidates[0]) last.data._model_fallback = model
       return last
     }
-    if (last.status !== 404) return last
+    // 404 = model retired; 429/5xx = quota or Google's frequent "high demand"
+    // 503. The next model in the list usually still has capacity, so try it
+    // before falling back to Groq. Other errors (400 etc.) won't improve.
+    if (!(last.status === 404 || last.status === 429 || last.status >= 500)) return last
   }
   return last
 }

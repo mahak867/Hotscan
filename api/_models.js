@@ -15,8 +15,8 @@
 export var MODELS = {
   HAIKU: 'openai/gpt-oss-20b',
   CODEX: 'openai/gpt-oss-120b',
-  VISION: 'qwen/qwen3.6-27b',
-  VISION_FALLBACK: 'qwen/qwen3.6-27b',
+  VISION: 'qwen/qwen3.8-27b',
+  VISION_FALLBACK: 'qwen/qwen3.8-27b',
   COMPOUND: 'groq/compound',
   COMPOUND_MINI: 'groq/compound-mini',
 }

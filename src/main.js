@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
 import { VISION_MODEL } from './config.js'
 import { SUPA_URL, SUPA_KEY, FREE_SCANS } from './config.js'
-import { ol, showToast, checkAndEarnAchievements } from './utils.js'
+import { ol, showToast, checkAndEarnAchievements, isProActive } from './utils.js'
 import {
   openAuth, closeAuth, toggleAuthMode, authContinue, signInWithGoogle,
   sendPasswordReset, openAccountModal, closeAccountModal, signOutUser,
@@ -228,13 +228,24 @@ document.addEventListener('DOMContentLoaded', function () {
 })
 
 // window.load: app init
+// Collection search. index.html called searchCol() from an inline oninput, but
+// searchCol is a module import and was never put on window, so every keystroke
+// threw "searchCol is not defined" and the list never filtered. A listener
+// bound here needs no global at all.
+function _bindColSearch() {
+  var cs = document.getElementById('col-search')
+  if (cs) cs.addEventListener('input', function () { searchCol(cs.value) })
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _bindColSearch)
+else _bindColSearch()
+
 window.addEventListener('load', function () {
   // Restore cached profile for instant header UI
   try {
     var _cp = JSON.parse(localStorage.getItem('hs_profile_cache') || 'null')
     if (_cp && _cp.data && (Date.now() - _cp.ts) < 3600000) {
       state.userProfile = _cp.data
-      if (_cp.data.is_pro || _cp.data.is_developer) localStorage.setItem('hs_pro', 'true')
+      if (isProActive(_cp.data)) localStorage.setItem('hs_pro', 'true')
     }
   } catch (e) {}
 

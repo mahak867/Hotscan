@@ -28,6 +28,35 @@ var _thumbBackfillTried = {}
 var _editingItem = null
 var _editingItemId = null
 
+// Writes the in-memory collection to localStorage. Until now only a non-empty
+// cloud merge ever wrote hs_col, so for guests, offline users, or anyone whose
+// sync had not yet run, every add / edit / delete lived in memory only and was
+// gone on reload — and a deleted car came back from the stale saved copy.
+// Called after every local mutation. If storage is full, retry without photos
+// (they are the bulk of the payload) rather than losing the cars themselves.
+var _persistWarned = false
+export function persistCollection() {
+  try {
+    localStorage.setItem('hs_col', JSON.stringify(state.collection))
+    return true
+  } catch (e) {
+    try {
+      var slim = state.collection.map(function(c) {
+        var copy = Object.assign({}, c)
+        if (copy.image && String(copy.image).startsWith('data:')) delete copy.image
+        return copy
+      })
+      localStorage.setItem('hs_col', JSON.stringify(slim))
+      if (!_persistWarned) { _persistWarned = true; showToast('Storage almost full — photos are kept for this session only. Sign in to back them up.', 'error') }
+      return true
+    } catch (e2) {
+      captureException(e2)
+      showToast('Could not save your collection on this device — storage is full', 'error')
+      return false
+    }
+  }
+}
+
 export function addToCol() {
   if(!state.lastResult){ showToast('Scan a car first to add to collection', 'error'); return }
   var item = {
@@ -57,6 +86,7 @@ export function addToCol() {
 }
 function _doAddToCol(item) {
   state.collection.unshift(item)
+  persistCollection()
   if (navigator.vibrate) navigator.vibrate(30)
   // Snapshot collection value for history chart
   try {
@@ -67,7 +97,7 @@ function _doAddToCol(item) {
     localStorage.setItem('hs_val_hist', JSON.stringify(_vh))
   } catch(e) {}
   if (state._sb && state.currentUser) {
-    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col_hash','') } }catch(e){} })()
+    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col_hash',''); persistCollection() } }catch(e){} })()
   }
   renderCol(); window.goPage('collection')
 }
@@ -94,6 +124,7 @@ export async function delFromCol(id) {
     }
   }
   state.collection = state.collection.filter(function(c) { return String(c.id) !== String(id) })
+  persistCollection()
   localStorage.removeItem('hs_col_hash')
   if (navigator.vibrate) navigator.vibrate([20, 30, 20])
   showToast('🗑 Car removed', 'success')
@@ -128,19 +159,40 @@ export function editColItem(id) {
   document.body.style.overflow = 'hidden'
 }
 
-export function saveColEdit() {
+export async function saveColEdit() {
   if (!_editingItem) return
   var item = _editingItem
+  var priceRaw = document.getElementById('col-edit-price').value.trim()
+  var priceNum = Number(priceRaw)
+  if (priceRaw && !(isFinite(priceNum) && priceNum >= 0 && priceNum <= 10000000)) {
+    showToast('Enter a valid price in ₹', 'error'); return
+  }
   item.name = document.getElementById('col-edit-name').value || item.name
   item.rarity = document.getElementById('col-edit-rarity').value || item.rarity
   item.condition = document.getElementById('col-edit-condition').value || item.condition
-  item.india_collector_inr = '₹' + document.getElementById('col-edit-price').value
+  // An empty field used to save the literal string "₹".
+  if (priceRaw) item.india_collector_inr = '₹' + Math.round(priceNum)
   item.notes = document.getElementById('col-edit-notes').value || ''
-  if (state._sb && state.currentUser && typeof item.id === 'string' && item.id.includes('-')) {
-    saveToCloud(item)
-  }
+  // Local first, so the edit survives a reload whatever the network does.
+  persistCollection()
   closeColEdit()
   renderCol()
+  if (state._sb && state.currentUser && typeof item.id === 'string' && item.id.includes('-')) {
+    // Previously this fired saveToCloud without awaiting it and toasted
+    // success regardless, so a failed save looked saved until the next sync
+    // quietly reverted it.
+    var cloudOk = null
+    try { cloudOk = await saveToCloud(item) } catch (e) { captureException(e) }
+    if (!cloudOk) {
+      // _dirty makes the next sync push this edit instead of overwriting it
+      // with the stale cloud row.
+      item._dirty = true
+      persistCollection()
+      showToast('Saved on this device — cloud sync failed, will retry on next sync', 'error')
+      return
+    }
+    if (item._dirty) { delete item._dirty; persistCollection() }
+  }
   showToast('Car updated!', 'success')
 }
 
@@ -592,8 +644,9 @@ export function addCarToCollection(car, thumb) {
     added: new Date().toISOString()
   }
   state.collection.unshift(item)
+  persistCollection()
   if (state._sb && state.currentUser) {
-    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; } }catch(e){} })()
+    ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; persistCollection() } }catch(e){} })()
   }
   renderCol()
   return item
@@ -722,6 +775,27 @@ async function _doFullCloudSync(retryCount) {
           _synced: true
         }
       })
+    }
+
+    // 1b. Carry local state across the merge.
+    // condition and notes are edited in the app but are not cloud columns yet,
+    // so every sync used to replace them with nothing. And a local edit whose
+    // cloud save failed is pushed now instead of being overwritten by the stale
+    // cloud copy.
+    var _localById = {}
+    state.collection.forEach(function(c) { if (c && c.id != null) _localById[String(c.id)] = c })
+    for (var _ci = 0; _ci < cloudItems.length; _ci++) {
+      var _loc = _localById[String(cloudItems[_ci].id)]
+      if (!_loc) continue
+      if (_loc.condition) cloudItems[_ci].condition = _loc.condition
+      if (_loc.notes) cloudItems[_ci].notes = _loc.notes
+      if (_loc._dirty) {
+        var _merged = Object.assign({}, cloudItems[_ci], _loc)
+        var _saved = null
+        try { _saved = await saveToCloud(_merged) } catch (e) { captureException(e) }
+        if (_saved) delete _merged._dirty
+        cloudItems[_ci] = _merged
+      }
     }
 
     // 2. Get local items that are NOT yet in cloud (have numeric/float IDs from Date.now())

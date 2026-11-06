@@ -197,18 +197,18 @@ async function communityPrices(carName) {
     if (!res.ok) return null
     var rows=await res.json()
     if (!rows||!rows.length) return null
-    // Marketplace-verified sales are a REAL closed transaction, not a
-    // self-reported guess — weight them 3x in the merged price list so they
-    // dominate the median/average when present, without needing a schema
-    // migration (identified purely via the platform field markListingSold
-    // tags them with).
+    // Every community row is self-reported and weighted equally.
+    //
+    // Rows whose platform text said "Verified Sale" used to count 3x, and a
+    // single one could replace the price estimate. But platform is free text
+    // any signed-in user can insert, and even the genuine path (seller taps
+    // "Mark as Sold" and types a number) proves no payment happened. Until a
+    // buyer-confirmed transaction record exists, nothing here is verified.
     var weighted = []
-    var verifiedCount = 0
     rows.forEach(function(r) {
       var p = parseInt((r.price_inr||'0').toString().replace(/[₹,\s]/g,''))
       if (!(p>50 && p<200000)) return
-      var isVerified = (r.platform||'').indexOf('Verified Sale') > -1
-      if (isVerified) { verifiedCount++; weighted.push(p,p,p) } else { weighted.push(p) }
+      weighted.push(p)
     })
     var prices = weighted.sort((a,b)=>a-b)
     if (!prices.length) return null
@@ -216,8 +216,7 @@ async function communityPrices(carName) {
       community_avg_inr: Math.round(prices.reduce((a,b)=>a+b,0)/prices.length),
       community_median_inr: prices[Math.floor(prices.length/2)],
       community_min_inr: prices[0], community_max_inr: prices[prices.length-1],
-      community_count: rows.length,
-      community_verified_count: verifiedCount,
+      community_count: prices.length,
       community_range_inr: prices[0]+'-'+prices[prices.length-1]
     }
   } catch { return null }
@@ -271,12 +270,30 @@ async function handler(req) {
 // Apify run, so it is several times more expensive than a scan.
 const PRICE_WINDOW_S = 60
 const PRICE_MAX_REQS = 8
+// Degraded-mode fallback when Upstash is missing/failing: per-instance, weaker
+// than Redis, but a Redis outage now tightens rather than removes the cap on
+// the most expensive endpoint (two Groq calls + optional billed Apify run).
+var _priceLocalHits = new Map()
+var _priceLimiterWarned = false
+function priceLocalLimited(ip, reason) {
+  if (!_priceLimiterWarned) {
+    _priceLimiterWarned = true
+    captureServerException(new Error('Upstash price limiter unavailable (' + reason + ') — using in-memory fallback'), { tags: { endpoint: 'prices', check: 'ratelimit' } })
+  }
+  var now = Date.now()
+  var rec = _priceLocalHits.get(ip)
+  if (!rec || now - rec.start > PRICE_WINDOW_S * 1000) {
+    if (_priceLocalHits.size > 5000) _priceLocalHits.clear()
+    _priceLocalHits.set(ip, { start: now, count: 1 })
+    return false
+  }
+  rec.count++
+  return rec.count > PRICE_MAX_REQS
+}
 async function isPriceRateLimited(ip) {
   var url = process.env.UPSTASH_KV_REST_API_URL
   var token = process.env.UPSTASH_KV_REST_API_TOKEN
-  // Fail OPEN when Redis is unconfigured: the auth check below is the real gate,
-  // and a missing cache should not take pricing down for everyone.
-  if (!url || !token) return false
+  if (!url || !token) return priceLocalLimited(ip, 'not configured')
   try {
     var key = 'hs:price:' + ip
     var res = await fetch(url + '/pipeline', {
@@ -284,11 +301,12 @@ async function isPriceRateLimited(ip) {
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify([['INCR', key], ['EXPIRE', key, String(PRICE_WINDOW_S), 'NX']]),
     })
-    if (!res.ok) return false
+    if (!res.ok) return priceLocalLimited(ip, 'HTTP ' + res.status)
     var out = await res.json()
     var count = out && out[0] && Number(out[0].result)
+    if (!Number.isFinite(count)) return priceLocalLimited(ip, 'malformed response')
     return count > PRICE_MAX_REQS
-  } catch (e) { return false }
+  } catch (e) { return priceLocalLimited(ip, 'network error') }
 }
 
 // Resolves the caller from their Supabase JWT. Identity must come from the
@@ -399,16 +417,12 @@ async function handleRequest(req) {
     sources:{web_search:!!web,community:!!community,synthesized:!!final},
     car_name:carName, rarity:rarity
   }
-  // A real marketplace sale is strong enough evidence on its own — one
-  // verified transaction beats several self-reported guesses. Regular
-  // self-reported submissions still need 3+ before they're trusted over the
-  // AI's synthesis.
-  if (community && community.community_median_inr && (community.community_verified_count >= 1 || community.community_count >= 3)) {
+  // Self-reported prices need 3+ valid reports before they replace the
+  // synthesized estimate, and are labelled as reports, not verification.
+  if (community && community.community_median_inr && community.community_count >= 3) {
     var med = community.community_median_inr
     result.india_collector_inr = Math.round(med*0.85) + '-' + Math.round(med*1.15)
-    result.data_quality = community.community_verified_count >= 1
-      ? 'Verified Sale (' + community.community_verified_count + ' on Hotscan Marketplace)'
-      : 'Community Verified (' + community.community_count + ' submissions)'
+    result.data_quality = 'Community reports (' + community.community_count + ', unverified)'
   }
   return new Response(JSON.stringify(result),{status:200,headers:{...cors,'Content-Type':'application/json'}})
 }
