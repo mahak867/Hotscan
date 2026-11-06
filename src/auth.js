@@ -315,8 +315,15 @@ export async function initAuth(){
         }
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
       } else {
-        state.currentUser=null; state.userProfile=null; state.collection=[]
-  if(window.renderCol) window.renderCol()
+        // No session. This also fires as INITIAL_SESSION on every page load
+        // for guests, and used to wipe state.collection unconditionally — so a
+        // guest's cars (still in hs_col) vanished on every reload. Only clear
+        // when a signed-in user's session actually ended; an explicit sign-out
+        // already clears hs_col in signOutUser().
+        var hadUser = !!state.currentUser
+        state.currentUser=null; state.userProfile=null
+        if (hadUser) state.collection=[]
+        if(window.renderCol) window.renderCol()
         localStorage.removeItem('hs_pro')
         updateHeaderUI(); window.renderProfilePage(); window.updateScanCounter()
       }
