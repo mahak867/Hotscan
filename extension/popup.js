@@ -33,6 +33,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // Allow Enter key in API key input
   var keyInp = document.getElementById('key-inp')
   if (keyInp) keyInp.addEventListener('keydown', function(e) { if (e.key === 'Enter') saveKey() })
+
+  // Manifest V3's CSP forbids inline handlers, so the onclick="..." attributes
+  // popup.html used to carry were silently blocked: Save Key, Search, Share,
+  // List for Sale and Change key did nothing when clicked (Enter still worked
+  // because those two keydown listeners were the only real bindings).
+  var bind = function(id, fn) { var el = document.getElementById(id); if (el) el.addEventListener('click', fn) }
+  bind('key-save-btn', saveKey)
+  bind('search-btn', doSearch)
+  bind('r-wa-btn', shareOnWA)
+  bind('r-sell-btn', openSell)
+  bind('key-change-btn', showKeyChange)
 })
 
 function showKeySetup() {

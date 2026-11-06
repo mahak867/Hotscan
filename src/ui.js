@@ -85,7 +85,13 @@ var _pageOrder = {scan:0,collection:1,marketplace:2,market:3,profile:4,more:5,al
 var _prevPageId = 'scan'
 export function goPage(id){
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active','slide-from-right','slide-from-left') })
-  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active') })
+  // Mobile dock and desktop sidebar share one current-page state. The sidebar
+  // used to keep "Scanner" highlighted whatever page was open.
+  document.querySelectorAll('.nav-item, .hs-sidebar-item').forEach(function(n){
+    n.classList.remove('active'); n.removeAttribute('aria-current')
+  })
+  var sbi = document.getElementById('sb-'+id)
+  if (sbi) { sbi.classList.add('active'); sbi.setAttribute('aria-current', 'page') }
   var pg = document.getElementById('page-'+id)
   if(pg){
     // #21 — directional slide
@@ -98,6 +104,7 @@ export function goPage(id){
   var ni = document.getElementById('nav-'+id)
   if(ni){
     ni.classList.add('active')
+    ni.setAttribute('aria-current', 'page')
     var svg = ni.querySelector('svg')
     if(svg){
       svg.style.transform = 'scale(1.3)'
@@ -130,7 +137,9 @@ export function setMode(mode) {
   state.currentMode = mode
   ;['photo','barcode','deal','fake'].forEach(function(m) {
     document.getElementById('mode-' + m).style.display = m === mode ? 'block' : 'none'
-    document.getElementById('tab-' + m).classList.toggle('active', m === mode)
+    var t = document.getElementById('tab-' + m)
+    t.classList.toggle('active', m === mode)
+    t.setAttribute('aria-selected', m === mode ? 'true' : 'false')
   })
   document.getElementById('analyze-btn').style.display = 'none'
   document.getElementById('result').style.display = 'none'

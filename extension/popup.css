@@ -149,5 +149,5 @@ body {
 }
 .footer-link { font-size: 11px; color: var(--text3); text-decoration: none }
 .footer-link:hover { color: var(--red) }
-.key-change { font-size: 11px; color: var(--text3); cursor: pointer }
+.key-change { font-size: 11px; color: var(--text3); cursor: pointer; background: none; border: 0; padding: 0; font-family: inherit }
 .key-change:hover { color: var(--text) }

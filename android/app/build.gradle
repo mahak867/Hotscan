@@ -16,10 +16,40 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Release signing comes from the environment (see
+    // .github/workflows/android-release.yml). The workflow already exported
+    // these variables, but nothing read them, so "Build & Sign" uploaded
+    // unsigned artifacts. KEYSTORE_PATH is relative to the android/ directory.
+    def ksPath = System.getenv("KEYSTORE_PATH")
+    signingConfigs {
+        release {
+            if (ksPath) {
+                storeFile rootProject.file(ksPath)
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (ksPath) signingConfig signingConfigs.release
+        }
+    }
+}
+
+// On CI a release build without signing config is a failure, not an unsigned
+// artifact. Local release builds without a keystore still work (unsigned).
+gradle.taskGraph.whenReady { graph ->
+    def wantsRelease = graph.allTasks.any { it.name.toLowerCase().contains("release") && (it.name.startsWith("assemble") || it.name.startsWith("bundle")) }
+    if (System.getenv("CI") && wantsRelease) {
+        ["KEYSTORE_PATH", "KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD"].each { v ->
+            if (!System.getenv(v)) throw new GradleException("Release signing: environment variable " + v + " is not set")
+        }
+        if (!rootProject.file(System.getenv("KEYSTORE_PATH")).exists()) {
+            throw new GradleException("Release signing: keystore not found at " + System.getenv("KEYSTORE_PATH"))
         }
     }
 }
