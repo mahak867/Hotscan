@@ -238,6 +238,10 @@ const MAX_MESSAGES     = 4
 const MAX_TOKENS_CAP   = 2000               // highest value the client uses
 // Keep in sync with api/_models.js / src/config.js.
 const ALLOWED_MODELS = new Set([
+  'qwen/qwen3.8-27b',
+  // Groq shut qwen3.6-27b down on 2026-09-14. Installed PWAs and the extension
+  // may still send it until they refresh, so it is accepted and rewritten to
+  // its successor below rather than rejected.
   'qwen/qwen3.6-27b',
   'openai/gpt-oss-20b',
   'openai/gpt-oss-120b',
@@ -282,7 +286,8 @@ function validateBody(raw) {
     }
     messages.push({ role: m.role, content: parts })
   }
-  const body = { model: raw.model, messages }
+  const MODEL_ALIASES = { 'qwen/qwen3.6-27b': 'qwen/qwen3.8-27b' }
+  const body = { model: MODEL_ALIASES[raw.model] || raw.model, messages }
   if (raw.temperature !== undefined) {
     if (typeof raw.temperature !== 'number' || !(raw.temperature >= 0 && raw.temperature <= 1)) return { error: 'Invalid temperature' }
     body.temperature = raw.temperature
