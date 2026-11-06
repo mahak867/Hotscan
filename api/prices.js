@@ -271,12 +271,30 @@ async function handler(req) {
 // Apify run, so it is several times more expensive than a scan.
 const PRICE_WINDOW_S = 60
 const PRICE_MAX_REQS = 8
+// Degraded-mode fallback when Upstash is missing/failing: per-instance, weaker
+// than Redis, but a Redis outage now tightens rather than removes the cap on
+// the most expensive endpoint (two Groq calls + optional billed Apify run).
+var _priceLocalHits = new Map()
+var _priceLimiterWarned = false
+function priceLocalLimited(ip, reason) {
+  if (!_priceLimiterWarned) {
+    _priceLimiterWarned = true
+    captureServerException(new Error('Upstash price limiter unavailable (' + reason + ') — using in-memory fallback'), { tags: { endpoint: 'prices', check: 'ratelimit' } })
+  }
+  var now = Date.now()
+  var rec = _priceLocalHits.get(ip)
+  if (!rec || now - rec.start > PRICE_WINDOW_S * 1000) {
+    if (_priceLocalHits.size > 5000) _priceLocalHits.clear()
+    _priceLocalHits.set(ip, { start: now, count: 1 })
+    return false
+  }
+  rec.count++
+  return rec.count > PRICE_MAX_REQS
+}
 async function isPriceRateLimited(ip) {
   var url = process.env.UPSTASH_KV_REST_API_URL
   var token = process.env.UPSTASH_KV_REST_API_TOKEN
-  // Fail OPEN when Redis is unconfigured: the auth check below is the real gate,
-  // and a missing cache should not take pricing down for everyone.
-  if (!url || !token) return false
+  if (!url || !token) return priceLocalLimited(ip, 'not configured')
   try {
     var key = 'hs:price:' + ip
     var res = await fetch(url + '/pipeline', {
@@ -284,11 +302,12 @@ async function isPriceRateLimited(ip) {
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify([['INCR', key], ['EXPIRE', key, String(PRICE_WINDOW_S), 'NX']]),
     })
-    if (!res.ok) return false
+    if (!res.ok) return priceLocalLimited(ip, 'HTTP ' + res.status)
     var out = await res.json()
     var count = out && out[0] && Number(out[0].result)
+    if (!Number.isFinite(count)) return priceLocalLimited(ip, 'malformed response')
     return count > PRICE_MAX_REQS
-  } catch (e) { return false }
+  } catch (e) { return priceLocalLimited(ip, 'network error') }
 }
 
 // Resolves the caller from their Supabase JWT. Identity must come from the
