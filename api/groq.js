@@ -148,6 +148,10 @@ const GUEST_SCANS_PER_DAY = 3
 // fresh device id. Deliberately generous: on Indian mobile networks a single
 // public IP can front a very large number of unrelated people.
 const GUEST_SCANS_PER_IP_PER_DAY = 60
+// Guest text calls: one scan can trigger a price-fallback call and a deal check,
+// so allow a handful per scan, still hard-capped.
+const GUEST_TEXT_PER_DAY = 15
+const GUEST_TEXT_PER_IP_PER_DAY = 300
 
 // Counts a guest's scans, keyed on device id where available and IP otherwise.
 //
@@ -162,7 +166,11 @@ const GUEST_SCANS_PER_IP_PER_DAY = 60
 // A localStorage device id is spoofable by clearing storage. That is an
 // acceptable trade: it raises the effort of farming while not punishing
 // legitimate users, and the per-IP ceiling below catches bulk abuse.
-async function guestScanCount(ip, deviceId) {
+async function guestScanCount(ip, deviceId, kind) {
+  // kind 'text' keeps a separate, larger budget for guest text calls (price
+  // fallback, deal check) so they neither burn scan credits nor go uncapped.
+  const prefix = kind === 'text' ? 'guest:text:' : 'guest:groq:'
+  const ipCap = kind === 'text' ? GUEST_TEXT_PER_IP_PER_DAY : GUEST_SCANS_PER_IP_PER_DAY
   // Fail CLOSED when Redis is unconfigured: without a counter there is no cap,
   // and an uncapped anonymous path is exactly the hole this whole change exists
   // to close. Signed-in users are unaffected.
@@ -171,9 +179,9 @@ async function guestScanCount(ip, deviceId) {
     const day = new Date().toISOString().slice(0, 10)
     // Date-stamped key gives a natural daily reset without needing a cron.
     const key = deviceId
-      ? 'guest:groq:' + day + ':d:' + deviceId
-      : 'guest:groq:' + day + ':' + ip
-    const ipKey = 'guest:groq:' + day + ':ip:' + ip
+      ? prefix + day + ':d:' + deviceId
+      : prefix + day + ':' + ip
+    const ipKey = prefix + day + ':ip:' + ip
     const res = await fetch(UPSTASH_URL + '/pipeline', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + UPSTASH_TOKEN, 'Content-Type': 'application/json' },
@@ -191,7 +199,7 @@ async function guestScanCount(ip, deviceId) {
     // Either ceiling can stop a guest, but they are wildly different sizes: a
     // few per device, many per IP. Report whichever has been breached so the
     // caller's message stays accurate.
-    if (typeof ipCount === 'number' && ipCount > GUEST_SCANS_PER_IP_PER_DAY) return Infinity
+    if (typeof ipCount === 'number' && ipCount > ipCap) return Infinity
     return typeof count === 'number' ? count : Infinity
   } catch (e) {
     return Infinity
@@ -400,7 +408,14 @@ async function handleRequest(req) {
         signUpRequired: true,
       }, 401, cors)
     }
-  } else if (!isGuest) {
+  } else if (isGuest) {
+    const rawDevice = (req.headers.get('x-device-id') || '').trim()
+    const deviceId = /^[a-zA-Z0-9-]{8,64}$/.test(rawDevice) ? rawDevice : ''
+    const usedText = await guestScanCount(ip, deviceId, 'text')
+    if (usedText > GUEST_TEXT_PER_DAY) {
+      return json({ error: 'Free guest limit reached — create a free account to keep going.', signUpRequired: true }, 401, cors)
+    }
+  } else {
     if (!SUPA_URL || !SUPA_KEY) {
       return json({ error: 'Server auth not configured' }, 503, cors)
     }
