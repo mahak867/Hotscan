@@ -422,12 +422,14 @@ export function showResult(d) {
   var rb = document.getElementById('r-rar')
   var rarLabel = d.rarity || 'Common'
   rb.textContent = (rarIcons[rarLabel] ? rarIcons[rarLabel] + ' ' : '') + rarLabel; rb.className = 'rar ' + rcls(d.rarity)
+  // Identification is not authentication. This badge used to render whatever
+  // is_authentic the model returned — and the prompt's own JSON example set it
+  // to true — so a 128px side shot of a VW bus got a green "Authentic". The
+  // only authenticity verdict now lives in Fake Detector mode, which enforces
+  // evidence rules. Cached results from before this change may still carry the
+  // field, so it is ignored rather than trusted.
   var ab = document.getElementById('r-auth')
-  if (d.is_authentic !== undefined) {
-    ab.style.display = 'inline-flex'
-    ab.className = 'auth-badge ' + (d.is_authentic ? 'auth-y' : 'auth-n')
-    ab.textContent = d.is_authentic ? '✓ Authentic' : '⚠️ Possibly Fake'
-  } else ab.style.display = 'none'
+  if (ab) ab.style.display = 'none'
   
   // Show low confidence warning
   var lcw = document.getElementById('r-low-conf-warning')
