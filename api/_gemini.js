@@ -101,7 +101,19 @@ export function fromGeminiResponse(g) {
       total_tokens: g.usageMetadata.totalTokenCount,
     } : undefined,
     _provider: 'gemini',
+    // Present only for Google Search grounded calls: the pages the answer drew on.
+    _sources: groundingSources(cand),
   }
+}
+
+function groundingSources(cand) {
+  const chunks = (cand && cand.groundingMetadata && cand.groundingMetadata.groundingChunks) || []
+  const out = []
+  for (const c of chunks) {
+    if (c && c.web && c.web.uri) out.push({ title: c.web.title || '', url: c.web.uri })
+    if (out.length >= 5) break
+  }
+  return out.length ? out : undefined
 }
 
 // Calls Gemini and returns a fetch-like { ok, status, json, text } so the proxy
@@ -143,7 +155,9 @@ async function callGeminiModel(model, key, geminiBody, timeoutMs) {
 // no amount of retrying the same ID will fix — every other status (quota,
 // timeout, malformed request) is returned immediately so the caller falls back
 // to Groq rather than burning time on models that will fail the same way.
-export async function callGemini(openaiBody, timeoutMs) {
+// opts.googleSearch adds Google Search grounding, so the model answers from
+// live search results instead of training data. Used for price lookups.
+export async function callGemini(openaiBody, timeoutMs, opts) {
   const key = process.env.GEMINI_API_KEY
   if (!key) return { ok: false, status: 503, error: 'No Gemini key configured' }
 
@@ -153,6 +167,7 @@ export async function callGemini(openaiBody, timeoutMs) {
     : GEMINI_MODELS
 
   const geminiBody = toGeminiBody(openaiBody)
+  if (opts && opts.googleSearch) geminiBody.tools = [{ google_search: {} }]
   let last = { ok: false, status: 503, error: 'No Gemini model configured' }
   for (const model of candidates) {
     last = await callGeminiModel(model, key, geminiBody, timeoutMs)

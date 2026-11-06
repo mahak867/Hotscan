@@ -221,8 +221,9 @@ async function searchPrices(carName, rarity, castingYear) {
           us_retail_usd: d.us_retail_usd, us_collector_usd: d.us_collector_usd,
           price_trend: d.price_trend||'Stable', price_trend_reason: d.price_trend_reason||'',
           india_insight: d.india_insight||'', sell_platforms: d.sell_platforms||['OLX India','Instagram','Maido'],
-          buy_tip: d.buy_tip||'', data_quality: d.data_quality||'Live',
-          community_avg_inr: d.community_avg_inr||null, community_count: d.community_count||0
+          buy_tip: d.buy_tip||'', data_quality: d.data_quality||'Estimated',
+          community_avg_inr: d.community_avg_inr||null, community_count: d.community_count||0,
+          web_sources: Array.isArray(d.web_sources) ? d.web_sources.slice(0, 3) : []
         }
       }
     }

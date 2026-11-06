@@ -485,7 +485,12 @@ export function showResult(d) {
     _dqEl.textContent = '👥 ' + d.data_quality
     _dqEl.style.color = 'var(--blue)'
   } else {
-    _dqEl.textContent = 'Updated just now · ' + d.data_quality
+    // Name where the live price came from, so "Live" is checkable.
+    var _src = ''
+    if (Array.isArray(d.web_sources) && d.web_sources.length) {
+      try { _src = ' · via ' + (d.web_sources[0].title || new URL(d.web_sources[0].url).hostname).replace(/^www\./, '') } catch (e) {}
+    }
+    _dqEl.textContent = 'Updated just now · ' + d.data_quality + _src
     _dqEl.style.color = ''
   }
   // #4 — pop animation on price tiles
