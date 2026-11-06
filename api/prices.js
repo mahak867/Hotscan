@@ -1,10 +1,11 @@
 // HotScan India — Real-Time Pricing Engine (Vercel Edge Function)
-// 3-source pipeline: Groq compound web search + Supabase community + AI synthesis
+// 3-source pipeline: Gemini + Google Search grounded web search + Supabase community + AI synthesis
 // Same fix as api/groq.js — Edge's fixed 25s ceiling was a real risk here
-// too, since groq/compound's agentic multi-tool-call search can genuinely
+// too, since grounded web search can genuinely
 // take longer than a single completion call.
 export const config = { runtime: 'nodejs', maxDuration: 60 }
 import { MODELS } from './_models.js'
+import { callGemini, hasGeminiKey } from './_gemini.js'
 import { captureServerException } from './_sentry.js'
 
 const ALLOWED_ORIGINS = ['https://hotscan.in','https://www.hotscan.in','https://hotscan-theta.vercel.app']
@@ -173,16 +174,25 @@ async function webSearch(carName, rarity, pool) {
     'India collector demand level for this casting: ' + demand + '\n\n' +
     'Return ONLY valid JSON (no markdown): {"india_retail_inr":"range e.g. 150-200","india_collector_inr":"range e.g. 200-350","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences about Indian collector demand for this specific casting","buy_tip":"actionable India buying advice"}'
 
-  // groq/compound (full, not -mini) — mini only makes a single tool call per
-  // request, meaning one search with no cross-checking. Full compound can
-  // make multiple tool calls, which matters here since price accuracy is
-  // this product's actual core value — worth the extra latency/rate-limit
-  // cost over mini.
-  var content = await callGroq({model:MODELS.COMPOUND,messages:[{role:'user',content:q}],max_tokens:500,temperature:0},pool,15000)
+  // Live search used to be groq/compound, which Groq retired in October 2026
+  // (404 model_not_found, Sentry HOTSCAN-INDIA-11). Since then every price was
+  // AI synthesis with no live data behind it. Gemini with Google Search
+  // grounding is the replacement: it searches, then answers from the results.
+  if (!hasGeminiKey()) return null
+  var g = await callGemini({ messages:[{role:'user',content:q}], max_tokens:700, temperature:0 }, 20000, { googleSearch: true })
+  if (!g.ok) {
+    captureServerException(new Error('Price web search failed (Gemini grounded ' + g.status + '): ' + String(g.error||'').slice(0,200)), { tags: { endpoint: 'prices', provider: 'gemini' }, function: 'webSearch' })
+    return null
+  }
+  var content = g.data && g.data.choices && g.data.choices[0] && g.data.choices[0].message.content
   if (!content) return null
   try {
     var s=content.indexOf('{'),e=content.lastIndexOf('}')
-    return s>-1?JSON.parse(content.slice(s,e+1)):null
+    var parsed = s>-1?JSON.parse(content.slice(s,e+1)):null
+    // A grounded answer with no sources was not actually backed by a search.
+    if (parsed && !(g.data._sources && g.data._sources.length)) return null
+    if (parsed) parsed._sources = g.data._sources
+    return parsed
   } catch { return null }
 }
 
@@ -388,6 +398,8 @@ async function handleRequest(req) {
     webSearch(carName,rarity||'Common',pool).catch(()=>null),
     communityPrices(carName).catch(()=>null)
   ])
+  var webSources = web && web._sources
+  if (web) delete web._sources
   var final=await synthesize(carName,rarity||'Common',web,community,pool)
   var band=BANDS[rarity]||BANDS['Common']
 
@@ -410,11 +422,14 @@ async function handleRequest(req) {
     price_trend_reason:  (final&&final.price_trend_reason)||'',
     india_insight:       (final&&final.india_insight)||'',
     buy_tip:             (final&&final.buy_tip)||'Check OLX India and local collector groups',
-    data_quality:        (final&&final.data_quality)||'Estimated',
+    // Derived from which sources actually returned data, not from the model's
+    // own claim: synthesis could say "Live+Community" with no live data at all.
+    data_quality:        web&&community ? 'Live+Community' : web ? 'Live Only' : community ? 'Community Only' : 'Estimated',
     community_avg_inr:   community?community.community_avg_inr:null,
     community_median_inr:community?community.community_median_inr:null,
     community_count:     community?community.community_count:0,
     sources:{web_search:!!web,community:!!community,synthesized:!!final},
+    web_sources:         webSources || [],
     car_name:carName, rarity:rarity
   }
   // Self-reported prices need 3+ valid reports before they replace the

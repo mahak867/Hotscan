@@ -245,8 +245,6 @@ const ALLOWED_MODELS = new Set([
   'qwen/qwen3.6-27b',
   'openai/gpt-oss-20b',
   'openai/gpt-oss-120b',
-  'groq/compound',
-  'groq/compound-mini',
 ])
 const DATA_URL_RE = /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/
 

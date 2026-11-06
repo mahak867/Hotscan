@@ -17,6 +17,6 @@ export var MODELS = {
   CODEX: 'openai/gpt-oss-120b',
   VISION: 'qwen/qwen3.8-27b',
   VISION_FALLBACK: 'qwen/qwen3.8-27b',
-  COMPOUND: 'groq/compound',
-  COMPOUND_MINI: 'groq/compound-mini',
+  // groq/compound and compound-mini were retired in Oct 2026; live price
+  // search now uses Gemini with Google Search grounding (api/prices.js).
 }
