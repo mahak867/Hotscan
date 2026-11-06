@@ -919,6 +919,22 @@ create policy "profiles_update_safe" on profiles
     AND razorpay_payment_id IS NOT DISTINCT FROM (SELECT razorpay_payment_id FROM profiles WHERE id = auth.uid())
   );
 
+-- Bridge for grants that set is_pro without a term (the old webhook still
+-- running during deploy, or a manual service-role grant): default them to 30
+-- days instead of leaving pro_until null, which the new code treats as Free.
+create or replace function profiles_default_pro_term() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.is_pro and new.pro_until is null and not coalesce(new.is_developer, false) then
+    new.pro_until := now() + interval '30 days';
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_profiles_default_pro_term on profiles;
+create trigger trg_profiles_default_pro_term
+  before insert or update of is_pro, pro_until on profiles
+  for each row execute function profiles_default_pro_term();
+
 -- Verification:
 --   select id, is_pro, pro_until from profiles where is_pro;      -- every row has pro_until
 --   -- as a normal signed-in user, this must fail with an RLS error:
@@ -933,3 +949,11 @@ create policy "profiles_update_safe" on profiles
 update community_prices
    set platform = 'Hotscan Marketplace (Seller-reported)'
  where platform ilike '%verified sale%';
+
+-- ── 27. Lock down upsert_profile ───────────────────────────────────────
+-- upsert_profile(p_id, p_email, p_name) existed in production but not in this
+-- file. It is SECURITY DEFINER and was executable by anon: passing the owner's
+-- email granted is_pro + is_developer to any profile id the caller chose, and it
+-- could overwrite any user's email. Nothing in the app calls it. Applied to
+-- production 2026-11-06; no privileged profiles other than the owner existed.
+revoke execute on function public.upsert_profile(text, text, text) from public, anon, authenticated;
