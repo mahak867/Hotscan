@@ -1,7 +1,7 @@
 // HotScan India — Service Worker v5.0
 // Provides offline support (cache-first for static assets) and deal-alert notifications.
 
-const CACHE = 'hotscan-v9'
+const CACHE = 'hotscan-v10'
 // index.html is deliberately NOT precached — see the fetch handler. It is the
 // only file that names the current hashed asset bundles, so serving a stale copy
 // points the browser at JS filenames that no longer exist on the server, which

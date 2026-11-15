@@ -17,11 +17,12 @@ flag likely fakes before money changes hands.
 | Feature | Description |
 |---|---|
 | **Photo scan** | Identify casting, series, year, rarity, colour and wheel type from one photo |
-| **Batch scan** | Up to five photos in one pass, each car attributed to its source image |
 | **Indian pricing** | Retail and collector ranges in INR rather than converted USD comparables |
 | **Fake detector** | Authenticity check driven by base markings, with an explicit no-verdict path |
 | **Deal check** | Enter an asking price and get a verdict on whether it is fair |
-| **Collection** | Cloud-synced, with live valuation, rarity breakdown and value history |
+| **Collection** | Cloud-synced, with valuation, gain/loss against what you paid, duplicate markers and group-by-casting |
+| **Wishlist** | Cars you are hunting; one tap moves a found car into the collection |
+| **Spotter's guide** | TH vs STH tells, an interactive fake-spotting checklist, condition grades |
 | **Marketplace** | Listings with seller reputation, ratings and gated contact details |
 
 ## Stack
@@ -32,7 +33,7 @@ flag likely fakes before money changes hands.
   keys never reach the client. The proxy round-robins a key pool, enforces per-IP
   limits, and records scans for quota enforcement.
 - **Data** — Supabase (Postgres, Auth, Storage) with row-level security throughout.
-- **Vision** — Groq, `qwen/qwen3.6-27b`.
+- **Vision** — Groq, `qwen/qwen3.8-27b`.
 - **Native** — Capacitor wraps the same build for Android and iOS.
 - **Monitoring** — Sentry for errors, Plausible for analytics.
 
@@ -46,6 +47,8 @@ src/
   marketplace.js          Listings and seller reputation
   auth.js                 Supabase auth, profiles, avatars
   ui.js                   Page rendering and navigation
+  guide.js                Spotter's guide checklist
+  style.css               Design system (tokens, components, layout)
 android/  ios/            Capacitor native shells
 extension/                Chrome extension (separate from the web build)
 tests/                    Playwright smoke and model-health tests

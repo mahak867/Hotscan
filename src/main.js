@@ -1,8 +1,7 @@
 import './style.css'
 import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
-import { VISION_MODEL } from './config.js'
-import { SUPA_URL, SUPA_KEY, FREE_SCANS } from './config.js'
+import { VISION_MODEL, SUPA_URL, SUPA_KEY, FREE_SCANS } from './config.js'
 import { ol, showToast, checkAndEarnAchievements, isProActive } from './utils.js'
 import {
   openAuth, closeAuth, toggleAuthMode, authContinue, signInWithGoogle,
@@ -13,7 +12,7 @@ import {
 import {
   addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
   addCarToCollection, fullCloudSync, editColItem, saveColEdit, closeColEdit,
-  setColView
+  setColView, setColTab
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
@@ -21,7 +20,7 @@ import {
   openOlxSearch, olxLastResult,
   quickSell, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected
 } from './marketplace.js'
-import { addToWantList, removeFromWantList, renderWantList } from './ui.js'
+import { renderFakeChecklist, resetFakeChecklist } from './guide.js'
 import {
   goPage, saveKey, showKeySetup, setMode, resetScan,
   openCam, openGal, openFakeCam, openFakeGal, openMulti,
@@ -37,7 +36,8 @@ import {
   getRefCode, getRefLink, updateRefUI, copyRefLink, shareViaWA,
   runAlertCheck, handleUpgrade, whatsappSupport, updateStreak, shareCollection,
   startTimer, stopTimer, setStep, resetSteps, runAnalyze, showResult, loadCommunityPrices,
-  saveToHist, clearScanHistory, exportCollectionCSV, resetAchievements
+  saveToHist, clearScanHistory, exportCollectionCSV, resetAchievements,
+  addToWantList, removeFromWantList, renderWantList, moveWantToCollection, renderRecentScans
 } from './ui.js'
 import {
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
@@ -81,7 +81,9 @@ Object.assign(window, {
   openCam, openGal, openFakeCam, openFakeGal, openMulti, runAnalyze,
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
   addToCol, delFromCol, sCol, fCol, exportVal, addCarToCollection,
-  fullCloudSync, renderCol, setColView,
+  fullCloudSync, renderCol, setColView, setColTab, editColItem, saveColEdit, closeColEdit,
+  addToWantList, removeFromWantList, renderWantList, moveWantToCollection,
+  clearScanHistory, exportCollectionCSV, resetAchievements, resetFakeChecklist,
   submitPrice, addAlert, delAlert, clearAlerts, renderAlerts,
   showShare, closeShare, shareWA, shareNative, shareApp, shareResultToGroup,
   copyShareText, shareInstagram,
@@ -101,146 +103,77 @@ Object.assign(window, {
   analyzeMultiPhoto,
 })
 
-// Alias — called directly from HTML button
+// Modules that cannot import state without a cycle (utils.js, and scanner.js in
+// places) read it from window. It was never assigned, so achievements, realtime
+// sync and pull-to-refresh all silently did nothing.
+window.state = state
 window.FREE_SCANS = FREE_SCANS
-window.syncCollectionFromCloud = window.fullCloudSync
-
-// Fix: expose `currentUser` as a live getter on window.
-// index.html line 50 has onclick="currentUser?openAccountModal():openAuth()"
-// which reads bare `currentUser` from the global scope. Without this, it throws
-// ReferenceError on every unauthenticated page load (confirmed in Sentry, May 2026).
-// state.currentUser is null until initAuth() resolves, so the getter safely returns
-// null for logged-out users and the real user object for logged-in ones.
-Object.defineProperty(window, 'currentUser', {
-  get() { return state.currentUser },
-  configurable: true,
-})
-
-window.doCloudSync = async function(btn) {
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing…' }
-  try {
-    var timeoutP = new Promise(function(_, rej) {
-      setTimeout(function() { rej(new Error('timeout')) }, 5000)
-    })
-    var ok = await Promise.race([window.fullCloudSync(), timeoutP])
-    window.renderProfilePage()
-    window.showToast(
-      ok ? '✅ Collection synced from cloud!' : '⚠️ No cloud data yet — scan a car first',
-      ok ? 'success' : 'error'
-    )
-  } catch(e) {
-    if (e.message === 'timeout') {
-      window.showToast('Sync timed out — check your connection and try again', 'error')
-    } else if (e.message && e.message.includes('relation') && e.message.includes('does not exist')) {
-      window.showToast('Database not set up — contact support', 'error')
-    } else {
-      window.showToast('Sync failed — ' + (e.message || 'try again'), 'error')
-    }
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '☁️ Sync Collection from Cloud' }
-  }
-}
-
-// Expose collection editing functions to window
-window.delFromCol = delFromCol
-window.toggleCelebrations = function(checked){ localStorage.setItem('hs_celebrations', checked ? 'on' : 'off') }
-window.editColItem = editColItem
-window.saveColEdit = saveColEdit
-window.closeColEdit = closeColEdit
+window.toggleCelebrations = function (checked) { localStorage.setItem('hs_celebrations', checked ? 'on' : 'off') }
 window._checkAchievements = checkAndEarnAchievements
 
-// Expose utility functions to window
-window.clearScanHistory = clearScanHistory
-window.addToWantList = addToWantList
-window.removeFromWantList = removeFromWantList
-window.renderWantList = renderWantList
-window.exportCollectionCSV = exportCollectionCSV
-window.resetAchievements = resetAchievements
-
-// DOMContentLoaded: file input event listeners + mobile dock touch
-document.addEventListener('DOMContentLoaded', function () {
-  // Mobile dock: tap dock background to expand, tap outside to collapse
-  var dock = document.querySelector('.nav-dock')
-  if (dock) {
-    var _dockOpen = false
-    var _dockTimer = null
-    dock.addEventListener('touchstart', function (e) {
-      if (!_dockOpen) {
-        _dockOpen = true
-        dock.classList.add('touch-open')
-        clearTimeout(_dockTimer)
-        _dockTimer = setTimeout(function () {
-          _dockOpen = false
-          dock.classList.remove('touch-open')
-        }, 3500)
+// ── File inputs ───────────────────────────────────────────────────────
+function bindFileInputs() {
+  function single(id, mode) {
+    var el = document.getElementById(id)
+    if (!el) return
+    el.addEventListener('change', function (e) {
+      if (mode === 'photo') {
+        state.multiImages = []
+        var mp = document.getElementById('multi-preview'); if (mp) mp.style.display = 'none'
       }
-    }, { passive: true })
-    document.addEventListener('touchstart', function (e) {
-      if (_dockOpen && !dock.contains(e.target)) {
-        _dockOpen = false
-        dock.classList.remove('touch-open')
-        clearTimeout(_dockTimer)
-      }
-    }, { passive: true })
+      if (e.target.files[0]) handleFile(e.target.files[0], mode)
+    })
   }
+  single('fc', 'photo'); single('fg', 'photo'); single('fc-fake', 'fake'); single('fg-fake', 'fake')
 
-  var fc = document.getElementById('fc')
-  var fg = document.getElementById('fg')
-  var fcFake = document.getElementById('fc-fake')
-  var fgFake = document.getElementById('fg-fake')
   var fgMulti = document.getElementById('fg-multi')
-  if (fc) fc.addEventListener('change', function (e) {
-    state.multiImages = []
-    var mp = document.getElementById('multi-preview'); if(mp) mp.style.display = 'none'
-    if (e.target.files[0]) handleFile(e.target.files[0], 'photo')
-  })
-  if (fg) fg.addEventListener('change', function (e) {
-    state.multiImages = []
-    var mp = document.getElementById('multi-preview'); if(mp) mp.style.display = 'none'
-    if (e.target.files[0]) handleFile(e.target.files[0], 'photo')
-  })
-  if (fcFake) fcFake.addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0], 'fake') })
-  if (fgFake) fgFake.addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0], 'fake') })
   if (fgMulti) fgMulti.addEventListener('change', function (e) {
-    // Copy the list, then clear the input. Without the reset, picking the same
-    // files again fires no change event — so a user who removed a photo by
-    // mistake could not re-add it without reloading the page.
+    // Copy then clear, so picking the same files again still fires a change.
     var files = Array.prototype.slice.call(e.target.files || [])
     e.target.value = ''
     if (files.length === 1) {
       state.multiImages = []
-      var mp = document.getElementById('multi-preview'); if(mp) mp.style.display = 'none'
+      var mp = document.getElementById('multi-preview'); if (mp) mp.style.display = 'none'
       handleFile(files[0], 'photo')
     } else if (files.length > 1) {
       handleMultiFiles(files)
     }
   })
 
-  // Swipe-to-dismiss for result card
-  var resultEl = document.getElementById('result')
-  if (resultEl) {
-    var _swipeStartY = 0
-    resultEl.addEventListener('touchstart', function (e) { _swipeStartY = e.touches[0].clientY }, { passive: true })
-    resultEl.addEventListener('touchend', function (e) {
-      if (e.changedTouches[0].clientY - _swipeStartY > 60) window.resetScan()
-    }, { passive: true })
-  }
-})
-
-// window.load: app init
-// Collection search. index.html called searchCol() from an inline oninput, but
-// searchCol is a module import and was never put on window, so every keystroke
-// threw "searchCol is not defined" and the list never filtered. A listener
-// bound here needs no global at all.
-function _bindColSearch() {
   var cs = document.getElementById('col-search')
   if (cs) cs.addEventListener('input', function () { searchCol(cs.value) })
+  var bi = document.getElementById('barcode-input')
+  if (bi) bi.addEventListener('keydown', function (e) { if (e.key === 'Enter') scanBarcode() })
 }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _bindColSearch)
-else _bindColSearch()
 
+// ── Routing ───────────────────────────────────────────────────────────
+// The manifest shortcuts and shared links use #scan / #collection, and the
+// back button should move between pages rather than leave the app. Supabase
+// also puts #access_token=… in the hash after OAuth, so only hashes that name
+// a real page are treated as routes.
+var PAGES = ['scan', 'collection', 'marketplace', 'market', 'guide', 'hunt', 'alerts', 'profile', 'more']
+function pageFromHash() {
+  var h = (window.location.hash || '').replace(/^#\/?/, '')
+  return PAGES.indexOf(h) > -1 ? h : null
+}
+window.addEventListener('hashchange', function () {
+  var p = pageFromHash()
+  if (p) goPage(p, true)
+})
+
+// ── Offline banner ────────────────────────────────────────────────────
+function updateOnlineStatus() {
+  var banner = document.getElementById('hs-offline')
+  if (banner) banner.style.display = navigator.onLine ? 'none' : 'block'
+}
+window.addEventListener('online', updateOnlineStatus)
+window.addEventListener('offline', updateOnlineStatus)
+
+// ── Boot ──────────────────────────────────────────────────────────────
 window.addEventListener('load', function () {
-  // Restore cached profile for instant header UI
+  bindFileInputs()
+
+  // Cached profile gives the header its Pro ring before the network answers.
   try {
     var _cp = JSON.parse(localStorage.getItem('hs_profile_cache') || 'null')
     if (_cp && _cp.data && (Date.now() - _cp.ts) < 3600000) {
@@ -249,9 +182,8 @@ window.addEventListener('load', function () {
     }
   } catch (e) {}
 
-  // Init Supabase
   try {
-    if (window.supabase && window.supabase.createClient) {
+    if (SUPA_URL && SUPA_KEY && window.supabase && window.supabase.createClient) {
       state._sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
         auth: {
           persistSession: true,
@@ -265,104 +197,85 @@ window.addEventListener('load', function () {
     }
   } catch (e) { Sentry.captureException(e) }
 
-  // App init
-  var kc = document.getElementById('key-card')
-  if (kc) kc.style.display = 'none'
-  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
-  var sa = window.matchMedia('(display-mode:standalone)').matches
-  var _ib = document.getElementById('ib')
-  if (_ib && (!ios || sa)) _ib.style.display = 'none'
-
   renderCol()
+  renderWantList()
   renderAlerts()
   renderEvents()
   renderTrends()
   renderHunt('mainline')
+  renderFakeChecklist()
+  renderRecentScans()
   renderProfilePage()
   initAuth()
   updateRefUI()
   updateScanCounter()
-  // Sync server-side scan count after short delay (auth needs to initialize first)
-  setTimeout(syncScanCountFromServer, 3000)
+  updateStreak(true)
+  updateOnlineStatus()
 
-  // ── Onboarding — show to first-time users ────────────────────────────
+  var start = pageFromHash()
+  if (start && start !== 'scan') goPage(start, true)
+
   if (!localStorage.getItem('hs_onboarded')) {
     var ob = document.getElementById('hs-onboard')
     if (ob) ob.style.display = 'flex'
   }
 
-  // ── Offline detection ────────────────────────────────────────────────
-  function updateOnlineStatus() {
-    var banner = document.getElementById('hs-offline')
-    if (!banner) return
-    if (!navigator.onLine) {
-      banner.style.display = 'block'
-      document.body.style.paddingTop = '40px'
-    } else {
-      banner.style.display = 'none'
-      document.body.style.paddingTop = ''
-    }
-  }
-  window.addEventListener('online',  updateOnlineStatus)
-  window.addEventListener('offline', updateOnlineStatus)
-  updateOnlineStatus()
-
-  // Alert check loop
-  var _alertInterval = null
-  setTimeout(function () { runAlertCheck(); if (!_alertInterval) { _alertInterval = setInterval(runAlertCheck, 300000) } }, 15000)
-
-  // Hide ref banner if Pro or closed
+  setTimeout(runAlertCheck, 15000)
   setTimeout(function () {
     var b = document.getElementById('ref-banner')
-    if (b && (isPro() || localStorage.getItem('hs_ref_banner_closed'))) b.style.display = 'none'
+    if (b && isPro()) b.style.display = 'none'
   }, 2000)
 })
 
-// ── Onboarding steps ──────────────────────────────────────────────────
+// ── Onboarding ────────────────────────────────────────────────────────
 var _obStep = 0
 var _obSteps = [
-  { icon:'📷', title:'Scan Any Hot Wheels', body:'Point your camera at any Hot Wheels car — or upload a photo from your gallery. Works on any phone.' },
-  { icon:'₹', title:'Get Live Indian Prices', body:'AI identifies the exact car and shows real Indian market prices — retail, collector, OLX, Instagram swap meets.' },
-  { icon:'📦', title:'Build Your Collection', body:'Add scanned cars to your collection. Track total value, spot Treasure Hunts, and share with other collectors.' },
+  { icon: 'i-scan',   title: 'Scan any Hot Wheels', body: 'Point your camera at a car or pick a photo. HotScan names the casting in a few seconds.' },
+  { icon: 'i-rupee',  title: 'Priced in rupees', body: 'Indian retail and collector ranges, not converted US prices. Every result says where its number came from.' },
+  { icon: 'i-garage', title: 'Your garage, valued', body: 'Add cars to your collection, record what you paid, and watch the total. It works offline and syncs when you sign in.' },
 ]
-window.obNext = function() {
+window.obNext = function () {
   _obStep++
   if (_obStep >= _obSteps.length) { window.obSkip(); return }
   var s = _obSteps[_obStep]
-  document.getElementById('hs-ob-step').textContent = s.icon
+  var use = document.querySelector('#hs-ob-step use'); if (use) use.setAttribute('href', '#' + s.icon)
   document.getElementById('hs-ob-title').textContent = s.title
-  document.getElementById('hs-ob-body').textContent  = s.body
-  document.querySelectorAll('.ob-dot').forEach(function(d, i) {
-    d.classList.toggle('active', i === _obStep)
-  })
-  if (_obStep === _obSteps.length - 1) {
-    document.getElementById('hs-ob-next').textContent = '🚗 Start Scanning!'
-  }
+  document.getElementById('hs-ob-body').textContent = s.body
+  document.querySelectorAll('.ob-dot').forEach(function (d, i) { d.classList.toggle('active', i === _obStep) })
+  if (_obStep === _obSteps.length - 1) document.getElementById('hs-ob-next').textContent = 'Start scanning'
 }
-window.obSkip = function() {
+window.obSkip = function () {
   localStorage.setItem('hs_onboarded', '1')
   var ob = document.getElementById('hs-onboard')
-  if (ob) { ob.style.opacity = '0'; ob.style.transition = 'opacity .3s'; setTimeout(function(){ ob.style.display = 'none' }, 300) }
+  if (ob) ob.style.display = 'none'
 }
-document.addEventListener('keydown', function(e) {
+
+// ── Keyboard ──────────────────────────────────────────────────────────
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open, .auth-modal.open').forEach(function (m) { m.classList.remove('open') })
+    document.body.style.overflow = ''
+    return
+  }
   var tag = (e.target.tagName || '').toLowerCase()
-  if (tag === 'input' || tag === 'textarea' || e.metaKey || e.ctrlKey || e.altKey) return
-  var map = { s:'scan', c:'collection', m:'marketplace', t:'market', p:'profile' }
-  var page = map[e.key.toLowerCase()]
-  if (page) { e.preventDefault(); window.goPage(page) }
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.metaKey || e.ctrlKey || e.altKey) return
+  var map = { s: 'scan', c: 'collection', m: 'marketplace', t: 'market', g: 'guide', p: 'profile' }
+  var page = map[(e.key || '').toLowerCase()]
+  if (page) { e.preventDefault(); goPage(page) }
 })
-window.showSkeleton = function(containerId, count) {
+
+window.showSkeleton = function (containerId, count) {
   var el = document.getElementById(containerId)
   if (!el) return
-  el.innerHTML = Array(count || 3).fill(0).map(function() {
+  el.innerHTML = Array(count || 3).fill(0).map(function () {
     return '<div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line sm"></div><div class="skeleton skeleton-line xs"></div></div></div>'
   }).join('')
 }
 
-window.submitScanFeedback = async function(accurate) {
+window.submitScanFeedback = async function (accurate) {
   var fb = document.getElementById('scan-feedback')
   if (fb) fb.style.display = 'none'
-  showToast(accurate ? '👍 Thanks!' : '👎 Noted — we will improve.', 'success')
+  showToast(accurate ? 'Thanks, noted.' : 'Thanks. We use these to improve identification.', 'success')
   if (!state._sb || !state.currentUser) return
   try {
     await state._sb.from('scan_feedback').insert({
@@ -372,64 +285,52 @@ window.submitScanFeedback = async function(accurate) {
       model: VISION_MODEL,
       created_at: new Date().toISOString()
     })
-  } catch(e) {}
+  } catch (e) {}
 }
-// Background collection sync every 30s when logged in
-// Supabase Realtime — instant sync when collection changes on any device
-function _setupRealtimeSync() {
-  if (!window.state || !window.state._sb || !window.state.currentUser) return
-  if (window._realtimeChannel) window._realtimeChannel.unsubscribe()
-  window._realtimeChannel = window.state._sb
+
+// ── Cloud sync ────────────────────────────────────────────────────────
+// Realtime pushes changes made on another device. The channel can only be
+// opened once auth has resolved, so this is retried from the fallback poll
+// below rather than fired once on a timer and hoped for.
+var _realtimeFor = null
+function ensureRealtime() {
+  var uid = state.currentUser && state.currentUser.id
+  if (!state._sb || uid === _realtimeFor) return
+  if (window._realtimeChannel) { try { window._realtimeChannel.unsubscribe() } catch (e) {} window._realtimeChannel = null }
+  _realtimeFor = uid || null
+  if (!uid) return
+  window._realtimeChannel = state._sb
     .channel('collection-changes')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'collection',
-      filter: 'user_id=eq.' + window.state.currentUser.id
-    }, function() {
-      window.fullCloudSync().then(function(ok) {
-        if (ok) window.renderCol()
-      }).catch(function(){})
-    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'collection', filter: 'user_id=eq.' + uid }, syncNow)
     .subscribe()
 }
-// Set up realtime after auth resolves
-setTimeout(_setupRealtimeSync, 3000)
-// Fallback poll every 30s in case realtime disconnects
-setInterval(function() {
-  if (document.hidden) return
-  if (window.state && window.state.currentUser && window.state._sb) {
-    window.fullCloudSync().then(function(ok) {
-      if (ok) window.renderCol()
-    }).catch(function(){})
-  }
-}, 30000)
+function syncNow() {
+  if (!state._sb || !state.currentUser) return Promise.resolve(false)
+  return fullCloudSync().then(function (ok) { if (ok) renderCol(); return ok }).catch(function () { return false })
+}
+setTimeout(ensureRealtime, 3000)
+setInterval(function () {
+  ensureRealtime()
+  if (!document.hidden) syncNow()
+}, 300000)
+document.addEventListener('visibilitychange', function () { if (!document.hidden) { ensureRealtime(); syncScanCountFromServer() } })
+setTimeout(syncScanCountFromServer, 3000)
 
-
-// Pull to refresh on collection page
-;(function(){
-  var startY = 0, pulling = false
-  document.addEventListener('touchstart', function(e) {
+// Pull to refresh on the collection page. Only arms when the page is already
+// scrolled to the very top, so an ordinary scroll back up never triggers it.
+;(function () {
+  var startY = 0, armed = false
+  document.addEventListener('touchstart', function (e) {
     var pg = document.getElementById('page-collection')
-    if (!pg || !pg.classList.contains('active')) return
-    if (pg.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true }
-  }, {passive: true})
-  document.addEventListener('touchend', function(e) {
-    if (!pulling) return
-    var dy = e.changedTouches[0].clientY - startY
-    if (dy > 80 && window.state && window.state.currentUser) {
-      window.showToast('Refreshing collection...', 'info')
-      window.fullCloudSync().then(function(ok) {
-        if (ok) { window.renderCol(); window.showToast('Collection updated', 'success') }
-      })
+    armed = !!(pg && pg.classList.contains('active') && window.scrollY <= 0 && state.currentUser)
+    if (armed) startY = e.touches[0].clientY
+  }, { passive: true })
+  document.addEventListener('touchend', function (e) {
+    if (!armed) return
+    armed = false
+    if (e.changedTouches[0].clientY - startY > 110 && window.scrollY <= 0) {
+      showToast('Refreshing collection…', 'info')
+      syncNow().then(function (ok) { if (ok) showToast('Collection up to date', 'success') })
     }
-    pulling = false
-  }, {passive: true})
+  }, { passive: true })
 })()
-
-// Keep Supabase connection warm — prevents cold start timeouts
-setInterval(function() {
-  if (window.state && window.state._sb) {
-    window.state._sb.from('profiles').select('id').limit(1).then(function(){}).catch(function(){})
-  }
-}, 240000) // every 4 minutes

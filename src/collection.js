@@ -2,7 +2,7 @@ import { state } from './state.js'
 // hsConfirm was used in addToCol() without ever being imported, so scanning a
 // car already in the collection threw ReferenceError instead of offering to add
 // a second copy — the duplicate flow was dead for every user.
-import { cleanINR, parseINR, escHtml, showToast, rcls, hsConfirm, captureException } from './utils.js'
+import { cleanINR, parseINR, fmtINR, escHtml, showToast, rcls, hsConfirm, captureException } from './utils.js'
 
 // Prevents concurrent fullCloudSync() calls racing against Supabase.
 // Both onAuthStateChange(INITIAL_SESSION) and getSession() fire on page load,
@@ -77,7 +77,7 @@ export function addToCol() {
   }
   var isDupe = state.collection.some(function(x){ return x.name && item.name && x.name.toLowerCase()===item.name.toLowerCase() && x.color===item.color })
   if (isDupe) {
-    hsConfirm('Already in Collection', item.name + ' is already in your collection. Add another copy?', 'Add Copy', '➕').then(function(ok) {
+    hsConfirm('Already in your collection', item.name + ' is already in your collection. Add another copy?', 'Add copy').then(function(ok) {
       if (ok) _doAddToCol(item)
     })
     return
@@ -87,6 +87,7 @@ export function addToCol() {
 function _doAddToCol(item) {
   state.collection.unshift(item)
   persistCollection()
+  if (window.pruneWantList) window.pruneWantList(item.name)
   if (navigator.vibrate) navigator.vibrate(30)
   // Snapshot collection value for history chart
   try {
@@ -99,7 +100,12 @@ function _doAddToCol(item) {
   if (state._sb && state.currentUser) {
     ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; localStorage.setItem('hs_col_hash',''); persistCollection() } }catch(e){} })()
   }
-  renderCol(); window.goPage('collection')
+  renderCol()
+  // Stay on the result: at a store you scan several cars in a row, and being
+  // thrown to the collection page after each one breaks that flow.
+  showToast(item.name + ' added to your collection', 'success')
+  var oc = document.getElementById('r-owned')
+  if (oc) { var n = state.collection.filter(function (c) { return (c.name || '').toLowerCase() === (item.name || '').toLowerCase() }).length; oc.textContent = 'In your collection' + (n > 1 ? ' ×' + n : ''); oc.classList.add('show') }
 }
 
 export async function delFromCol(id) {
@@ -110,6 +116,9 @@ export async function delFromCol(id) {
     showToast('That card was already updated — list refreshed', 'error')
     return
   }
+  var sure = await hsConfirm('Remove this car?', (item.name || 'This car') + ' will be removed from your collection.', 'Remove')
+  if (!sure) return
+  closeColEdit()
   if (item && state._sb && state.currentUser) {
     var cloudId = (typeof item.id === 'string' && item.id.includes('-')) ? item.id : null
     var ok = await deleteFromCloud(cloudId, item.name, item.color, item.series)
@@ -127,35 +136,34 @@ export async function delFromCol(id) {
   persistCollection()
   localStorage.removeItem('hs_col_hash')
   if (navigator.vibrate) navigator.vibrate([20, 30, 20])
-  showToast('🗑 Car removed', 'success')
+  showToast('Car removed', 'success')
   renderCol()
 }
 
 export function editColItem(id) {
-  if (document.getElementById('col-edit-modal')) return // prevent double-open
   id = String(id)
   var item = state.collection.find(function(c) { return String(c.id) === id })
   if (!item) {
-    if (window.renderCol) window.renderCol()
-    showToast('That card was already updated — list refreshed', 'error')
+    renderCol()
+    showToast('That car changed on another device. List refreshed.', 'info')
     return
   }
   _editingItem = item
   _editingItemId = id
-  // Show edit modal
-  var modal = document.getElementById('col-edit-modal')
-  if (!modal) {
-    // Create modal if it doesn't exist
-    createEditModal()
-    modal = document.getElementById('col-edit-modal')
-  }
-  // Populate form with item data
+  var modal = document.getElementById('col-edit-modal') || createEditModal()
   document.getElementById('col-edit-name').value = item.name || ''
   document.getElementById('col-edit-rarity').value = item.rarity || 'Common'
-  document.getElementById('col-edit-condition').value = item.condition || 'Good'
+  document.getElementById('col-edit-condition').value = item.condition || 'Near Mint'
   document.getElementById('col-edit-price').value = cleanINR(item.india_collector_inr) || ''
+  document.getElementById('col-edit-paid').value = item.paid != null ? item.paid : ''
   document.getElementById('col-edit-notes').value = item.notes || ''
-  modal.style.display = 'flex'
+  var facts = [['Series', item.series], ['Colour', item.color], ['Casting year', item.casting_year], ['Wheels', item.wheel_type], ['Tampo', item.tampo], ['India retail', item.india_retail_inr ? '₹' + cleanINR(item.india_retail_inr) : '']]
+    .filter(function (f) { return f[1] })
+  document.getElementById('col-edit-facts').innerHTML =
+    (item.image ? '<img src="' + escHtml(item.image) + '" alt="" style="width:100%;max-height:200px;object-fit:cover;border-radius:14px;margin-bottom:12px">' : '') +
+    facts.map(function (f) { return '<div class="det" style="padding:8px 0"><span class="det-k">' + f[0] + '</span><span class="det-v">' + escHtml(String(f[1])) + '</span></div>' }).join('') +
+    (item.fun_fact ? '<p class="hint">' + escHtml(item.fun_fact) + '</p>' : '')
+  modal.classList.add('open')
   document.body.style.overflow = 'hidden'
 }
 
@@ -163,24 +171,24 @@ export async function saveColEdit() {
   if (!_editingItem) return
   var item = _editingItem
   var priceRaw = document.getElementById('col-edit-price').value.trim()
-  var priceNum = Number(priceRaw)
-  if (priceRaw && !(isFinite(priceNum) && priceNum >= 0 && priceNum <= 10000000)) {
-    showToast('Enter a valid price in ₹', 'error'); return
-  }
-  item.name = document.getElementById('col-edit-name').value || item.name
+  var paidRaw = document.getElementById('col-edit-paid').value.trim()
+  var okNum = function (v) { var n = Number(v); return isFinite(n) && n >= 0 && n <= 10000000 }
+  // The price field holds a range like "600-900" for scanned cars; only a value
+  // the user actually changed to a plain number is validated and rewritten.
+  var priceChanged = priceRaw !== (cleanINR(item.india_collector_inr) || '')
+  if (priceChanged && priceRaw && !/^\d+(\s*-\s*\d+)?$/.test(priceRaw)) { showToast('Enter a price like 450 or 400-600', 'error'); return }
+  if (paidRaw && !okNum(paidRaw)) { showToast('Enter what you paid as a number', 'error'); return }
+  item.name = document.getElementById('col-edit-name').value.trim() || item.name
   item.rarity = document.getElementById('col-edit-rarity').value || item.rarity
   item.condition = document.getElementById('col-edit-condition').value || item.condition
-  // An empty field used to save the literal string "₹".
-  if (priceRaw) item.india_collector_inr = '₹' + Math.round(priceNum)
+  if (priceChanged && priceRaw) item.india_collector_inr = priceRaw.replace(/\s+/g, '')
+  if (paidRaw) item.paid = Math.round(Number(paidRaw)); else delete item.paid
   item.notes = document.getElementById('col-edit-notes').value || ''
   // Local first, so the edit survives a reload whatever the network does.
   persistCollection()
   closeColEdit()
   renderCol()
   if (state._sb && state.currentUser && typeof item.id === 'string' && item.id.includes('-')) {
-    // Previously this fired saveToCloud without awaiting it and toasted
-    // success regardless, so a failed save looked saved until the next sync
-    // quietly reverted it.
     var cloudOk = null
     try { cloudOk = await saveToCloud(item) } catch (e) { captureException(e) }
     if (!cloudOk) {
@@ -188,17 +196,17 @@ export async function saveColEdit() {
       // with the stale cloud row.
       item._dirty = true
       persistCollection()
-      showToast('Saved on this device — cloud sync failed, will retry on next sync', 'error')
+      showToast('Saved on this device. Cloud sync failed and will retry.', 'error')
       return
     }
     if (item._dirty) { delete item._dirty; persistCollection() }
   }
-  showToast('Car updated!', 'success')
+  showToast('Car updated', 'success')
 }
 
 export function closeColEdit() {
   var modal = document.getElementById('col-edit-modal')
-  if (modal) modal.style.display = 'none'
+  if (modal) modal.classList.remove('open')
   document.body.style.overflow = ''
   _editingItem = null
   _editingItemId = null
@@ -207,33 +215,33 @@ export function closeColEdit() {
 function createEditModal() {
   var el = document.createElement('div')
   el.id = 'col-edit-modal'
-  el.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box'
-  var rarOpts = ['Common','Uncommon','Rare','Premium','Treasure Hunt','Super Treasure Hunt','Error Car','Vintage'].map(function(o){return '<option>'+o+'</option>'}).join('')
-  var condOpts = ['Mint on Card','Near Mint','Very Good','Good','Fair'].map(function(o){return '<option>'+o+'</option>'}).join('')
-  var S = 'width:100%;padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:#fff;box-sizing:border-box;font-size:14px;margin-bottom:12px'
-  var L = 'display:block;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;font-weight:700;text-transform:uppercase'
+  el.className = 'modal-overlay'
+  var opts = function (a) { return a.map(function (o) { return '<option>' + o + '</option>' }).join('') }
   el.innerHTML =
-    '<div style="background:#131320;border-radius:18px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;padding:22px;box-sizing:border-box;border:1px solid rgba(255,255,255,.1)">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">' +
-        '<div style="font-size:17px;font-weight:800">✏️ Edit Car</div>' +
-        '<button id="cem-x" style="background:rgba(255,255,255,.1);border:none;color:#fff;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:8px">✕</button>' +
+    '<div class="sheet" role="dialog" aria-label="Car details">' +
+      '<button class="icon-btn sheet-x" id="cem-x" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>' +
+      '<div class="card-title">Car details</div>' +
+      '<div id="col-edit-facts"></div>' +
+      '<label class="field-label" for="col-edit-name">Name</label><input class="inp" id="col-edit-name" type="text">' +
+      '<div class="grid-2">' +
+        '<div><label class="field-label" for="col-edit-rarity">Rarity</label><select class="inp" id="col-edit-rarity">' + opts(['Common','Uncommon','Rare','Premium','Treasure Hunt','Super Treasure Hunt','Error Car','Vintage']) + '</select></div>' +
+        '<div><label class="field-label" for="col-edit-condition">Condition</label><select class="inp" id="col-edit-condition">' + opts(['Mint on Card','Near Mint','Very Good','Good','Fair']) + '</select></div>' +
       '</div>' +
-      '<label style="'+L+'">Car Name</label><input id="col-edit-name" type="text" placeholder="e.g. Bone Shaker" style="'+S+'">' +
-      '<label style="'+L+'">Rarity</label><select id="col-edit-rarity" style="'+S+'">'+rarOpts+'</select>' +
-      '<label style="'+L+'">Condition</label><select id="col-edit-condition" style="'+S+'">'+condOpts+'</select>' +
-      '<label style="'+L+'">Collector Price (₹)</label><input id="col-edit-price" type="number" placeholder="e.g. 350" style="'+S+'">' +
-      '<label style="'+L+'">Notes</label>' +
-      '<textarea id="col-edit-notes" style="'+S+';height:70px;resize:none;font-family:inherit;margin-bottom:16px"></textarea>' +
-      '<div style="display:flex;gap:8px">' +
-        '<button id="cem-save" style="flex:1;padding:13px;background:#e63946;border:none;color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Save Changes</button>' +
-        '<button id="cem-cancel" style="flex:1;padding:13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>' +
+      '<div class="grid-2">' +
+        '<div><label class="field-label" for="col-edit-price">Value now</label><div class="inp-affix"><span>₹</span><input class="inp" id="col-edit-price" type="text" inputmode="numeric" placeholder="450"></div></div>' +
+        '<div><label class="field-label" for="col-edit-paid">You paid</label><div class="inp-affix"><span>₹</span><input class="inp" id="col-edit-paid" type="number" inputmode="numeric" placeholder="179"></div></div>' +
       '</div>' +
+      '<p class="hint">What you paid, condition and notes are saved on this device.</p>' +
+      '<label class="field-label" for="col-edit-notes">Notes</label><textarea class="inp" id="col-edit-notes" rows="2" placeholder="Where you found it, card condition"></textarea>' +
+      '<button class="btn btn-primary btn-lg btn-block" id="cem-save">Save</button>' +
+      '<button class="btn btn-danger btn-block" id="cem-del">Remove from collection</button>' +
     '</div>'
   document.body.appendChild(el)
   document.getElementById('cem-save').addEventListener('click', saveColEdit)
-  document.getElementById('cem-cancel').addEventListener('click', closeColEdit)
   document.getElementById('cem-x').addEventListener('click', closeColEdit)
+  document.getElementById('cem-del').addEventListener('click', function () { if (_editingItemId) delFromCol(_editingItemId) })
   el.addEventListener('click', function(e) { if (e.target === el) closeColEdit() })
+  return el
 }
 
 // Counts the valuation up to its new figure instead of snapping to it — the
@@ -290,274 +298,228 @@ export function setColView(v) {
 export function sCol(by, el) { state.sortBy = by; document.querySelectorAll('#sc .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
 export function fCol(f, el) { state.filterBy = f; document.querySelectorAll('#fc2 .chip').forEach(function(b){b.classList.remove('active')}); el.classList.add('active'); renderCol() }
 
+// Garage / Wishlist switch on the collection page.
+export function setColTab(tab) {
+  var want = tab === 'want'
+  var g = document.getElementById('col-garage'), w = document.getElementById('col-want')
+  if (g) g.hidden = want
+  if (w) w.hidden = !want
+  ;[['seg-garage', !want], ['seg-want', want]].forEach(function (p) {
+    var b = document.getElementById(p[0])
+    if (b) { b.classList.toggle('active', p[1]); b.setAttribute('aria-selected', p[1] ? 'true' : 'false') }
+  })
+  if (want && window.renderWantList) window.renderWantList()
+}
+
+var TIER_ORDER = ['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
+var TIER_COLOR = {
+  'super treasure hunt': '#ff6a3d', 'treasure hunt': '#f7c948', 'error car': '#b69cff', 'vintage': '#f7c948',
+  'premium': '#5cc8f5', 'rare': '#5cc8f5', 'uncommon': '#34d17c', 'common': 'transparent'
+}
+var CHASE = ['super treasure hunt', 'treasure hunt', 'error car', 'vintage']
+var CAR_ICON = '<svg class="ic"><use href="#i-garage"/></svg>'
+function _inr(n) { return '₹' + Math.round(n).toLocaleString('en-IN') }
+function _plHtml(c) {
+  if (c.paid == null) return ''
+  var diff = parseINR(c.india_collector_inr) - c.paid
+  if (!diff) return '<div class="car-pl">at cost</div>'
+  return '<div class="car-pl ' + (diff > 0 ? 'up' : 'down') + '">' + (diff > 0 ? '+' : '−') + _inr(Math.abs(diff)) + '</div>'
+}
+
 export function renderCol() {
-  // Only show sign-in prompt if auth has fully resolved AND user is not logged in
+  var list = document.getElementById('col-list')
+  if (!list) return
+  // Only show the sign-in prompt once auth has resolved and there is nothing local.
   if (window._authResolved && !state.currentUser && state.collection.length === 0) {
-    var _list = document.getElementById('col-list')
-    if (_list) _list.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;margin-bottom:12px">🔐</div><div style="font-size:15px;font-weight:700;margin-bottom:6px">Sign in to see your collection</div><div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">Your collection syncs across all devices when signed in</div><button class="btn-red" style="padding:12px 24px;border-radius:12px;font-size:14px" onclick="window.openAuth()">Sign In / Create Account</button></div>'
-    return
+    list.className = ''
+    list.innerHTML = '<div class="empty"><div class="empty-t">Your garage is empty</div><div class="empty-s">Scan a car to start. It is saved on this device; sign in to back it up.</div>' +
+      '<button class="btn btn-primary" onclick="goPage(\'scan\')">Scan your first car</button> <button class="btn btn-ghost" onclick="openAuth()">Sign in</button></div>'
+  } else if (window._colSyncing && state.collection.length === 0) {
+    list.className = ''
+    list.innerHTML = '<div class="empty"><div class="empty-t">Syncing your collection…</div><div class="empty-s">Loading from the cloud</div></div>'
   }
-  if (window._colSyncing) {
-    var list = document.getElementById('col-list')
-    if (list && state.collection.length === 0) {
-      list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text2)"><div style="font-size:32px;margin-bottom:12px">☁️</div><div style="font-size:14px;font-weight:600">Syncing your collection...</div><div style="font-size:12px;margin-top:6px;opacity:.6">Loading from cloud</div></div>'
-      return
-    }
-  }
-  var items = state.collection.slice()
-  if (state.searchQuery && state.searchQuery.trim()) {
-    var q = state.searchQuery.toLowerCase()
-    items = items.filter(function(c) {
-      return (c.name||'').toLowerCase().includes(q) || (c.series||'').toLowerCase().includes(q) || (c.rarity||'').toLowerCase().includes(q)
+
+  var all = state.collection
+  var items = all.slice()
+  var q = (state.searchQuery || '').trim().toLowerCase()
+  if (q) {
+    items = items.filter(function (c) {
+      return [c.name, c.series, c.rarity, c.color, c.casting_year, c.notes].some(function (f) { return String(f || '').toLowerCase().includes(q) })
     })
   }
-  if (state.filterBy !== 'all') items = items.filter(function(c) { return (c.rarity||'').toLowerCase().includes(state.filterBy.toLowerCase()) })
-  var order = ['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
-  if (state.sortBy === 'value') items.sort(function(a,b) { return parseINR(b.india_collector_inr) - parseINR(a.india_collector_inr) })
-  else if (state.sortBy === 'name') items.sort(function(a,b) { return (a.name||'').localeCompare(b.name||'') })
-  else if (state.sortBy === 'rarity') items.sort(function(a,b) { return order.indexOf(a.rarity) - order.indexOf(b.rarity) })
-  var total = state.collection.length
-  var rare = state.collection.filter(function(c) { var r=(c.rarity||'').toLowerCase(); return r.includes('rare')||r.includes('treasure')||r.includes('error')||r.includes('vintage') }).length
-  var sth = state.collection.filter(function(c) { return (c.rarity||'').toLowerCase().includes('treasure') }).length
-  var val = 0; state.collection.forEach(function(c) { val += parseINR(c.india_collector_inr) })
+  if (state.filterBy !== 'all') items = items.filter(function (c) { return (c.rarity || '').toLowerCase().includes(state.filterBy.toLowerCase()) })
+  if (state.sortBy === 'value') items.sort(function (a, b) { return parseINR(b.india_collector_inr) - parseINR(a.india_collector_inr) })
+  else if (state.sortBy === 'name' || state.sortBy === 'casting') items.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') })
+  else if (state.sortBy === 'rarity') items.sort(function (a, b) { return TIER_ORDER.indexOf(a.rarity || 'Common') - TIER_ORDER.indexOf(b.rarity || 'Common') })
+
+  // ── Summary ──
+  var total = all.length
+  var isRare = function (c) { var r = (c.rarity || '').toLowerCase(); return r.includes('rare') || r.includes('treasure') || r.includes('error') || r.includes('vintage') || r.includes('premium') }
+  var val = 0, paid = 0, valOfPaid = 0, paidCount = 0
+  all.forEach(function (c) {
+    var v = parseINR(c.india_collector_inr); val += v
+    if (c.paid != null) { paid += c.paid; valOfPaid += v; paidCount++ }
+  })
   _rollValue(document.getElementById('val-total'), val)
   document.getElementById('v-cars').textContent = total
-  document.getElementById('v-rare').textContent = rare
-  document.getElementById('v-sth').textContent = sth
-  document.getElementById('v-avg').textContent = total > 0 ? '₹' + Math.round(val/total).toLocaleString('en-IN') : '₹0'
+  document.getElementById('v-rare').textContent = all.filter(isRare).length
+  document.getElementById('v-sth').textContent = all.filter(function (c) { return (c.rarity || '').toLowerCase().includes('treasure') }).length
+  document.getElementById('v-avg').textContent = total ? _inr(val / total) : '₹0'
 
-  // Sparkline: show value history over last 6 months
+  // Gain or loss against what was actually paid, counted only over the cars
+  // that have a purchase price so a half-filled garage does not look like profit.
+  var plEl = document.getElementById('val-pl')
+  if (plEl) {
+    if (!paidCount) {
+      plEl.className = 'val-pl'
+      plEl.textContent = total ? 'Add what you paid to a car to track gain or loss.' : ''
+    } else {
+      var diff = valOfPaid - paid
+      plEl.className = 'val-pl ' + (diff >= 0 ? 'up' : 'down')
+      plEl.textContent = (diff >= 0 ? '+' : '−') + _inr(Math.abs(diff)) + (paid ? ' (' + (diff >= 0 ? '+' : '−') + Math.abs(Math.round(diff / paid * 100)) + '%)' : '') +
+        ' on ' + paidCount + (paidCount === total ? '' : ' of ' + total) + ' car' + (paidCount === 1 ? '' : 's') + ' with a purchase price'
+    }
+  }
+
+  // Value history: one bar per month that has a real snapshot. Months without
+  // one are drawn empty — they used to be filled in with today's value, which
+  // made a brand-new collection look like six months of steady history.
   var sparkEl = document.getElementById('val-sparkline')
   if (sparkEl) {
-    var _vh = []
-    try { _vh = JSON.parse(localStorage.getItem('hs_val_hist') || '[]') } catch(e) {}
-    var now = new Date()
-    var months = []
+    var hist = []
+    try { hist = JSON.parse(localStorage.getItem('hs_val_hist') || '[]') } catch (e) {}
+    var now = new Date(), months = []
     for (var mi = 5; mi >= 0; mi--) {
       var md = new Date(now.getFullYear(), now.getMonth() - mi, 1)
-      months.push({label: md.toLocaleString('default', {month:'short'}), val: 0})
+      months.push({ y: md.getFullYear(), m: md.getMonth(), label: md.toLocaleString('en-IN', { month: 'short' }), val: null })
     }
-    // Use latest snapshot per month
-    _vh.forEach(function(snap) {
+    hist.forEach(function (snap) {
       var sd = new Date(snap.ts)
-      for (var i = 0; i < 6; i++) {
-        var ref = new Date(now.getFullYear(), now.getMonth() - (5-i), 1)
-        if (sd.getMonth() === ref.getMonth() && sd.getFullYear() === ref.getFullYear()) {
-          months[i].val = Math.max(months[i].val, snap.val)
-        }
-      }
+      months.forEach(function (mo) { if (sd.getFullYear() === mo.y && sd.getMonth() === mo.m) mo.val = snap.val })
     })
-    // Fill empty months with current value
-    var currentVal = 0; state.collection.forEach(function(c){ currentVal += parseINR(c.india_collector_inr) })
-    months.forEach(function(m) { if (!m.val && currentVal) m.val = currentVal })
-    var maxVal = Math.max.apply(null, months.map(function(m){return m.val})) || 1
+    if (total) months[5].val = val
+    var real = months.filter(function (mo) { return mo.val != null })
     sparkEl.innerHTML = ''
-    months.forEach(function(m, idx) {
-      var h = Math.max(Math.round((m.val / maxVal) * 28), m.val > 0 ? 4 : 2)
-      var sc = document.createElement('div'); sc.className = 'val-spark-col'
-      var bar = document.createElement('div'); bar.className = 'val-spark-bar' + (idx === 5 ? ' now' : '')
-      bar.style.height = h + 'px'
-      bar.title = m.label + ': ₹' + Math.round(m.val).toLocaleString('en-IN')
-      var lbl = document.createElement('div'); lbl.className = 'val-spark-lbl'; lbl.textContent = m.label
-      sc.appendChild(bar); sc.appendChild(lbl)
-      sparkEl.appendChild(sc)
-    })
+    if (real.length >= 2) {
+      var maxV = Math.max.apply(null, real.map(function (mo) { return mo.val })) || 1
+      months.forEach(function (mo, idx) {
+        var col = document.createElement('div'); col.className = 'val-spark-col'
+        var bar = document.createElement('div')
+        bar.className = 'val-spark-bar' + (idx === 5 ? ' now' : '') + (mo.val == null ? ' none' : '')
+        bar.style.height = (mo.val == null ? 2 : Math.max(Math.round(mo.val / maxV * 26), 3)) + 'px'
+        bar.title = mo.label + ': ' + (mo.val == null ? 'no record' : _inr(mo.val))
+        var lbl = document.createElement('div'); lbl.className = 'val-spark-lbl'; lbl.textContent = mo.label
+        col.appendChild(bar); col.appendChild(lbl); sparkEl.appendChild(col)
+      })
+    }
   }
 
-  if (!items.length) {
-    var emptyMsg = state.filterBy === 'all' ? 'Your garage is empty' : 'No ' + state.filterBy + ' cars'
-    var emptySub = state.filterBy === 'all' ? 'Scan your first car to start building your collection!' : 'Try a different filter'
-    var ctaBtn = state.filterBy === 'all' ? '<button class="btn-red" onclick="goPage(\'scan\')" style="margin-top:14px;padding:11px 22px;border-radius:12px">📷 Scan Your First Car →</button>' : ''
-    document.getElementById('col-list').innerHTML = '<div class="empty"><div class="empty-icon">🚗</div><div class="empty-t">' + emptyMsg + '</div><div class="empty-s">' + emptySub + '</div>' + ctaBtn + '</div>'
+  var isGrid = state.colView === 'grid'
+  var lb = document.getElementById('cv-list'), gb = document.getElementById('cv-grid')
+  if (lb) lb.classList.toggle('active', !isGrid)
+  if (gb) gb.classList.toggle('active', isGrid)
+  var cntEl = document.getElementById('col-count')
+  if (cntEl) cntEl.textContent = !total ? '' : items.length === total ? total + (total === 1 ? ' car' : ' cars') : items.length + ' of ' + total + ' cars'
+
+  if (!total) {
+    if (!list.innerHTML) list.innerHTML = '<div class="empty"><div class="empty-t">Your garage is empty</div><div class="empty-s">Scan your first car to start building your collection.</div><button class="btn btn-primary" onclick="goPage(\'scan\')">Scan a car</button></div>'
     return
   }
-  var list = document.getElementById('col-list')
   list.innerHTML = ''
-  // #8 — rarity dot color map
-  var dotColors = {
-    'super treasure hunt': '#e63946',
-    'treasure hunt': '#ffd60a',
-    'error car': '#ff6b6b',
-    'vintage': '#ffd60a',
-    'premium': '#4cc9f0',
-    'rare': '#4cc9f0',
-    'uncommon': '#2dc653',
-    'common': '#444'
-  }
-  var maxVal = Math.max.apply(null, items.map(function(x){return parseINR(x.india_collector_inr)})) || 1
-  var spotlightRarities = ['super treasure hunt','treasure hunt','error car','vintage']
-  var spotlights = items.filter(function(x){return spotlightRarities.indexOf((x.rarity||'').toLowerCase())!==-1})
-  var regular = items.filter(function(x){return spotlightRarities.indexOf((x.rarity||'').toLowerCase())===-1})
-  var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
-
-  function makeCard(c, isSpotlight) {
-    var rv = (c.rarity||'common').toLowerCase()
-    var bc = dotColors[rv] || '#444'
-    var glow = rv.includes('super treasure')?'rgba(255,214,10,.18)':rv.includes('treasure')?'rgba(255,150,0,.14)':rv.includes('error')||rv.includes('vintage')?'rgba(76,201,240,.12)':'transparent'
-    var colRarity = c.rarity || 'Common'
-    var icon = rarIcons[colRarity] || ''
-    var priceVal = parseINR(c.india_collector_inr)
-    var pct = Math.round((priceVal/maxVal)*100)
-    var thumbHtml = c.image ? '<img src="'+c.image+'" style="width:100%;height:100%;object-fit:cover" alt="">' : (icon||'🚗')
-    var div = document.createElement('div')
-
-    if (isSpotlight) {
-      div.style.cssText = 'background:var(--surface);border-radius:16px;padding:14px;margin-bottom:10px;border:1px solid '+bc+';box-shadow:0 0 24px '+glow+',0 4px 16px rgba(0,0,0,.4);position:relative;overflow:hidden;grid-column:1/-1'
-      div.innerHTML = '<div style="position:absolute;top:0;left:0;width:3px;height:100%;background:'+bc+'"></div>'+
-        '<div style="display:flex;align-items:center;gap:12px">'+
-          '<div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;border:1px solid '+bc+'">'+thumbHtml+'</div>'+
-          '<div style="flex:1;min-width:0">'+
-            '<div style="font-size:10px;font-weight:800;color:'+bc+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">'+icon+' '+colRarity+'</div>'+
-            '<div style="font-size:15px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.name||'Unknown')+'</div>'+
-            '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+escHtml(c.series||'')+(c.color?' · '+escHtml(c.color):'')+'</div>'+
-            '<div style="font-size:17px;font-weight:800;color:'+bc+';margin-top:6px">₹'+cleanINR(c.india_collector_inr)+'</div>'+
-          '</div>'+
-          '<div style="display:flex;gap:4px;flex-shrink:0">'+
-            '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;transition:color .2s" onmouseenter="this.style.color=\'var(--red)\'" onmouseleave="this.style.color=\'var(--text3)\'">🗑</button>'+
-          '</div>'+
-        '</div>'
-    } else {
-      div.className = 'flip-card'
-      div.style.cssText = 'border-radius:14px;transition:transform .15s'
-      div.onmouseenter=function(){this.style.transform='translateY(-2px)'}
-      div.onmouseleave=function(){this.style.transform=''}
-      var valBar = pct>0?'<div style="height:3px;background:var(--surface3);border-radius:2px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+bc+';border-radius:2px"></div></div>':''
-      var backFacts = []
-      if (c.casting_year) backFacts.push(['Casting Year', c.casting_year])
-      if (c.tampo) backFacts.push(['Tampo', c.tampo])
-      if (c.wheel_type) backFacts.push(['Wheels', c.wheel_type])
-      var backExtra = (c.fun_fact ? '<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-top:8px">💡 '+escHtml(c.fun_fact)+'</div>' : '')
-        + (c.investment_reason ? '<div style="font-size:11px;color:'+bc+';line-height:1.5;margin-top:6px">📈 '+escHtml(c.investment_reason)+'</div>' : '')
-      div.innerHTML =
-        '<div class="flip-card-inner">'+
-          '<div class="flip-card-front" style="background:var(--surface);padding:11px;border:1px solid var(--border);border-left:3px solid '+bc+'">'+
-            '<div style="display:flex;align-items:flex-start;gap:10px">'+
-              '<div style="width:50px;height:50px;border-radius:10px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+thumbHtml+'</div>'+
-              '<div style="flex:1;min-width:0">'+
-                '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:16px">'+escHtml(c.name||'Unknown')+'</div>'+
-                '<div style="font-size:11px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(c.series||'')+'</div>'+
-                '<div style="display:flex;align-items:center;margin-top:4px;gap:6px">'+
-                  '<span style="font-size:10px;font-weight:700;color:'+bc+'">'+icon+' '+colRarity+'</span>'+
-                  (c.india_collector_inr?'<span style="font-size:12px;font-weight:800;margin-left:auto">₹'+cleanINR(c.india_collector_inr)+'</span>':'')+
-                '</div>'+valBar+
-              '</div>'+
-              '<div style="display:flex;gap:4px;flex-shrink:0;align-items:flex-start">'+
-                '<button data-flipid="'+c.id+'" title="Show details" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">ℹ</button>'+
-                '<button data-delid="'+c.id+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s">🗑</button>'+
-              '</div>'+
-            '</div>'+
-          '</div>'+
-          '<div class="flip-card-back">'+
-            '<button class="flip-card-btn" data-flipid="'+c.id+'" title="Back to card">✕</button>'+
-            '<div style="font-size:13px;font-weight:800;padding-right:16px">'+escHtml(c.name||'Unknown')+'</div>'+
-            (backFacts.length ? '<div style="margin-top:8px">'+backFacts.map(function(f){return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">'+f[0]+'</span><span style="color:var(--text2);font-weight:600">'+escHtml(String(f[1]))+'</span></div>'}).join('')+'</div>' : '<div style="font-size:11px;color:var(--text3);margin-top:8px">No extra details for this car yet</div>')+
-            backExtra+
-          '</div>'+
-        '</div>'
-    }
-    return div
+  list.className = isGrid ? 'col-grid' : ''
+  if (!items.length) {
+    list.className = ''
+    list.innerHTML = '<div class="empty"><div class="empty-t">No matches</div><div class="empty-s">' + (q ? 'Nothing matches “' + escHtml(q) + '”.' : 'No cars in this rarity tier.') + '</div></div>'
+    return
   }
 
-  // Grid mode: photo-first cards. Falls back to the rarity icon when a car has
-  // no image, same as the list rows do.
-  function makeGridCard(c) {
-    var rv = (c.rarity||'common').toLowerCase()
-    var bc = dotColors[rv] || '#444'
-    var colRarity = c.rarity || 'Common'
-    var icon = rarIcons[colRarity] || '🚗'
-    var glow = rv.indexOf('super treasure') > -1 ? '0 0 22px rgba(230,57,70,.28)'
-             : rv.indexOf('treasure') > -1 ? '0 0 18px rgba(255,214,10,.2)'
-             : rv.indexOf('vintage') > -1 || rv.indexOf('error') > -1 ? '0 0 16px rgba(255,107,107,.16)'
-             : 'none'
-    // Full tier names are too long for a corner pill — "Super Treasure Hunt"
-    // wrapped to two lines and collided with the card art.
-    var shortRar = {'Super Treasure Hunt':'STH','Treasure Hunt':'TH','Error Car':'Error'}[colRarity] || colRarity
+  // How many of each casting are owned, for the ×N marker.
+  var copies = {}
+  all.forEach(function (c) { var k = (c.name || '').toLowerCase(); copies[k] = (copies[k] || 0) + 1 })
+
+  function tierOf(c) { return (c.rarity || 'Common').toLowerCase() }
+  function thumb(c) { return c.image ? '<img src="' + escHtml(c.image) + '" alt="" loading="lazy">' : CAR_ICON }
+  function meta(c) { return [c.series, c.color, c.casting_year].filter(Boolean).map(function (x) { return escHtml(String(x)) }).join(' · ') }
+
+  function makeRow(c) {
+    var t = tierOf(c), n = copies[(c.name || '').toLowerCase()] || 1
     var d = document.createElement('div')
-    d.className = 'col-gcard'
-    d.style.borderColor = bc
-    if (glow !== 'none') d.style.boxShadow = glow
+    d.className = 'car-row' + (CHASE.indexOf(t) > -1 ? ' is-chase' : '')
+    d.style.setProperty('--tier', TIER_COLOR[t] || 'transparent')
+    d.dataset.editid = c.id
+    d.tabIndex = 0
+    d.setAttribute('role', 'button')
     d.innerHTML =
-      '<div class="col-gcard-img">'+
-        (c.image ? '<img src="'+escHtml(c.image)+'" alt="" loading="lazy">' : '<span>'+icon+'</span>')+
-        '<div class="col-gcard-scrim"></div>'+
-        '<span class="col-gcard-rar" style="color:'+bc+'" title="'+escHtml(colRarity)+'">'+icon+' '+escHtml(shortRar)+'</span>'+
-        '<button class="col-gcard-del" data-delid="'+c.id+'" title="Remove" aria-label="Remove">🗑</button>'+
-        (c.india_collector_inr ? '<div class="col-gcard-price">₹'+cleanINR(c.india_collector_inr)+'</div>' : '')+
-      '</div>'+
-      '<div class="col-gcard-body">'+
-        '<div class="col-gcard-nm">'+escHtml(c.name||'Unknown')+'</div>'+
-        '<div class="col-gcard-sr">'+escHtml(c.series||'—')+'</div>'+
-      '</div>'
-    d.addEventListener('click', function(e) {
-      if (e.target.closest('[data-delid]')) return
-      editColItem(c.id)
-    })
+      '<div class="car-thumb">' + thumb(c) + '</div>' +
+      '<div class="car-body">' +
+        '<div class="car-name">' + escHtml(c.name || 'Unknown') + '</div>' +
+        '<div class="car-meta">' + (meta(c) || '&nbsp;') + '</div>' +
+        '<div class="car-tags"><span class="rar ' + rcls(c.rarity) + '">' + escHtml(c.rarity || 'Common') + '</span>' +
+          (n > 1 ? '<span class="car-qty">×' + n + ' owned</span>' : '') +
+          (c.condition ? '<span class="car-qty">' + escHtml(c.condition) + '</span>' : '') + '</div>' +
+      '</div>' +
+      '<div class="car-side">' + (c.india_collector_inr ? '<div class="car-price">' + escHtml(fmtINR(c.india_collector_inr)) + '</div>' : '') + _plHtml(c) + '</div>'
+    return d
+  }
+
+  function makeGridCard(c) {
+    var t = tierOf(c)
+    var short = { 'Super Treasure Hunt': 'STH', 'Treasure Hunt': 'TH', 'Error Car': 'Error' }[c.rarity] || c.rarity || 'Common'
+    var d = document.createElement('div')
+    d.className = 'col-gcard' + (CHASE.indexOf(t) > -1 ? ' is-chase' : '')
+    d.style.setProperty('--tier', TIER_COLOR[t] || 'transparent')
+    d.dataset.editid = c.id
+    d.tabIndex = 0
+    d.setAttribute('role', 'button')
+    d.innerHTML =
+      '<div class="col-gcard-img">' + thumb(c) + '<div class="col-gcard-scrim"></div>' +
+        '<span class="col-gcard-rar"><span class="rar ' + rcls(c.rarity) + '">' + escHtml(short) + '</span></span>' +
+        (c.india_collector_inr ? '<div class="col-gcard-price">' + escHtml(fmtINR(c.india_collector_inr)) + '</div>' : '') +
+      '</div>' +
+      '<div class="col-gcard-body"><div class="col-gcard-nm">' + escHtml(c.name || 'Unknown') + '</div><div class="col-gcard-sr">' + (meta(c) || '—') + '</div></div>'
     return d
   }
 
   function sectionHeader(label, count, color) {
     var h = document.createElement('div')
     h.className = 'col-section'
-    h.innerHTML = '<span class="col-section-t" style="color:'+color+'">'+escHtml(label)+'</span>'+
-                  '<span class="col-section-c">'+count+'</span>'+
-                  '<span class="col-section-r"></span>'
+    h.innerHTML = '<span class="col-section-t"' + (color && color !== 'transparent' ? ' style="color:' + color + '"' : '') + '>' + escHtml(label) + '</span><span class="col-section-c">' + count + '</span><span class="col-section-r"></span>'
     return h
   }
 
-  var isGrid = state.colView === 'grid'
-  list.className = isGrid ? 'col-grid' : ''
-  // Sync the toggle here rather than only in setColView, so a grid preference
-  // restored from localStorage shows the right button as active on first paint.
-  var _lb = document.getElementById('cv-list'), _gb = document.getElementById('cv-grid')
-  if (_lb) _lb.classList.toggle('active', !isGrid)
-  if (_gb) _gb.classList.toggle('active', isGrid)
-
-  var cntEl = document.getElementById('col-count')
-  if (cntEl) {
-    cntEl.textContent = items.length === state.collection.length
-      ? items.length + (items.length === 1 ? ' car' : ' cars')
-      : items.length + ' of ' + state.collection.length + ' cars'
-  }
-
-  if (state.sortBy === 'rarity' && items.length) {
-    // Items are already rarity-ordered here, so a header goes in each time the
-    // tier changes. Grouping beats an undifferentiated scroll for big collections.
-    var tierCounts = {}
-    items.forEach(function(c){ var r=c.rarity||'Common'; tierCounts[r]=(tierCounts[r]||0)+1 })
-    var currentTier = null
-    items.forEach(function(c) {
-      var r = c.rarity || 'Common'
-      if (r !== currentTier) {
-        currentTier = r
-        list.appendChild(sectionHeader(r, tierCounts[r], dotColors[r.toLowerCase()] || '#444'))
+  // Grouped views put a header in each time the group key changes. "By casting"
+  // keeps every colour and year of one model together, which is how collectors
+  // check which variants they still lack.
+  var groupKey = state.sortBy === 'rarity' ? function (c) { return c.rarity || 'Common' }
+               : state.sortBy === 'casting' ? function (c) { return c.name || 'Unknown' }
+               : null
+  var groupCounts = {}
+  if (groupKey) items.forEach(function (c) { var k = groupKey(c); groupCounts[k] = (groupCounts[k] || 0) + 1 })
+  var current = null
+  items.forEach(function (c) {
+    if (groupKey) {
+      var k = groupKey(c)
+      if (k !== current) {
+        current = k
+        list.appendChild(sectionHeader(k, groupCounts[k], state.sortBy === 'rarity' ? TIER_COLOR[k.toLowerCase()] : null))
       }
-      list.appendChild(isGrid ? makeGridCard(c) : makeCard(c, false))
-    })
-  } else if (isGrid) {
-    items.forEach(function(c){ list.appendChild(makeGridCard(c)) })
-  } else {
-    spotlights.forEach(function(c){list.appendChild(makeCard(c,true))})
-    regular.forEach(function(c){list.appendChild(makeCard(c,false))})
-  }
-
-  // Add hover effects to regular cards
-  document.querySelectorAll('#col-list [data-editid], #col-list [data-delid]').forEach(function(btn) {
-    btn.parentElement.parentElement.onmouseenter = function() {
-      this.querySelectorAll('[data-editid], [data-delid]').forEach(function(b) { b.style.opacity = '1' })
     }
-    btn.parentElement.parentElement.onmouseleave = function() {
-      this.querySelectorAll('[data-editid], [data-delid]').forEach(function(b) { b.style.opacity = '0' })
-    }
+    list.appendChild(isGrid ? makeGridCard(c) : makeRow(c))
   })
-  
-  // Handle edit, delete, and flip clicks
-  var oh=list._ch;if(oh)list.removeEventListener('click',oh);list._ch=function(e){var eb=e.target.closest('[data-editid]'),db=e.target.closest('[data-delid]'),fb=e.target.closest('[data-flipid]');if(eb){e.stopPropagation();editColItem(eb.dataset.editid)}if(db){e.stopPropagation();delFromCol(db.dataset.delid)}if(fb){e.stopPropagation();var fc=fb.closest('.flip-card');if(fc)fc.classList.toggle('flipped')}};list.addEventListener('click',list._ch)
+
+  // One delegated listener; a tap or Enter on a car opens its details, where
+  // it can be edited or removed. (List rows used to hide their delete button
+  // behind :hover, so on a phone there was no way to remove a car at all.)
+  if (!list._bound) {
+    list._bound = true
+    var open = function (e) { var el = e.target.closest('[data-editid]'); if (el) editColItem(el.dataset.editid) }
+    list.addEventListener('click', open)
+    list.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e) } })
+  }
 }
 
 export function exportVal() {
   if (!state.collection.length) { showToast('Add some cars first!', 'error'); return }
-  var exportBtn = document.querySelector('[onclick="exportVal()"]')
-  if (exportBtn) { exportBtn.disabled = true; exportBtn.textContent = '⏳ Generating PDF…' }
 
   setTimeout(function() {
     var val = 0
@@ -620,7 +582,6 @@ export function exportVal() {
     win.document.close()
     win.focus()
     setTimeout(function() { win.print() }, 600)
-    if (exportBtn) { exportBtn.disabled = false; exportBtn.textContent = '📄 Export Valuation Certificate' }
     showToast('PDF ready — use "Save as PDF" in the print dialog', 'success')
   }, 120)
 }
@@ -645,6 +606,7 @@ export function addCarToCollection(car, thumb) {
   }
   state.collection.unshift(item)
   persistCollection()
+  if (window.pruneWantList) window.pruneWantList(item.name)
   if (state._sb && state.currentUser) {
     ;(async function(){ try{ var cloudId = await saveToCloud(item); if(cloudId){ item.id=cloudId; persistCollection() } }catch(e){} })()
   }
@@ -680,27 +642,6 @@ function _timedQuery(queryPromise, ms) {
 }
 
 // Retry helper with exponential backoff
-async function _retryWithBackoff(fn, maxAttempts, initialDelay) {
-  maxAttempts = maxAttempts || 3
-  initialDelay = initialDelay || 1000
-  var lastError
-  for (var attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return await fn()
-    } catch(e) {
-      lastError = e
-      if (attempt < maxAttempts - 1) {
-        var delay = initialDelay * Math.pow(2, attempt) + Math.random() * 1000
-        await new Promise(function(r) { setTimeout(r, delay) })
-      }
-    }
-  }
-  throw lastError
-}
-
-// Fetches image_thumb for just the rows that have no image yet, mutating them in
-// place. Non-fatal: on failure those cars render without artwork until the next
-// session does a full sync, which beats failing the whole sync over a thumbnail.
 async function _backfillThumbs(items) {
   var missing = items.filter(function(c) {
     return !c.image && c.id && !_thumbBackfillTried[c.id]
@@ -789,6 +730,7 @@ async function _doFullCloudSync(retryCount) {
       if (!_loc) continue
       if (_loc.condition) cloudItems[_ci].condition = _loc.condition
       if (_loc.notes) cloudItems[_ci].notes = _loc.notes
+      if (_loc.paid != null) cloudItems[_ci].paid = _loc.paid
       if (_loc._dirty) {
         var _merged = Object.assign({}, cloudItems[_ci], _loc)
         var _saved = null
@@ -949,10 +891,6 @@ async function _doFullCloudSync(retryCount) {
 }
 
 // Alias — kept for compatibility, routes to fullCloudSync
-export async function syncCollectionFromCloud() {
-  return fullCloudSync()
-}
-
 // Last-resort shrink for an oversized data URL. Returns null on failure so the
 // caller can fall back to the original rather than losing the image.
 function _shrinkDataUrl(dataUrl, size, quality) {

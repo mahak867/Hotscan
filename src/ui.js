@@ -1,6 +1,6 @@
 import { state } from './state.js'
 import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
-import { escHtml, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException, isProActive } from './utils.js'
+import { escHtml, fmtINR, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException, isProActive } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
 
 // ── Pro helpers ──
@@ -72,50 +72,53 @@ export function closeProModal() {
   document.body.style.overflow = ''
 }
 export function updateScanCounter() {
+  var used = getTodayScans()
+  var pro = isPro()
   var pb = document.getElementById('prof-scans-bar')
   if (pb && state.currentUser) {
-    var used = getTodayScans()
-    pb.style.width = isPro() ? '100%' : Math.min(used/FREE_SCANS*100,100)+'%'
-    pb.style.background = isPro() ? 'var(--green)' : 'linear-gradient(90deg,var(--red),var(--gold))'
+    pb.style.width = pro ? '100%' : Math.min(used / FREE_SCANS * 100, 100) + '%'
+    pb.style.background = pro ? 'var(--green)' : ''
+  }
+  // Scan allowance, visible where the scanning happens instead of only on the
+  // profile page — running out mid-hunt should never be a surprise.
+  var q = document.getElementById('scan-quota')
+  if (q) {
+    var left = Math.max(FREE_SCANS - used, 0)
+    q.textContent = pro ? 'Pro · unlimited' : left + ' of ' + FREE_SCANS + ' free scans left'
+    q.className = 'quota-pill' + (pro ? ' pro' : left <= 1 ? ' low' : '')
   }
 }
 
 // ── Navigation ──
-var _pageOrder = {scan:0,collection:1,marketplace:2,market:3,profile:4,more:5,alerts:6,hunt:7}
-var _prevPageId = 'scan'
-export function goPage(id){
-  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active','slide-from-right','slide-from-left') })
-  // Mobile dock and desktop sidebar share one current-page state. The sidebar
-  // used to keep "Scanner" highlighted whatever page was open.
-  document.querySelectorAll('.nav-item, .hs-sidebar-item').forEach(function(n){
+// Sub-pages have no tab of their own; they light up the tab they are reached from.
+var _navParent = { guide: 'more', hunt: 'more', alerts: 'more', profile: 'more' }
+export function goPage(id, fromHash) {
+  var pg = document.getElementById('page-' + id)
+  if (!pg) return
+  document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active') })
+  document.querySelectorAll('.nav-item, .hs-sidebar-item').forEach(function (n) {
     n.classList.remove('active'); n.removeAttribute('aria-current')
   })
-  var sbi = document.getElementById('sb-'+id)
-  if (sbi) { sbi.classList.add('active'); sbi.setAttribute('aria-current', 'page') }
-  var pg = document.getElementById('page-'+id)
-  if(pg){
-    // #21 — directional slide
-    var prevIdx = _pageOrder[_prevPageId] !== undefined ? _pageOrder[_prevPageId] : 0
-    var newIdx  = _pageOrder[id]          !== undefined ? _pageOrder[id]          : 0
-    pg.classList.add('active', newIdx >= prevIdx ? 'slide-from-right' : 'slide-from-left')
-    pg.addEventListener('animationend', function(){ pg.classList.remove('slide-from-right','slide-from-left') }, {once:true})
-    _prevPageId = id
+  pg.classList.add('active')
+  ;[document.getElementById('sb-' + id), document.getElementById('nav-' + (document.getElementById('nav-' + id) ? id : _navParent[id]))].forEach(function (el) {
+    if (el) { el.classList.add('active'); el.setAttribute('aria-current', 'page') }
+  })
+  var dd = document.getElementById('profile-dd-menu'); if (dd) dd.classList.remove('open')
+  if (id === 'profile') renderProfilePage()
+  if (id === 'marketplace') window.loadAndRenderListings()
+  if (id === 'collection') renderWantList()
+  if (id === 'scan') updateScanCounter()
+  // Keep the URL in step so back/forward and shared links work. Skipped when
+  // the navigation itself came from the hash, and never touches an auth hash.
+  if (!fromHash) {
+    try {
+      var cur = window.location.hash
+      if (!/access_token|error_description|type=recovery/.test(cur) && cur !== '#' + id) {
+        history.pushState(null, '', id === 'scan' ? window.location.pathname + window.location.search : '#' + id)
+      }
+    } catch (e) {}
   }
-  var ni = document.getElementById('nav-'+id)
-  if(ni){
-    ni.classList.add('active')
-    ni.setAttribute('aria-current', 'page')
-    var svg = ni.querySelector('svg')
-    if(svg){
-      svg.style.transform = 'scale(1.3)'
-      setTimeout(function(){ svg.style.transform = '' }, 180)
-    }
-    var dock = document.querySelector('.nav-dock')
-    if(dock) dock.blur()
-  }
-  if(id === 'profile') renderProfilePage()
-  if(id === 'marketplace') window.loadAndRenderListings()
-  window.scrollTo({top:0, behavior:'smooth'})
+  window.scrollTo(0, 0)
 }
 
 // ── Key ──
@@ -147,7 +150,7 @@ export function setMode(mode) {
   document.getElementById('err-box').style.display = 'none'
   if (mode === 'deal') {
     document.getElementById('analyze-btn').style.display = 'block'
-    document.getElementById('analyze-btn').textContent = '💰 Check This Deal'
+    document.getElementById('analyze-btn').textContent = 'Check this deal'
   }
   // These tips say "Side profile", which is the wrong advice in Fake mode —
   // authenticity is settled by the base, and that panel says so already.
@@ -181,7 +184,7 @@ export async function handleFile(file, mode) {
       state.fakeImg64 = await compress(raw, 1024)
       document.getElementById('analyze-btn').style.display = 'block'
       document.getElementById('analyze-btn').classList.add('sticky-btn')
-      document.getElementById('analyze-btn').textContent = '🕵️ Check If Fake'
+      document.getElementById('analyze-btn').textContent = 'Check authenticity'
     } else {
       document.getElementById('preview-img').src = raw
       document.getElementById('preview-wrap').style.display = 'block'
@@ -191,13 +194,13 @@ export async function handleFile(file, mode) {
       state.imgThumb = await compressThumb(raw)
       document.getElementById('analyze-btn').style.display = 'block'
       document.getElementById('analyze-btn').classList.add('sticky-btn')
-      document.getElementById('analyze-btn').textContent = '🔎 Identify & Get Live Prices'
+      document.getElementById('analyze-btn').textContent = 'Identify and price this car'
     }
     document.getElementById('result').style.display = 'none'
     document.getElementById('deal-result').style.display = 'none'
     document.getElementById('err-box').style.display = 'none'
   } catch(err) {
-    document.getElementById('err-box').textContent = '⚠️ Could not load image. Try again.'
+    document.getElementById('err-box').textContent = 'Could not load that image. Try another photo.'
     document.getElementById('err-box').style.display = 'block'
   }
 }
@@ -269,8 +272,8 @@ export function renderMultiThumbs() {
     // One photo left is a single scan, not a batch — say so rather than
     // offering to "identify all cars" in one picture.
     btn.textContent = n === 1
-      ? '🔎 Identify & Get Live Prices'
-      : '🔎 Identify All Cars (' + n + ' photos)'
+      ? 'Identify and price this car'
+      : 'Identify all cars (' + n + ' photos)'
   }
   // The rest of the app reads img64/imgThumb for the "current" photo, so it
   // must always track the first remaining image.
@@ -338,9 +341,9 @@ export function setStep(n, s) {
   var stepEl = el.closest ? el.closest('.pip-step') : el.parentElement
   el.className = 'pip-st'
   if (stepEl) stepEl.classList.remove('step-done')
-  if (s === 'active') { el.classList.add('active'); el.innerHTML = '<span class="hs-loader-ring" style="width:14px;height:14px;border-width:2px;vertical-align:middle;margin-right:5px"></span>Running...' }
+  if (s === 'active') { el.classList.add('active'); el.innerHTML = '<span class="hs-loader-ring" style="width:13px;height:13px;vertical-align:-2px;margin-right:6px"></span>Working' }
   else if (s === 'done') {
-    el.classList.add('done'); el.textContent = '✓'
+    el.classList.add('done'); el.textContent = 'Done'
     if (stepEl) stepEl.classList.add('step-done')
   }
   else if (s === 'err') { el.classList.add('err'); el.textContent = 'Failed' }
@@ -380,7 +383,16 @@ function _playReveal(rarity) {
 }
 
 export function showResult(d) {
-  if (state.imgThumb) document.getElementById('r-thumb').innerHTML = '<img src="' + state.imgThumb + '" alt="">'
+  document.getElementById('r-thumb').innerHTML = state.imgThumb ? '<img src="' + state.imgThumb + '" alt="">' : ''
+  // "Do I already have this?" is the first question on a peg hunt, and the
+  // answer used to arrive only as a dialog after tapping Add.
+  var ownedEl = document.getElementById('r-owned')
+  if (ownedEl) {
+    var nm0 = (d.name || '').toLowerCase()
+    var owned = nm0 ? state.collection.filter(function (c) { return (c.name || '').toLowerCase() === nm0 }).length : 0
+    ownedEl.textContent = owned ? 'In your collection' + (owned > 1 ? ' ×' + owned : '') : ''
+    ownedEl.classList.toggle('show', owned > 0)
+  }
   document.getElementById('r-name').textContent = d.name || 'Unknown'
   document.getElementById('r-series').textContent = d.series || ''
   // Rarity reveal. Pulling a Treasure Hunt is the emotional peak of the product
@@ -410,9 +422,8 @@ export function showResult(d) {
   if (!warnEl) {
     warnEl = document.createElement('div')
     warnEl.id = 'r-confidence-warn'
-    var confBar = document.getElementById('r-conf')
-    var anchor = confBar && confBar.parentElement ? confBar.parentElement : null
-    if (anchor && anchor.parentElement) anchor.parentElement.insertBefore(warnEl, anchor.nextSibling)
+    var hero = document.querySelector('#result .r-hero')
+    if (hero && hero.parentElement) hero.parentElement.insertBefore(warnEl, hero.nextSibling)
   }
   if (warnEl) {
     var warnings = []
@@ -420,17 +431,15 @@ export function showResult(d) {
     else if (d._lowConfidence || conf < 75) warnings.push('Low confidence (' + conf + '%) — check the casting name against the base before trusting the price.')
     if (d._needsVerification) warnings.push('This rarity was claimed without stating visible evidence. Verify the TH logo and wheels yourself before paying a premium.')
     if (warnings.length) {
-      warnEl.style.cssText = 'margin:8px 0 0;padding:9px 11px;border-radius:9px;background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.28);font-size:11.5px;line-height:1.6;color:var(--text2)'
-      warnEl.innerHTML = warnings.map(function(w){ return '⚠️ ' + escHtml(w) }).join('<br>')
+      warnEl.style.cssText = 'padding:11px 13px;border-radius:12px;background:rgba(247,201,72,.08);border:1px solid rgba(247,201,72,.28);font-size:13px;line-height:1.55;color:var(--text2)'
+      warnEl.innerHTML = warnings.map(function(w){ return escHtml(w) }).join('<br>')
       warnEl.style.display = 'block'
     } else {
       warnEl.style.display = 'none'
     }
   }
-  var rarIcons = {'Super Treasure Hunt':'⭐','Treasure Hunt':'🔥','Error Car':'⚡','Vintage':'🏆','Premium':'💎','Rare':'💫','Uncommon':'🔶'}
   var rb = document.getElementById('r-rar')
-  var rarLabel = d.rarity || 'Common'
-  rb.textContent = (rarIcons[rarLabel] ? rarIcons[rarLabel] + ' ' : '') + rarLabel; rb.className = 'rar ' + rcls(d.rarity)
+  rb.textContent = d.rarity || 'Common'; rb.className = 'rar ' + rcls(d.rarity)
   // Identification is not authentication. This badge used to render whatever
   // is_authentic the model returned — and the prompt's own JSON example set it
   // to true — so a 128px side shot of a VW bus got a green "Authentic". The
@@ -440,49 +449,24 @@ export function showResult(d) {
   var ab = document.getElementById('r-auth')
   if (ab) ab.style.display = 'none'
   
-  // Show low confidence warning
-  var lcw = document.getElementById('r-low-conf-warning')
-  if (d._lowConfidence) {
-    if (!lcw) {
-      var warn = document.createElement('div')
-      warn.id = 'r-low-conf-warning'
-      warn.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);border-radius:8px;margin-top:12px;font-size:12px;color:var(--gold)'
-      warn.innerHTML = '⚠️ <span><strong>Low confidence:</strong> This identification might be uncertain. Please verify the car details match your photo.</span>'
-      document.getElementById('r-dets').parentElement.insertBefore(warn, document.getElementById('r-dets'))
-    }
-  } else {
-    if (lcw) lcw.remove()
-  }
-  
-  // Show verification needed for rare rarities without clear evidence
-  var vnw = document.getElementById('r-verify-warning')
-  if (d._needsVerification) {
-    if (!vnw) {
-      var verify = document.createElement('div')
-      verify.id = 'r-verify-warning'
-      verify.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.3);border-radius:8px;margin-top:12px;font-size:12px;color:var(--red)'
-      verify.innerHTML = '🔍 <span><strong>Please verify:</strong> This appears to be ' + (d.rarity || 'rare') + '. Check for the distinguishing features before confirming.</span>'
-      document.getElementById('r-dets').parentElement.insertBefore(verify, document.getElementById('r-dets'))
-    }
-  } else {
-    if (vnw) vnw.remove()
-  }
-  document.getElementById('p1').textContent = d.india_retail_inr ? '₹' + cleanINR(d.india_retail_inr) : '—'
-  document.getElementById('p2').textContent = d.india_collector_inr ? '₹' + cleanINR(d.india_collector_inr) : '—'
+  // The older #r-low-conf-warning / #r-verify-warning banners repeated the two
+  // warnings above word for word, so a doubtful scan showed four boxes.
+  document.getElementById('p1').textContent = fmtINR(d.india_retail_inr) || '—'
+  document.getElementById('p2').textContent = fmtINR(d.india_collector_inr) || '—'
   document.getElementById('p3').textContent = d.us_retail_usd ? '$' + d.us_retail_usd : '—'
   document.getElementById('p4').textContent = d.us_collector_usd ? '$' + d.us_collector_usd : '—'
   var _dqEl = document.getElementById('live-upd')
   if (!d.data_quality || d.data_quality === 'Estimated') {
-    _dqEl.textContent = '⚠️ Estimated — verify on OLX'
+    _dqEl.textContent = 'AI estimate. Check current OLX listings before paying.'
     _dqEl.style.color = 'var(--gold)'
   } else if (d.data_quality.indexOf('Reference') === 0 || d.data_quality === 'Database') {
-    _dqEl.textContent = '📚 Reference price from built-in catalog — not live. Check OLX for current listings.'
+    _dqEl.textContent = 'Reference price from the built-in catalogue, not live. Check OLX for current listings.'
     _dqEl.style.color = 'var(--gold)'
   } else if (d.data_quality.indexOf('Community') === 0 || d.data_quality.indexOf('Verified Sale') === 0) {
     // 'Verified Sale' / 'Community Verified' can still arrive from cached scans
     // made before those labels were withdrawn; show them as reports.
     if (d.data_quality.indexOf('Community reports') !== 0) d.data_quality = 'Community reports (unverified)'
-    _dqEl.textContent = '👥 ' + d.data_quality
+    _dqEl.textContent = d.data_quality
     _dqEl.style.color = 'var(--blue)'
   } else {
     // Name where the live price came from, so "Live" is checkable.
@@ -501,10 +485,9 @@ export function showResult(d) {
   })
   var trend = d.price_trend || 'Stable'
   if (trend !== 'Rising' && trend !== 'Falling' && trend !== 'Stable') trend = 'Stable'
-  document.getElementById('trend-ic').textContent = trend === 'Rising' ? '📈' : trend === 'Falling' ? '📉' : '➡️'
-  document.getElementById('trend-txt').innerHTML = '<span class="' + (trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst') + '">' + escHtml(trend) + '</span>' + (d.price_trend_reason ? ' — ' + escHtml(d.price_trend_reason) : '')
+    document.getElementById('trend-txt').innerHTML = '<span class="' + (trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst') + '">' + escHtml(trend) + '</span>' + (d.price_trend_reason ? ' — ' + escHtml(d.price_trend_reason) : '')
   var ib = document.getElementById('r-inv')
-  ib.textContent = (d.investment || 'Medium') + ' Potential'; ib.className = 'inv-badge'
+  ib.textContent = d.investment || 'Medium'; ib.className = 'inv-badge'
   var iv = (d.investment || '').toLowerCase()
   ib.classList.add(iv.includes('very') ? 'iv' : iv === 'high' ? 'ih' : iv === 'medium' ? 'im' : 'il')
   // #16 — investment badge tooltip
@@ -529,27 +512,29 @@ export function showResult(d) {
   }
   if (d.name) {
     var buyLinks = [
-      {label:'🛒 Amazon India', url:'https://www.amazon.in/s?k=hot+wheels+' + encodeURIComponent(d.name)},
-      {label:'🛒 Flipkart', url:'https://www.flipkart.com/search?q=hot+wheels+' + encodeURIComponent(d.name)},
-      {label:'💸 OLX India', url:'https://www.olx.in/items/q-hot+wheels+' + encodeURIComponent(d.name)},
-      {label:'📸 Instagram', url:'https://www.instagram.com/explore/tags/'+encodeURIComponent('hotwheelsindiasale')},
-      {label:'🏪 Maido', url:'https://www.maido.in/search?q=' + encodeURIComponent(d.name)},
+      {label:'Amazon', url:'https://www.amazon.in/s?k=hot+wheels+' + encodeURIComponent(d.name)},
+      {label:'Flipkart', url:'https://www.flipkart.com/search?q=hot+wheels+' + encodeURIComponent(d.name)},
+      {label:'OLX', url:'https://www.olx.in/items/q-hot+wheels+' + encodeURIComponent(d.name)},
+      {label:'Instagram', url:'https://www.instagram.com/explore/tags/'+encodeURIComponent('hotwheelsindiasale')},
+      {label:'Maido', url:'https://www.maido.in/search?q=' + encodeURIComponent(d.name)},
     ]
     var bl = document.getElementById('r-buy-list')
     bl.innerHTML = ''
     buyLinks.forEach(function(l) {
       var s = document.createElement('span')
       s.className = 'tag'
-      s.style.cssText = 'cursor:pointer;color:var(--blue)'
-      s.textContent = l.label + ' →'
+      s.setAttribute('role', 'link'); s.tabIndex = 0
+      s.textContent = l.label
       s.onclick = (function(u) { return function() { ol(u) } })(l.url)
       bl.appendChild(s)
     })
   }
   loadCommunityPrices(d.name)
+  renderPriceHistory(d.name)
   document.getElementById('result').style.display = 'block'
   document.getElementById('analyze-btn').style.display = 'none'
   var _sfb = document.getElementById('scan-feedback'); if (_sfb) _sfb.style.display = 'flex'
+  var _tips = document.getElementById('scan-tips-card'); if (_tips) _tips.style.display = 'none'
   setTimeout(function() { document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'}) }, 100)
 }
 
@@ -583,8 +568,8 @@ export async function loadCommunityPrices(carName) {
     listEl.innerHTML = ''
     list.slice(0, 5).forEach(function(p) {
       var div = document.createElement('div')
-      div.style.cssText = 'display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px'
-      div.innerHTML = '<span style="color:var(--text2)">' + escHtml(String(p.platform||'India')) + ' · ' + escHtml(String(p.user||'Collector')) + '</span><span style="color:var(--gold);font-weight:700">₹' + p.price + '</span>'
+      div.className = 'li-row'
+      div.innerHTML = '<div class="li-body"><div class="li-t">' + escHtml(String(p.platform||'India')) + '</div><div class="li-s">' + escHtml(String(p.user||'Collector')) + '</div></div><div class="li-v">₹' + escHtml(String(Number(p.price)||0)) + '</div>'
       listEl.appendChild(div)
     })
   }
@@ -619,60 +604,72 @@ export async function submitPrice() {
     } catch(e) { captureException(e) }
   }
   document.getElementById('community-price').value = ''
-  showToast('✅ Price submitted! Thank you for helping the community.', 'success')
+  showToast('Price reported. Thank you.', 'success')
+  document.getElementById('community-price').value = ''
   loadCommunityPrices(state.lastResult.name)
 }
 
 // ── Alerts ──
+function _readWant() { try { return JSON.parse(localStorage.getItem('hs_want') || '[]') } catch (e) { return [] } }
+function _writeWant(wl) { try { localStorage.setItem('hs_want', JSON.stringify(wl)) } catch (e) {} }
+
 export function addToWantList() {
   if (!state.lastResult) { showToast('Scan a car first', 'error'); return }
-  try {
-    var wl = JSON.parse(localStorage.getItem('hs_want') || '[]')
-    var exists = wl.some(function(w){ return w.name === state.lastResult.name })
-    if (exists) { showToast(state.lastResult.name + ' is already on your want list', 'error'); return }
-    wl.unshift({
-      id: Date.now(),
-      name: state.lastResult.name,
-      series: state.lastResult.series,
-      rarity: state.lastResult.rarity,
-      india_retail_inr: state.lastResult.india_retail_inr,
-      image: state.imgThumb,
-      added: new Date().toISOString()
-    })
-    localStorage.setItem('hs_want', JSON.stringify(wl))
-    showToast('Added to want list ❤️', 'success')
-    renderWantList()
-  } catch(e) {}
+  var r = state.lastResult
+  var wl = _readWant()
+  if (wl.some(function (w) { return w.name === r.name })) { showToast(r.name + ' is already on your wishlist', 'info'); return }
+  // The whole result is kept, so moving it into the collection later needs no rescan.
+  wl.unshift(Object.assign({}, r, { id: Date.now(), image: state.imgThumb, added: new Date().toISOString() }))
+  _writeWant(wl)
+  showToast('Added to wishlist', 'success')
+  renderWantList()
 }
 
-export function removeFromWantList(id) {
-  try {
-    var wl = JSON.parse(localStorage.getItem('hs_want') || '[]')
-    wl = wl.filter(function(w){ return w.id !== id })
-    localStorage.setItem('hs_want', JSON.stringify(wl))
-    renderWantList()
-    showToast('Removed from want list', 'success')
-  } catch(e) {}
+export function removeFromWantList(id, silent) {
+  _writeWant(_readWant().filter(function (w) { return w.id !== id }))
+  renderWantList()
+  if (!silent) showToast('Removed from wishlist', 'success')
 }
+
+// Found one: it leaves the wishlist and joins the collection in one tap.
+export function moveWantToCollection(id) {
+  var w = _readWant().find(function (x) { return x.id === id })
+  if (!w) return
+  addCarToCollection(w, w.image || null)
+  removeFromWantList(id, true)
+  showToast(w.name + ' moved to your collection', 'success')
+}
+
+// A car added to the collection by any route comes off the wishlist, so the
+// list never keeps asking for something already found.
+export function pruneWantList(name) {
+  if (!name) return
+  var wl = _readWant()
+  var next = wl.filter(function (w) { return (w.name || '').toLowerCase() !== String(name).toLowerCase() })
+  if (next.length !== wl.length) { _writeWant(next); renderWantList() }
+}
+if (typeof window !== 'undefined') window.pruneWantList = pruneWantList
 
 export function renderWantList() {
   var el = document.getElementById('want-list')
+  var wl = _readWant()
+  var cnt = document.getElementById('want-count')
+  if (cnt) cnt.textContent = wl.length ? String(wl.length) : ''
   if (!el) return
-  var wl = []
-  try { wl = JSON.parse(localStorage.getItem('hs_want') || '[]') } catch(e) {}
   if (!wl.length) {
-    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No cars on your want list yet. Scan a car and tap ❤️ Want!</div>'
+    el.innerHTML = '<div class="empty"><div class="empty-t">Nothing on your wishlist</div><div class="empty-s">Scan a car you are hunting for and tap Wishlist. It moves to your collection when you find it.</div></div>'
     return
   }
-  el.innerHTML = wl.map(function(w) {
-    var thumb = w.image ? '<img src="' + w.image + '" style="width:40px;height:40px;border-radius:8px;object-fit:cover">' : '<div style="width:40px;height:40px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px">🚗</div>'
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">' +
-      thumb +
-      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(w.name) + '</div>' +
-      '<div style="font-size:11px;color:var(--text2)">' + escHtml(w.rarity||'') + ' · ₹' + cleanINR(w.india_retail_inr) + '</div></div>' +
-      '<button onclick="removeFromWantList(' + w.id + ')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">🗑️</button>' +
+  el.innerHTML = '<div class="card">' + wl.map(function (w) {
+    var price = cleanINR(w.india_collector_inr || w.india_retail_inr)
+    return '<div class="li-row">' +
+      '<div class="li-thumb">' + (w.image ? '<img src="' + escHtml(w.image) + '" alt="">' : '') + '</div>' +
+      '<div class="li-body"><div class="li-t">' + escHtml(w.name) + '</div>' +
+      '<div class="li-s">' + escHtml(w.rarity || 'Common') + (price ? ' · ' + escHtml(fmtINR(price)) : '') + '</div></div>' +
+      '<button class="btn btn-sm btn-ghost" onclick="moveWantToCollection(' + Number(w.id) + ')">Found it</button>' +
+      '<button class="icon-btn" aria-label="Remove from wishlist" onclick="removeFromWantList(' + Number(w.id) + ')"><svg class="ic"><use href="#i-x"/></svg></button>' +
       '</div>'
-  }).join('')
+  }).join('') + '</div>'
 }
 
 export function addAlert() {
@@ -695,23 +692,23 @@ export async function clearAlerts() {
 }
 export function renderAlerts() {
   if (!state.alerts.length) {
-    document.getElementById('alerts-list').innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><div class="empty-t">No alerts yet</div><div class="empty-s">Scan a car and tap "Alert" to watch for deals</div></div>'
+    document.getElementById('alerts-list').innerHTML = '<div class="empty"><div class="empty-t">Nothing on your watchlist</div><div class="empty-s">Scan a car and tap Watch to keep its searches one tap away.</div></div>'
     return
   }
   var al = document.getElementById('alerts-list'); al.innerHTML = ''
   state.alerts.forEach(function(a) {
     var div = document.createElement('div'); div.className = 'alert-item'
     var nm = document.createElement('div'); nm.className = 'alert-name'; nm.textContent = a.name
-    var meta = document.createElement('div'); meta.style.cssText = 'font-size:11px;color:var(--text3);margin-bottom:5px'; meta.textContent = (a.rarity||'Common') + ' · Target: ₹' + (cleanINR(a.india_collector_inr)||'?')
+    var meta = document.createElement('div'); meta.style.cssText = 'font-size:12.5px;color:var(--text3);margin-bottom:10px'; meta.textContent = (a.rarity||'Common') + ' · Target: ₹' + (cleanINR(a.india_collector_inr)||'?')
     var links = document.createElement('div'); links.style.cssText = 'display:flex;gap:8px'
-    var olxBtn = document.createElement('button'); olxBtn.className = 'alert-link'; olxBtn.textContent = 'OLX →'
+    var olxBtn = document.createElement('button'); olxBtn.className = 'alert-link'; olxBtn.textContent = 'OLX'
     olxBtn.onclick = (function(n){return function(){ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n||''))}})(a.name)
-    var igBtn = document.createElement('button'); igBtn.className = 'alert-link'; igBtn.textContent = 'Instagram →'
+    var igBtn = document.createElement('button'); igBtn.className = 'alert-link'; igBtn.textContent = 'Instagram'
     igBtn.onclick = function(){ol('https://www.instagram.com/explore/tags/hotwheelsindiasale/')}
-    var amzBtn = document.createElement('button'); amzBtn.className = 'alert-link'; amzBtn.textContent = 'Amazon →'
+    var amzBtn = document.createElement('button'); amzBtn.className = 'alert-link'; amzBtn.textContent = 'Amazon'
     amzBtn.onclick = (function(n){return function(){ol('https://www.amazon.in/s?k=hot+wheels+'+encodeURIComponent(n||''))}})(a.name)
     links.appendChild(olxBtn); links.appendChild(igBtn); links.appendChild(amzBtn)
-    var delBtn = document.createElement('button'); delBtn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-left:auto'
+    var delBtn = document.createElement('button'); delBtn.className = 'icon-btn'; delBtn.setAttribute('aria-label', 'Remove from watchlist')
     delBtn.textContent = '✕'; delBtn.onclick = (function(id){return function(){delAlert(id)}})(a.id)
     var row = document.createElement('div'); row.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start'
     var info = document.createElement('div'); info.appendChild(nm); info.appendChild(meta); info.appendChild(links)
@@ -726,6 +723,25 @@ export function saveToHist(d) {
   state.scanHistory.unshift(entry)
   if (state.scanHistory.length > 50) state.scanHistory = state.scanHistory.slice(0, 50)
   try { localStorage.setItem('hs_hist', JSON.stringify(state.scanHistory)) } catch(e) { try { localStorage.removeItem('hs_hist'); localStorage.setItem('hs_hist', JSON.stringify([entry])) } catch(e2) {} }
+  renderRecentScans()
+}
+
+function _ago(iso) {
+  var diff = Math.floor((Date.now() - new Date(iso)) / 60000)
+  return diff < 1 ? 'just now' : diff < 60 ? diff + 'm ago' : diff < 1440 ? Math.floor(diff / 60) + 'h ago' : Math.floor(diff / 1440) + 'd ago'
+}
+function _histRows(n) {
+  return state.scanHistory.slice(0, n).map(function (h) {
+    return '<div class="li-row"><div class="li-body"><div class="li-t">' + escHtml(h.name || 'Unknown') + '</div>' +
+      '<div class="li-s">' + escHtml(h.rarity || 'Common') + ' · ' + _ago(h.scanned) + '</div></div>' +
+      '<div class="li-v">' + escHtml(fmtINR(h.india_collector_inr)) + '</div></div>'
+  }).join('')
+}
+export function renderRecentScans() {
+  var card = document.getElementById('scan-recent-card'), el = document.getElementById('scan-recent')
+  if (!card || !el) return
+  card.hidden = !state.scanHistory.length
+  el.innerHTML = _histRows(4)
 }
 
 // ── Share ──
@@ -1074,28 +1090,15 @@ export function renderProfilePage() {
   var upEl = document.getElementById('prof-upgrade')
   var sinceEl = document.getElementById('prof-since')
   if (state.userProfile && state.userProfile.is_developer) {
-    planEl.textContent = '👑 Developer — Lifetime Pro'; planEl.className = 'plan-badge plan-dev'
-    upEl.style.display = 'none'; sinceEl.textContent = 'You built this app 🚗'
-    // remove upgrade pill if exists
-    var oldPill = document.getElementById('prof-upgrade-pill'); if(oldPill) oldPill.remove()
+    planEl.textContent = 'Developer · lifetime Pro'; planEl.className = 'plan-badge plan-dev'
+    upEl.style.display = 'none'; sinceEl.textContent = ''
   } else if (isProActive(state.userProfile)) {
-    planEl.textContent = '⭐ Pro Member'; planEl.className = 'plan-badge plan-pro'
+    planEl.textContent = 'Pro member'; planEl.className = 'plan-badge plan-pro'
     upEl.style.display = 'none'
     sinceEl.textContent = 'Pro until ' + new Date(state.userProfile.pro_until).toLocaleDateString('en-IN')
-    var oldPill2 = document.getElementById('prof-upgrade-pill'); if(oldPill2) oldPill2.remove()
   } else {
     planEl.textContent = 'Free Plan'; planEl.className = 'plan-badge plan-free'
-    upEl.style.display = 'block'
-    // #19 — inline upgrade pill next to Free badge
-    var existPill = document.getElementById('prof-upgrade-pill')
-    if (!existPill) {
-      var pill = document.createElement('button')
-      pill.id = 'prof-upgrade-pill'
-      pill.textContent = '⭐ Upgrade'
-      pill.style.cssText = 'background:rgba(255,214,10,.15);border:1px solid rgba(255,214,10,.35);color:var(--gold);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle'
-      pill.onclick = function(){ window.showProModal() }
-      planEl.insertAdjacentElement('afterend', pill)
-    }
+    upEl.hidden = false; upEl.style.display = ''
   }
   var total = state.collection.length
   var rare = state.collection.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.includes('rare')||r.includes('treasure')||r.includes('error')}).length
@@ -1116,23 +1119,9 @@ export function renderProfilePage() {
   var recentEl = document.getElementById('prof-recent')
   if (recentEl) {
     if (!state.scanHistory.length) {
-      recentEl.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0">No scans yet — go scan a car!</div>'
+      recentEl.innerHTML = '<div class="muted small">No scans yet.</div>'
     } else {
-      recentEl.innerHTML = ''
-      state.scanHistory.slice(0, 5).forEach(function(h) {
-        var diff = Math.floor((Date.now() - new Date(h.scanned))/60000)
-        var ago = diff<1?'just now':diff<60?diff+'m ago':diff<1440?Math.floor(diff/60)+'h ago':Math.floor(diff/1440)+'d ago'
-        var row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)'
-        var thumb = document.createElement('div'); thumb.style.cssText = 'width:40px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px'
-        if (h.image) { var img=document.createElement('img'); img.src=h.image; img.style.cssText='width:100%;height:100%;object-fit:cover'; thumb.appendChild(img) } else thumb.textContent='🚗'
-        var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
-        var nm = document.createElement('div'); nm.style.cssText = 'font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'; nm.textContent = h.name||'Unknown'
-        var mt = document.createElement('div'); mt.style.cssText = 'font-size:10px;color:var(--text3)'; mt.textContent = (h.rarity||'Common') + ' · ' + ago
-        info.appendChild(nm); info.appendChild(mt)
-        var price = document.createElement('div'); price.style.cssText = 'font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0'; price.textContent = h.india_collector_inr ? '₹'+cleanINR(h.india_collector_inr) : ''
-        row.appendChild(thumb); row.appendChild(info); row.appendChild(price)
-        recentEl.appendChild(row)
-      })
+      recentEl.innerHTML = _histRows(5)
     }
   }
   var phoneEl = document.getElementById('prof-wa-phone')
@@ -1152,7 +1141,7 @@ export function renderProfilePage() {
       olxStatus.innerHTML = '✅ Linked — <a href="' + escHtml(profileUrl) + '" target="_blank" style="color:#4cc9f0;text-decoration:none;font-weight:600">View OLX Profile →</a>'
         + ' &nbsp;<a href="' + escHtml(searchUrl) + '" target="_blank" style="color:#2dc653;text-decoration:none;font-size:12px">Your listings →</a>'
     } else {
-      olxStatus.textContent = 'Link your OLX account to speed up selling — shows your profile in deal alerts'
+      olxStatus.textContent = 'Shown on your listings so buyers can check your OLX history.'
     }
   }
 
@@ -1309,103 +1298,54 @@ export async function saveOLXAccount() {
 }
 
 // ── Price history ──
-export async function renderPriceHistory(name, rarity, currentPriceStr) {
+// Monthly averages of what collectors actually reported paying. Shown only when
+// there are at least three reports. The previous fallback drew eight bars from a
+// random-number generator seeded with the car's name and labelled them an "AI
+// estimate" with a percentage change — invented data presented as a trend.
+// (It was also never called, so the chart never appeared at all.)
+export async function renderPriceHistory(name) {
   var section = document.getElementById('phc')
   var barsEl = document.getElementById('phc-bars')
   var footerEl = document.getElementById('phc-footer')
-  var titleEl = document.getElementById('phc-title')
   if (!section || !barsEl) return
+  section.style.display = 'none'
+  if (!state._sb || !name) return
+  var rows = []
+  try {
+    var res = await state._sb.from('community_prices')
+      .select('price_inr, created_at')
+      .ilike('car_name', name)
+      .order('created_at', { ascending: true })
+      .limit(200)
+    rows = (res && res.data) || []
+  } catch (e) { return }
+  // The user may have scanned something else while this was in flight.
+  if (!state.lastResult || state.lastResult.name !== name || rows.length < 3) return
 
-  var base = parseFloat((currentPriceStr || '300').split('-')[0]) || 300
-
-  // Try to get real community price data from Supabase
-  var realData = []
-  if (state._sb && name) {
-    try {
-      var res = await state._sb.from('community_prices')
-        .select('price_inr, created_at')
-        .eq('car_name', name)
-        .order('created_at', { ascending: true })
-        .limit(50)
-      if (res.data && res.data.length >= 3) {
-        realData = res.data
-      }
-    } catch(e) {}
-  }
-
-  var months, prices, isReal = false
-
-  if (realData.length >= 3) {
-    // Build real monthly averages from community data
-    isReal = true
-    var buckets = {}
-    realData.forEach(function(r) {
-      var d = new Date(r.created_at)
-      var key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
-      if (!buckets[key]) buckets[key] = []
-      buckets[key].push(r.price_inr)
-    })
-    var keys = Object.keys(buckets).sort().slice(-8)
-    months = keys.map(function(k) {
-      var d = new Date(k + '-01')
-      return d.toLocaleString('default', { month: 'short' })
-    })
-    if (months.length > 0) months[months.length-1] = 'Now'
-    prices = keys.map(function(k) {
-      var vals = buckets[k]
-      return Math.round(vals.reduce(function(a,b){return a+b},0)/vals.length)
-    })
-    if (titleEl) titleEl.textContent = 'Real Price History — India ₹'
-    var aiLabel = document.querySelector('.phc-lbl span[style]')
-    if (aiLabel) aiLabel.textContent = realData.length + ' community reports'
-  } else {
-    // Estimated trend — clearly labeled
-    isReal = false
-    var vol = {'Super Treasure Hunt':0.22,'Treasure Hunt':0.16,'Vintage':0.18,'Rare':0.12,'Premium':0.10,'Uncommon':0.07,'Common':0.05}[rarity] || 0.08
-    var trendMult = {'Super Treasure Hunt':1.14,'Treasure Hunt':1.09,'Vintage':1.13,'Rare':1.05,'Premium':1.03}[rarity] || 1.01
-    var now = new Date()
-    months = []
-    for (var mi = 7; mi >= 0; mi--) {
-      var d = new Date(now.getFullYear(), now.getMonth() - mi, 1)
-      months.push(d.toLocaleString('default', { month: 'short' }))
-    }
-    months[7] = 'Now'
-    prices = []
-    var p = base / Math.pow(trendMult, 7)
-    // Use deterministic seed based on car name so chart doesn't change on every render
-    var seed = name ? name.split('').reduce(function(a,c){return a+c.charCodeAt(0)},0) : 42
-    for (var i = 0; i < 8; i++) {
-      seed = (seed * 1664525 + 1013904223) & 0xffffffff
-      var rand = (seed >>> 16) / 65535
-      p = p * trendMult * (1 + (rand - 0.5) * vol)
-      prices.push(Math.round(p))
-    }
-    prices[7] = base
-    if (titleEl) titleEl.textContent = 'Estimated Price Trend — India ₹'
-    var aiLbl = document.querySelector('.phc-lbl span[style]')
-    if (aiLbl) aiLbl.textContent = 'AI estimate · no real data yet'
-  }
-
-  var max = Math.max.apply(null, prices)
-  var min = Math.min.apply(null, prices)
-  var range = max - min || 1
+  var buckets = {}
+  rows.forEach(function (r) {
+    var d = new Date(r.created_at)
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+    ;(buckets[key] = buckets[key] || []).push(Number(r.price_inr) || 0)
+  })
+  var keys = Object.keys(buckets).sort().slice(-8)
+  var prices = keys.map(function (k) { var v = buckets[k]; return Math.round(v.reduce(function (a, b) { return a + b }, 0) / v.length) })
+  var max = Math.max.apply(null, prices) || 1
   barsEl.innerHTML = ''
-  prices.forEach(function(v, i) {
-    var h = Math.round(((v-min)/range)*60 + 8)
-    var col = document.createElement('div'); col.className='phc-col'
-    var bar = document.createElement('div')
-    bar.className = 'phc-bar' + (i===prices.length-1?' now':'')
-    if (isReal) bar.style.background = 'var(--green)'
-    bar.style.height = h+'px'
-    var val = document.createElement('div'); val.className='phc-val'
-    val.textContent = v>=1000 ? '₹'+(v/1000).toFixed(1)+'K' : '₹'+v
-    var mo = document.createElement('div'); mo.className='phc-mo'; mo.textContent=months[i]
+  keys.forEach(function (k, i) {
+    var col = document.createElement('div'); col.className = 'phc-col'
+    var val = document.createElement('div'); val.className = 'phc-val'
+    val.textContent = prices[i] >= 1000 ? '₹' + (prices[i] / 1000).toFixed(1) + 'k' : '₹' + prices[i]
+    var bar = document.createElement('div'); bar.className = 'phc-bar' + (i === keys.length - 1 ? ' now' : '')
+    bar.style.height = Math.max(Math.round(prices[i] / max * 52), 4) + 'px'
+    var mo = document.createElement('div'); mo.className = 'phc-mo'
+    mo.textContent = new Date(k + '-01').toLocaleString('en-IN', { month: 'short' })
     col.appendChild(val); col.appendChild(bar); col.appendChild(mo)
     barsEl.appendChild(col)
   })
-  var chg = prices[prices.length-1] - prices[0]
-  var chgPct = Math.round(chg/prices[0]*100)
-  footerEl.innerHTML = '<span style="color:'+(chg>=0?'var(--green)':'#ff6b6b')+';font-weight:700">'+(chg>=0?'↑':'↓')+Math.abs(chgPct)+'%</span><span style="color:var(--text3);font-size:11px;margin-left:4px">'+(isReal?'based on '+realData.length+' real reports':'estimated · submit your price above to improve'  )+'</span>'
+  var titleEl = document.getElementById('phc-title'); if (titleEl) titleEl.textContent = 'Reported prices by month'
+  var pill = document.querySelector('#phc .pill'); if (pill) pill.textContent = rows.length + ' reports'
+  if (footerEl) footerEl.textContent = 'Monthly average of prices reported by collectors. Unverified.'
   section.style.display = 'block'
 }
 
@@ -1484,27 +1424,15 @@ export function shareViaWA() {
   window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')), '_blank')
 }
 
-// ── Alert check ── shows watch links, no fake simulated data
+// ── Watchlist reminder ──
+// Once per watched car, a nudge that its searches are one tap away. This used to
+// overwrite #err-box's inline styles, so every later scan error rendered as a
+// gold "deal" banner.
 export function runAlertCheck() {
-  if (!state.alerts || !state.alerts.length) return
-  // Only show alert UI if user has alerts set — no fake price simulation
-  var a = state.alerts[0]
-  if (!a) return
-  var box = document.getElementById('err-box')
-  if (box && box.style.display === 'none') {
-    // Only show once per session, not repeatedly
-    if (localStorage.getItem('hs_alert_shown_' + a.id)) return
-    localStorage.setItem('hs_alert_shown_' + a.id, '1')
-    box.textContent = ''
-    var msg = document.createTextNode('🔔 Watching for ' + a.name + ' deals — ')
-    var btn = document.createElement('button')
-    btn.textContent = 'Check OLX now →'
-    btn.style.cssText = 'background:var(--gold);color:#000;border:none;padding:3px 9px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;margin-left:4px'
-    btn.onclick = (function(n){ return function(){ ol('https://www.olx.in/items/q-hot+wheels+'+encodeURIComponent(n)) }})(a.name)
-    box.appendChild(msg); box.appendChild(btn)
-    box.style.cssText='display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold);border-radius:12px;padding:12px;margin-bottom:11px;font-size:13px;line-height:1.6'
-    setTimeout(function(){ if(box) box.style.display='none' }, 8000)
-  }
+  var a = state.alerts && state.alerts[0]
+  if (!a || localStorage.getItem('hs_alert_shown_' + a.id)) return
+  localStorage.setItem('hs_alert_shown_' + a.id, '1')
+  showToast('Still watching for ' + a.name + '. Open Watchlist to search OLX.', 'info', 4500)
 }
 
 // ── Misc ──
@@ -1533,6 +1461,8 @@ export function resetScan() {
   document.getElementById('deal-result').style.display = 'none'
   document.getElementById('err-box').style.display = 'none'
   try { document.getElementById('r-insight').style.display = 'none' } catch(e) {}
+  var _fb = document.getElementById('scan-feedback'); if (_fb) _fb.style.display = 'none'
+  var _tp = document.getElementById('scan-tips-card'); if (_tp && state.currentMode !== 'fake') _tp.style.display = ''
   try { document.getElementById('price-submit').style.display = 'none' } catch(e) {}
   document.getElementById('fc').value = ''
   document.getElementById('fg').value = ''
@@ -1541,15 +1471,17 @@ export function resetScan() {
   window.scrollTo({top:0, behavior:'smooth'})
 }
 
-export function updateStreak() {
+// displayOnly: paint the header chip from storage without counting today.
+export function updateStreak(displayOnly) {
   var today = new Date().toDateString()
   var yesterday = new Date(Date.now() - 86400000).toDateString()
   var streak = JSON.parse(localStorage.getItem('hs_streak') || '{"count":0,"last":""}')
-  if (streak.last === today) {}
+  if (displayOnly === true) { if (streak.last !== today && streak.last !== yesterday) streak.count = 0 }
+  else if (streak.last === today) {}
   else if (streak.last === yesterday) { streak = { count: streak.count + 1, last: today }; localStorage.setItem('hs_streak', JSON.stringify(streak)) }
   else { streak = { count: 1, last: today }; localStorage.setItem('hs_streak', JSON.stringify(streak)) }
   var el = document.getElementById('hdr-streak')
-  if (el && streak.count >= 2) { el.textContent = '🔥 ' + streak.count + ' day streak'; el.style.display = 'inline-flex' }
+  if (el && streak.count >= 2) { el.textContent = streak.count + '-day streak'; el.style.display = 'inline-flex' }
   else if (el) { el.style.display = 'none' }
   return streak.count
 }

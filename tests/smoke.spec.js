@@ -53,4 +53,46 @@ test.describe('Hotscan basic smoke test', () => {
     await page.waitForTimeout(1500)
     expect(errors, 'Uncaught JS errors on page load: ' + errors.join('; ')).toEqual([])
   })
+
+  test('every page renders without errors and shows its heading', async ({ page }) => {
+    var errors = []
+    page.on('pageerror', (err) => errors.push(err.message))
+    await page.goto('/')
+    for (var id of ['collection', 'marketplace', 'market', 'guide', 'hunt', 'alerts', 'profile', 'more', 'scan']) {
+      await page.evaluate((p) => window.goPage(p), id)
+      await expect(page.locator('#page-' + id)).toBeVisible()
+    }
+    expect(errors).toEqual([])
+  })
+
+  test('collection shows value, gain/loss and opens car details', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('hs_col', JSON.stringify([
+        { id: 1, name: 'Bone Shaker', rarity: 'Super Treasure Hunt', india_collector_inr: '6000-9000', paid: 5000 },
+        { id: 2, name: 'Bone Shaker', rarity: 'Common', india_collector_inr: '200-300' },
+      ]))
+    })
+    await page.goto('/#collection')
+    await expect(page.locator('#page-collection')).toBeVisible()
+    await expect(page.locator('#val-total')).toHaveText('₹6,200')
+    await expect(page.locator('#val-pl')).toContainText('+₹1,000')
+    await expect(page.locator('.car-row')).toHaveCount(2)
+    await expect(page.locator('.car-row').first()).toContainText('×2 owned')
+    await page.locator('.car-row').first().click()
+    await expect(page.locator('#col-edit-modal')).toBeVisible()
+    await expect(page.locator('#col-edit-paid')).toHaveValue('5000')
+  })
+
+  test('wishlist item moves into the collection', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => {
+      window.state.lastResult = { name: 'Twin Mill', rarity: 'Treasure Hunt', india_collector_inr: '1000-2000' }
+      window.addToWantList()
+      window.goPage('collection'); window.setColTab('want')
+    })
+    await expect(page.locator('#want-count')).toHaveText('1')
+    await page.getByText('Found it').click()
+    await expect(page.locator('#want-count')).toHaveText('')
+    expect(await page.evaluate(() => window.state.collection.length)).toBe(1)
+  })
 })
