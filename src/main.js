@@ -1,3 +1,5 @@
+import '@fontsource-variable/bricolage-grotesque/wght.css'
+import '@fontsource-variable/schibsted-grotesk/wght.css'
 import './style.css'
 import * as Sentry from '@sentry/browser'
 import { state } from './state.js'
@@ -12,7 +14,7 @@ import {
 import {
   addToCol, delFromCol, sCol, fCol, searchCol, renderCol, exportVal,
   addCarToCollection, fullCloudSync, editColItem, saveColEdit, closeColEdit,
-  setColView, setColTab
+  setColView, setColTab, shareSaleList
 } from './collection.js'
 import {
   mpMode, mpFilter, loadAndRenderListings, deleteListing, submitListing,
@@ -37,7 +39,7 @@ import {
   runAlertCheck, handleUpgrade, whatsappSupport, updateStreak, shareCollection,
   startTimer, stopTimer, setStep, resetSteps, runAnalyze, showResult, loadCommunityPrices,
   saveToHist, clearScanHistory, exportCollectionCSV, resetAchievements,
-  addToWantList, removeFromWantList, renderWantList, moveWantToCollection, renderRecentScans
+  addToWantList, removeFromWantList, renderWantList, moveWantToCollection, renderRecentScans, shareWantList
 } from './ui.js'
 import {
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
@@ -82,7 +84,7 @@ Object.assign(window, {
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
   addToCol, delFromCol, sCol, fCol, exportVal, addCarToCollection,
   fullCloudSync, renderCol, setColView, setColTab, editColItem, saveColEdit, closeColEdit,
-  addToWantList, removeFromWantList, renderWantList, moveWantToCollection,
+  addToWantList, removeFromWantList, renderWantList, moveWantToCollection, shareWantList, shareSaleList,
   clearScanHistory, exportCollectionCSV, resetAchievements, resetFakeChecklist,
   submitPrice, addAlert, delAlert, clearAlerts, renderAlerts,
   showShare, closeShare, shareWA, shareNative, shareApp, shareResultToGroup,

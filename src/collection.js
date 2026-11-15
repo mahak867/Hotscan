@@ -157,6 +157,9 @@ export function editColItem(id) {
   document.getElementById('col-edit-price').value = cleanINR(item.india_collector_inr) || ''
   document.getElementById('col-edit-paid').value = item.paid != null ? item.paid : ''
   document.getElementById('col-edit-notes').value = item.notes || ''
+  document.getElementById('col-edit-source').value = item.source || ''
+  document.getElementById('col-edit-forsale').checked = !!item.forSale
+  document.getElementById('col-edit-ask').value = item.ask != null ? item.ask : ''
   var facts = [['Series', item.series], ['Colour', item.color], ['Casting year', item.casting_year], ['Wheels', item.wheel_type], ['Tampo', item.tampo], ['India retail', item.india_retail_inr ? '₹' + cleanINR(item.india_retail_inr) : '']]
     .filter(function (f) { return f[1] })
   document.getElementById('col-edit-facts').innerHTML =
@@ -178,12 +181,18 @@ export async function saveColEdit() {
   var priceChanged = priceRaw !== (cleanINR(item.india_collector_inr) || '')
   if (priceChanged && priceRaw && !/^\d+(\s*-\s*\d+)?$/.test(priceRaw)) { showToast('Enter a price like 450 or 400-600', 'error'); return }
   if (paidRaw && !okNum(paidRaw)) { showToast('Enter what you paid as a number', 'error'); return }
+  var askRaw = document.getElementById('col-edit-ask').value.trim()
+  if (askRaw && !okNum(askRaw)) { showToast('Enter your asking price as a number', 'error'); return }
   item.name = document.getElementById('col-edit-name').value.trim() || item.name
   item.rarity = document.getElementById('col-edit-rarity').value || item.rarity
   item.condition = document.getElementById('col-edit-condition').value || item.condition
   if (priceChanged && priceRaw) item.india_collector_inr = priceRaw.replace(/\s+/g, '')
   if (paidRaw) item.paid = Math.round(Number(paidRaw)); else delete item.paid
   item.notes = document.getElementById('col-edit-notes').value || ''
+  var src = document.getElementById('col-edit-source').value
+  if (src) item.source = src; else delete item.source
+  if (document.getElementById('col-edit-forsale').checked) { item.forSale = true; if (askRaw) item.ask = Math.round(Number(askRaw)); else delete item.ask }
+  else { delete item.forSale; delete item.ask }
   // Local first, so the edit survives a reload whatever the network does.
   persistCollection()
   closeColEdit()
@@ -231,7 +240,10 @@ function createEditModal() {
         '<div><label class="field-label" for="col-edit-price">Value now</label><div class="inp-affix"><span>₹</span><input class="inp" id="col-edit-price" type="text" inputmode="numeric" placeholder="450"></div></div>' +
         '<div><label class="field-label" for="col-edit-paid">You paid</label><div class="inp-affix"><span>₹</span><input class="inp" id="col-edit-paid" type="number" inputmode="numeric" placeholder="179"></div></div>' +
       '</div>' +
-      '<p class="hint">What you paid, condition and notes are saved on this device.</p>' +
+      '<label class="field-label" for="col-edit-source">Bought from</label><select class="inp" id="col-edit-source"><option value="">Not recorded</option>' + opts(['Retail store','Quick commerce','Amazon / Flipkart','Instagram seller','WhatsApp group','OLX','Swap meet','Import','Gift or trade']) + '</select>' +
+      '<div class="row between setting-row"><div><div class="setting-t">For sale or trade</div><div class="hint">Adds it to your WhatsApp sale list</div></div><label class="hs-switch"><input type="checkbox" id="col-edit-forsale"><span class="hs-switch-track"></span></label></div>' +
+      '<label class="field-label" for="col-edit-ask">Asking price</label><div class="inp-affix"><span>₹</span><input class="inp" id="col-edit-ask" type="number" inputmode="numeric" placeholder="Leave empty for “DM for price”"></div>' +
+      '<p class="hint">Price paid, source, sale status, condition and notes are saved on this device.</p>' +
       '<label class="field-label" for="col-edit-notes">Notes</label><textarea class="inp" id="col-edit-notes" rows="2" placeholder="Where you found it, card condition"></textarea>' +
       '<button class="btn btn-primary btn-lg btn-block" id="cem-save">Save</button>' +
       '<button class="btn btn-danger btn-block" id="cem-del">Remove from collection</button>' +
@@ -311,6 +323,24 @@ export function setColTab(tab) {
   if (want && window.renderWantList) window.renderWantList()
 }
 
+// The message Indian sellers post in WhatsApp groups and Instagram stories:
+// a numbered list with condition and price. Built from cars marked for sale.
+export function shareSaleList() {
+  var cars = state.collection.filter(function (c) { return c.forSale })
+  if (!cars.length) { showToast('Open a car and switch on “For sale or trade” to build a sale list', 'info', 4500); return }
+  var short = { 'Super Treasure Hunt': 'STH', 'Treasure Hunt': 'TH' }
+  var text = '*Hot Wheels for sale* (' + cars.length + ')\n' +
+    cars.map(function (c, i) {
+      var bits = [c.name + (short[c.rarity] ? ' ' + short[c.rarity] : '')]
+      if (c.color) bits.push(c.color)
+      if (c.condition) bits.push(c.condition)
+      bits.push(c.ask != null ? _inr(c.ask) : 'DM for price')
+      return (i + 1) + '. ' + bits.join(' · ')
+    }).join('\n') +
+    '\n\nShipping extra. Timestamp photos on request.\nList made with HotScan · hotscan.in'
+  if (window.shareText) window.shareText(text)
+}
+
 var TIER_ORDER = ['Super Treasure Hunt','Treasure Hunt','Error Car','Vintage','Premium','Rare','Uncommon','Common']
 var TIER_COLOR = {
   'super treasure hunt': '#ff6a3d', 'treasure hunt': '#f7c948', 'error car': '#b69cff', 'vintage': '#f7c948',
@@ -344,10 +374,11 @@ export function renderCol() {
   var q = (state.searchQuery || '').trim().toLowerCase()
   if (q) {
     items = items.filter(function (c) {
-      return [c.name, c.series, c.rarity, c.color, c.casting_year, c.notes].some(function (f) { return String(f || '').toLowerCase().includes(q) })
+      return [c.name, c.series, c.rarity, c.color, c.casting_year, c.notes, c.source].some(function (f) { return String(f || '').toLowerCase().includes(q) })
     })
   }
-  if (state.filterBy !== 'all') items = items.filter(function (c) { return (c.rarity || '').toLowerCase().includes(state.filterBy.toLowerCase()) })
+  if (state.filterBy === 'forsale') items = items.filter(function (c) { return c.forSale })
+  else if (state.filterBy !== 'all') items = items.filter(function (c) { return (c.rarity || '').toLowerCase().includes(state.filterBy.toLowerCase()) })
   if (state.sortBy === 'value') items.sort(function (a, b) { return parseINR(b.india_collector_inr) - parseINR(a.india_collector_inr) })
   else if (state.sortBy === 'name' || state.sortBy === 'casting') items.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') })
   else if (state.sortBy === 'rarity') items.sort(function (a, b) { return TIER_ORDER.indexOf(a.rarity || 'Common') - TIER_ORDER.indexOf(b.rarity || 'Common') })
@@ -379,6 +410,18 @@ export function renderCol() {
       plEl.textContent = (diff >= 0 ? '+' : '−') + _inr(Math.abs(diff)) + (paid ? ' (' + (diff >= 0 ? '+' : '−') + Math.abs(Math.round(diff / paid * 100)) + '%)' : '') +
         ' on ' + paidCount + (paidCount === total ? '' : ' of ' + total) + ' car' + (paidCount === 1 ? '' : 's') + ' with a purchase price'
     }
+  }
+
+  // Spend, total and this calendar month — a hobby budget is the number most
+  // collectors actually have to answer for.
+  var spendEl = document.getElementById('val-spend')
+  if (spendEl) {
+    var nowD = new Date(), monthSpend = 0
+    all.forEach(function (c) {
+      var ad = c.added ? new Date(c.added) : null
+      if (c.paid != null && ad && ad.getFullYear() === nowD.getFullYear() && ad.getMonth() === nowD.getMonth()) monthSpend += c.paid
+    })
+    spendEl.textContent = paidCount ? 'Spent ' + _inr(paid) + ' in total · ' + _inr(monthSpend) + ' in ' + nowD.toLocaleString('en-IN', { month: 'long' }) : ''
   }
 
   // Value history: one bar per month that has a real snapshot. Months without
@@ -456,7 +499,8 @@ export function renderCol() {
         '<div class="car-meta">' + (meta(c) || '&nbsp;') + '</div>' +
         '<div class="car-tags"><span class="rar ' + rcls(c.rarity) + '">' + escHtml(c.rarity || 'Common') + '</span>' +
           (n > 1 ? '<span class="car-qty">×' + n + ' owned</span>' : '') +
-          (c.condition ? '<span class="car-qty">' + escHtml(c.condition) + '</span>' : '') + '</div>' +
+          (c.condition ? '<span class="car-qty">' + escHtml(c.condition) + '</span>' : '') +
+          (c.forSale ? '<span class="car-sale">For sale' + (c.ask != null ? ' ' + _inr(c.ask) : '') + '</span>' : '') + '</div>' +
       '</div>' +
       '<div class="car-side">' + (c.india_collector_inr ? '<div class="car-price">' + escHtml(fmtINR(c.india_collector_inr)) + '</div>' : '') + _plHtml(c) + '</div>'
     return d
@@ -731,6 +775,8 @@ async function _doFullCloudSync(retryCount) {
       if (_loc.condition) cloudItems[_ci].condition = _loc.condition
       if (_loc.notes) cloudItems[_ci].notes = _loc.notes
       if (_loc.paid != null) cloudItems[_ci].paid = _loc.paid
+      if (_loc.source) cloudItems[_ci].source = _loc.source
+      if (_loc.forSale) { cloudItems[_ci].forSale = true; cloudItems[_ci].ask = _loc.ask }
       if (_loc._dirty) {
         var _merged = Object.assign({}, cloudItems[_ci], _loc)
         var _saved = null

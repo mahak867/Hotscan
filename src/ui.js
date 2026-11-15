@@ -477,6 +477,14 @@ export function showResult(d) {
     _dqEl.textContent = 'Updated just now · ' + d.data_quality + _src
     _dqEl.style.color = ''
   }
+  // How far above shelf price the collector market sits. Indian resale is
+  // usually quoted as a multiple of MRP, so say it in those terms.
+  var multEl = document.getElementById('r-mult')
+  if (multEl) {
+    var _ret = parseINR(d.india_retail_inr), _col = parseINR(d.india_collector_inr)
+    var _x = _ret > 0 ? _col / _ret : 0
+    multEl.textContent = _x >= 1.5 ? 'About ' + (_x >= 10 ? Math.round(_x) : _x.toFixed(1).replace(/\.0$/, '')) + '× retail' : ''
+  }
   // #4 — pop animation on price tiles
   document.querySelectorAll('.ptile').forEach(function(tile, i) {
     tile.classList.remove('pop')
@@ -639,6 +647,23 @@ export function moveWantToCollection(id) {
   removeFromWantList(id, true)
   showToast(w.name + ' moved to your collection', 'success')
 }
+
+// Collectors post "ISO" (in search of) lists in groups; this writes one.
+export function shareWantList() {
+  var wl = _readWant()
+  if (!wl.length) { showToast('Your wishlist is empty', 'info'); return }
+  var text = '*ISO — looking for these Hot Wheels*\n' +
+    wl.map(function (w, i) { return (i + 1) + '. ' + w.name + (w.rarity && w.rarity !== 'Common' ? ' (' + w.rarity + ')' : '') }).join('\n') +
+    '\n\nDM me if you have any. List made with HotScan · hotscan.in'
+  shareText(text)
+}
+
+// Native share sheet where there is one, WhatsApp otherwise.
+export function shareText(text) {
+  if (navigator.share) { navigator.share({ text: text }).catch(function () {}); return }
+  ol('https://wa.me/?text=' + encodeURIComponent(text))
+}
+if (typeof window !== 'undefined') window.shareText = shareText
 
 // A car added to the collection by any route comes off the wishlist, so the
 // list never keeps asking for something already found.

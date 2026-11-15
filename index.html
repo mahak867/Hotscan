@@ -242,6 +242,7 @@
       <div class="r-primary-lbl">Indian collector price</div>
       <div class="r-primary-val pinr" id="p2">—</div>
       <div class="live-upd" id="live-upd"></div>
+      <div class="r-mult" id="r-mult"></div>
     </div>
     <div class="price-grid">
       <div class="ptile"><div class="ptile-lbl">India retail</div><div class="ptile-val" id="p1">—</div><div class="ptile-sub">MRP at stores</div></div>
@@ -329,6 +330,7 @@
     <div class="val-lbl">Estimated collection value</div>
     <div class="val-total" id="val-total">₹0</div>
     <div class="val-pl" id="val-pl"></div>
+    <div class="val-spend" id="val-spend"></div>
     <div id="val-sparkline" class="val-sparkline"></div>
     <div class="val-breakdown">
       <div class="val-tile"><div class="val-tile-n" id="v-cars">0</div><div class="val-tile-l">Cars</div></div>
@@ -340,6 +342,7 @@
     <div class="row gap-8 val-actions">
       <button class="btn btn-ghost btn-sm" onclick="exportVal()"><svg class="ic"><use href="#i-doc"/></svg>Certificate</button>
       <button class="btn btn-ghost btn-sm" onclick="exportCollectionCSV()"><svg class="ic"><use href="#i-download"/></svg>CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="shareSaleList()"><svg class="ic"><use href="#i-chat"/></svg>Sale list</button>
       <button class="btn btn-ghost btn-sm" onclick="shareCollection()"><svg class="ic"><use href="#i-share"/></svg>Share</button>
     </div>
   </div>
@@ -356,7 +359,7 @@
       <input id="col-search" type="search" placeholder="Search name, series, colour or year" autocomplete="off">
     </div>
     <div class="chips" id="sc"><button class="chip active" onclick="sCol('date',this)">Latest</button><button class="chip" onclick="sCol('value',this)">Highest value</button><button class="chip" onclick="sCol('rarity',this)">By rarity</button><button class="chip" onclick="sCol('casting',this)">By casting</button><button class="chip" onclick="sCol('name',this)">A–Z</button></div>
-    <div class="chips" id="fc2"><button class="chip active" onclick="fCol('all',this)">All</button><button class="chip" onclick="fCol('Common',this)">Common</button><button class="chip" onclick="fCol('Uncommon',this)">Uncommon</button><button class="chip" onclick="fCol('Rare',this)">Rare</button><button class="chip" onclick="fCol('Treasure',this)">TH</button><button class="chip" onclick="fCol('Super',this)">STH</button><button class="chip" onclick="fCol('Premium',this)">Premium</button><button class="chip" onclick="fCol('Vintage',this)">Vintage</button></div>
+    <div class="chips" id="fc2"><button class="chip active" onclick="fCol('all',this)">All</button><button class="chip" onclick="fCol('Common',this)">Common</button><button class="chip" onclick="fCol('Uncommon',this)">Uncommon</button><button class="chip" onclick="fCol('Rare',this)">Rare</button><button class="chip" onclick="fCol('Treasure',this)">TH</button><button class="chip" onclick="fCol('Super',this)">STH</button><button class="chip" onclick="fCol('Premium',this)">Premium</button><button class="chip" onclick="fCol('Vintage',this)">Vintage</button><button class="chip" onclick="fCol('forsale',this)">For sale</button></div>
     <div class="col-bar">
       <div id="col-count" class="muted small"></div>
       <div class="col-viewtog" role="group" aria-label="Collection view">
@@ -367,6 +370,7 @@
     <div id="col-list"></div>
   </div>
   <div id="col-want" hidden>
+    <div class="want-actions"><button class="btn btn-ghost btn-sm" onclick="shareWantList()"><svg class="ic"><use href="#i-chat"/></svg>Share as ISO list</button></div>
     <div id="want-list"></div>
   </div>
 </section>
@@ -515,6 +519,20 @@
     <div id="fake-checklist" class="checklist"></div>
     <div class="checklist-foot"><span id="fake-check-score" class="muted small"></span><button class="link-btn" onclick="resetFakeChecklist()">Reset</button></div>
     <button class="btn btn-ghost btn-block" onclick="goPage('scan');setMode('fake')"><svg class="ic"><use href="#i-camera"/></svg>Run a base photo through Fake check</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><svg class="ic"><use href="#i-chat"/></svg>Buying on Instagram or WhatsApp</div>
+    <p class="muted small">Most collector trades in India happen in DMs and groups, paid by UPI. A UPI transfer cannot be reversed the way a card payment can, so the checking has to happen before you pay.</p>
+    <ol class="steps">
+      <li><b>Ask for a timestamp photo.</b> The car next to a handwritten note with today's date and the seller's username. It proves they hold the car right now.</li>
+      <li><b>Ask for the base and the card back.</b> Run the base photo through Fake check, and compare the card with the checklist above.</li>
+      <li><b>Look at the seller's history.</b> Older posts, tagged buyers, and vouches in a group you both belong to. A new account with stock photos is a no.</li>
+      <li><b>Agree the total up front.</b> Price, courier charge, and who pays if it is damaged in transit. Carded cars should ship in a box, not a cover.</li>
+      <li><b>Prefer meeting or cash on delivery for costly cars.</b> For a Super or a vintage piece, a public meet-up beats an advance transfer to a stranger.</li>
+      <li><b>Record an unboxing video</b> in one take from sealed parcel to car. It is the only evidence either side has if something is wrong.</li>
+    </ol>
+    <button class="btn btn-ghost btn-block" onclick="goPage('scan');setMode('deal')"><svg class="ic"><use href="#i-tag"/></svg>Check an asking price</button>
   </div>
 
   <div class="card">

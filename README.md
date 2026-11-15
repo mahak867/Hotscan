@@ -21,14 +21,20 @@ flag likely fakes before money changes hands.
 | **Fake detector** | Authenticity check driven by base markings, with an explicit no-verdict path |
 | **Deal check** | Enter an asking price and get a verdict on whether it is fair |
 | **Collection** | Cloud-synced, with valuation, gain/loss against what you paid, duplicate markers and group-by-casting |
-| **Wishlist** | Cars you are hunting; one tap moves a found car into the collection |
+| **Wishlist** | Cars you are hunting; one tap moves a found car into the collection, or share it as an ISO list |
+| **Sale list** | Mark cars for sale and share a WhatsApp-formatted list with condition and asking price |
+| **Spend tracking** | Price paid and source per car, total and monthly spend, gain or loss |
 | **Spotter's guide** | TH vs STH tells, an interactive fake-spotting checklist, condition grades |
 | **Marketplace** | Listings with seller reputation, ratings and gated contact details |
 
 ## Stack
 
 - **Frontend** — vanilla JavaScript (ES modules) built with Vite. No framework and no
-  runtime dependency beyond Sentry; ships as a single ~207 KB gzipped bundle.
+  runtime dependency beyond Sentry. Fonts (Bricolage Grotesque, Schibsted Grotesk) are
+  self-hosted through the bundle because the CSP allows no font CDN.
+- **Static files** — anything that must exist at a fixed URL (`manifest.json`, `sw.js`,
+  icons, `robots.txt`) lives in `public/`. Extra HTML pages are listed in
+  `vite.config.js`. Files left in the repo root are not deployed.
 - **Backend** — Vercel serverless functions in `api/`. Groq is proxied server-side so
   keys never reach the client. The proxy round-robins a key pool, enforces per-IP
   limits, and records scans for quota enforcement.

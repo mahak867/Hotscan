@@ -95,4 +95,29 @@ test.describe('Hotscan basic smoke test', () => {
     await expect(page.locator('#want-count')).toHaveText('')
     expect(await page.evaluate(() => window.state.collection.length)).toBe(1)
   })
+
+  // These all returned 404 in production: the build only emitted index.html, so
+  // the PWA manifest, service worker, icons, legal pages and the password-reset
+  // page that reset emails link to did not exist on the live site.
+  test('static assets and standalone pages are served', async ({ request }) => {
+    for (var path of ['/manifest.json', '/sw.js', '/icon-192.png', '/robots.txt', '/privacy.html', '/terms.html', '/reset-password.html']) {
+      var res = await request.get(path)
+      expect(res.status(), path).toBe(200)
+    }
+    expect((await request.get('/manifest.json')).headers()['content-type']).toContain('json')
+  })
+
+  test('sale list is built from cars marked for sale', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('hs_col', JSON.stringify([
+        { id: 1, name: 'Bone Shaker', rarity: 'Super Treasure Hunt', india_collector_inr: '6000-9000', forSale: true, ask: 8000, condition: 'Mint on Card' },
+        { id: 2, name: 'Twin Mill', rarity: 'Common', india_collector_inr: '200-300' },
+      ]))
+    })
+    await page.goto('/#collection')
+    var text = await page.evaluate(() => new Promise((resolve) => { window.shareText = resolve; window.shareSaleList() }))
+    expect(text).toContain('1. Bone Shaker STH · Mint on Card · ₹8,000')
+    expect(text).not.toContain('Twin Mill')
+    await expect(page.locator('.car-sale')).toHaveText('For sale ₹8,000')
+  })
 })
