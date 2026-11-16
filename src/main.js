@@ -39,7 +39,7 @@ import {
   runAlertCheck, handleUpgrade, whatsappSupport, updateStreak, shareCollection,
   startTimer, stopTimer, setStep, resetSteps, runAnalyze, showResult, loadCommunityPrices,
   saveToHist, clearScanHistory, exportCollectionCSV, resetAchievements,
-  addToWantList, removeFromWantList, renderWantList, moveWantToCollection, renderRecentScans, shareWantList
+  addToWantList, removeFromWantList, renderWantList, moveWantToCollection, renderRecentScans, shareWantList, moveDockIndicator
 } from './ui.js'
 import {
   analyzePhoto, analyzeDeal, analyzeFake, scanBarcode,
@@ -216,6 +216,7 @@ window.addEventListener('load', function () {
 
   var start = pageFromHash()
   if (start && start !== 'scan') goPage(start, true)
+  moveDockIndicator()
 
   if (!localStorage.getItem('hs_onboarded')) {
     var ob = document.getElementById('hs-onboard')

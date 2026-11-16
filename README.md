@@ -43,10 +43,30 @@ flag likely fakes before money changes hands.
 - **Native** — Capacitor wraps the same build for Android and iOS.
 - **Monitoring** — Sentry for errors, Plausible for analytics.
 
+## How a scan is priced
+
+All pricing rules live in `shared/pricing.js`, imported by both the app and `api/prices.js`
+and covered by `tests/pricing.spec.js`.
+
+1. The vision model identifies the car. It is not asked for prices.
+2. Rarity is settled from evidence: Premium needs rubber Real Riders or a premium series
+   card. The brand never decides it.
+3. Price sources, strongest first: community reports that fit the rarity (3 or more,
+   outliers dropped), live Indian listings from a grounded web search, the built-in
+   reference table (matched on name and rarity), then the typical range for the rarity.
+4. `reconcile()` makes the result coherent: shelf price follows the MRP rules (Treasure
+   Hunts sell at mainline MRP), and a collector price outside the rarity's limits is
+   pulled back and labelled as adjusted.
+5. The result card states which source was used and lets the collector set condition,
+   which re-prices from the carded-mint figure.
+
+Update `MAINLINE_MRP` and `BANDS` in that file when Mattel India revises prices.
+
 ## Repository layout
 
 ```
 api/                      Serverless functions (Groq proxy, prices, Razorpay webhook)
+shared/pricing.js         Pricing rules used by both the app and the price endpoint
 src/
   scanner.js              Vision calls; all four scan modes
   collection.js           Collection state, cloud sync, valuation

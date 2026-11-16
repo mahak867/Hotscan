@@ -469,7 +469,9 @@ export function renderCol() {
     return
   }
   list.innerHTML = ''
-  list.className = isGrid ? 'col-grid' : ''
+  // Rows rise in on arriving at the page, not on every keystroke of a search.
+  list.className = (isGrid ? 'col-grid' : '') + (window._colStagger ? ' stagger' : '')
+  window._colStagger = false
   if (!items.length) {
     list.className = ''
     list.innerHTML = '<div class="empty"><div class="empty-t">No matches</div><div class="empty-s">' + (q ? 'Nothing matches “' + escHtml(q) + '”.' : 'No cars in this rarity tier.') + '</div></div>'

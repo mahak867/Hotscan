@@ -20,14 +20,15 @@ test.describe('Hotscan basic smoke test', () => {
     await expect(page.locator('#page-scan')).toBeVisible()
   })
 
-  test('sidebar navigation is present (desktop only)', async ({ page }) => {
-    // .hs-sidebar is `display:none` below 768px by design (see style.css) —
-    // mobile doesn't have a sidebar at all, so this assertion only makes
-    // sense on a desktop-sized viewport.
-    test.skip(page.viewportSize()?.width < 768, 'Sidebar is desktop-only by design')
+  test('floating dock navigates and marks the current page', async ({ page }) => {
     await page.goto('/')
-    await expect(page.locator('#hs-sidebar')).toBeVisible()
-    await expect(page.locator('#sb-collection')).toBeVisible()
+    await expect(page.locator('#dock')).toBeVisible()
+    await page.locator('#nav-collection').click()
+    await expect(page.locator('#page-collection')).toBeVisible()
+    await expect(page.locator('#nav-collection')).toHaveAttribute('aria-current', 'page')
+    await expect(page.locator('#dock-ind')).toHaveClass(/on/)
+    await page.locator('#nav-scan').click()
+    await expect(page.locator('#page-scan')).toBeVisible()
   })
 
   test('sign-in flow opens without error', async ({ page }) => {

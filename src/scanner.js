@@ -4,26 +4,39 @@ import { VISION_MODEL, VISION_FALLBACK, CODEX_MODEL, HAIKU_MODEL } from './confi
 import { groqVision, groqJSON, parseJSON, proxyHeaders, sessionHeaders } from './groq.js'
 import { escHtml, cleanINR, parseINR, rcls, showToast } from './utils.js'
 import { addCarToCollection } from './collection.js'
+import { MAINLINE_MRP, BANDS, settleRarity, reconcile, typicalCollector, retailFor, bandFor, conditionFromScan } from '../shared/pricing.js'
 
-// Override rarity for known Premium castings the AI misclassifies
-function applyKnownPremiumOverrides(d) {
-  d = Object.assign({}, d);
-  var n = d.name.toLowerCase();
-  var premiumCastings = [
-    'mclaren','bugatti','ferrari','porsche','lamborghini',
-    'formula 1','f1 team','koenigsegg','pagani','aston martin',
-    'maserati','nascar','mercedes amg','red bull racing',
-    'alpine f1','haas f1','williams f1','alfa romeo f1'
-  ];
-  var isPremium = premiumCastings.some(function(k){ return n.includes(k); });
-  if (isPremium) {
-    d.rarity = 'Premium';
-    d.rarity_reason = 'Known Premium casting — always Premium line regardless of packaging';
-    d.india_retail_inr = '800-1500';
-    d.india_collector_inr = '1500-3500';
-    d.us_retail_usd = '4.99';
+// Settle a car's rarity from the evidence on it, before it is priced.
+// This replaces applyKnownPremiumOverrides, which relabelled every car with
+// Porsche, Ferrari, Lamborghini, McLaren, Bugatti (and more) in its name as
+// Premium and then overwrote whatever price had been found with ₹1,500-3,500 —
+// including live and community prices. Those brands are some of the most common
+// ₹169 mainline castings in India, so the commonest scans were the most wrong.
+function prepareCar(car) {
+  var settled = settleRarity(car)
+  if (settled !== car.rarity) {
+    car = Object.assign({}, car, {
+      rarity: settled,
+      rarity_reason: settled === 'Premium'
+        ? 'Rubber Real Riders tyres or a premium series card are visible.'
+        : 'No rubber tyres or premium card visible, so this is priced as the mainline release.'
+    })
   }
-  return d;
+  return car
+}
+
+// Merge a car with its price data and make the pair coherent: shelf price from
+// the MRP rules, collector price inside what is plausible for the rarity.
+function finalizeCar(car, priceData) {
+  var merged = Object.assign({}, car, priceData || {})
+  var fit = reconcile(merged, merged)
+  merged.india_retail_inr = fit.india_retail_inr
+  merged.india_collector_inr = fit.india_collector_inr
+  if (fit.estimated || !merged.data_quality) merged.data_quality = 'Typical range for this rarity'
+  // Kept so the result card can re-price for a different condition.
+  merged._carded_inr = fit.india_collector_inr
+  merged._condition = conditionFromScan(car.condition)
+  return merged
 }
 
 async function identifyCar(imageData) {
@@ -34,9 +47,9 @@ async function identifyCar(imageData) {
     'RULE 1: casting_year MUST come from the verified list below — else return \"Unknown\"',
     'RULE 2: fun_fact must be 100% certain — else write: \"A popular Hot Wheels die-cast casting.\"',
     'RULE 3: Default rarity = Common. Only upgrade with VISIBLE physical proof.',
-    'RULE 6: PREMIUM LINE DETECTION — If you see Real Riders rubber tires, metal/metal body, display plinth, or foil/premium packaging → rarity = Premium, india_retail_inr = 800-1500, NOT 150-200.',
-    'RULE 7: KNOWN PREMIUM CASTINGS — always rarity=Premium, india_retail_inr=800-1500 even loose unboxed: McLaren F1, Bugatti Chiron, any Ferrari, any Porsche, any Lamborghini, any Formula 1 car, Koenigsegg, Pagani, Aston Martin, Maserati, any NASCAR. NEVER price these as Common.',
-    'RULE 4: series = Unknown if you cannot read it clearly on card/base. BUT if you can identify the car name, infer the most likely series — e.g. McLaren F1 2025 = Hot Wheels Premium Formula 1 2025, Bugatti Chiron = Hot Wheels Boulevard, Bone Shaker = Hot Wheels Mainline, Ferrari = Hot Wheels Car Culture or Premium, Porsche = Hot Wheels Car Culture, Skyline = Hot Wheels Car Culture Japan Historics.',
+    'RULE 6: PREMIUM LINE — rarity = Premium ONLY when you can see rubber Real Riders tyres (soft, with tread) or a premium series card (Car Culture, Boulevard, Team Transport, Pop Culture). State which in rarity_reason.',
+    'RULE 7: THE BRAND IS NOT THE LINE — Porsche, Ferrari, Lamborghini, McLaren, Bugatti and Formula 1 cars are sold as ordinary mainline cars with plastic wheels far more often than as Premium. Plastic wheels = mainline, whatever the badge.',
+    'RULE 4: series = Unknown if you cannot read it clearly on card/base. BUT if you can identify the car name, infer the most likely series — e.g. Bone Shaker = Hot Wheels Mainline. Do not infer a premium series from the brand alone.',
     'RULE 5: Every field must be answerable from what is VISIBLE in the image.',
     '',
     '⚠️ FIRST CHECK: Is this a genuine Mattel Hot Wheels die-cast car?',
@@ -87,7 +100,7 @@ async function identifyCar(imageData) {
     '"base_origin":"Malaysia|China|Thailand|Unknown",',
     '"rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt|Error Car|Vintage|Premium",',
     '"rarity_reason":"specific VISIBLE evidence for this rarity rating — e.g. can see TH logo + rubber tires",',
-    '"condition":"Mint on Card|Near Mint|Very Good|Good|Fair",',
+    '"condition":"Mint on Card (only if the card is visible)|Near Mint|Loose|Good|Fair",',
     '"investment":"Low|Medium|High|Very High",',
     '"investment_reason":"specific market reasoning based on this exact casting and rarity",',
     '"fun_fact":"one VERIFIED fact, certain knowledge only — never invent history",',
@@ -156,55 +169,63 @@ export function partitionCars(cars) {
 // A car is counted in a headline total only when nothing about it is flagged.
 function isConfidentCar(c) { return c && !c._lowConfidence && !c._needsVerification }
 
-async function searchPrices(carName, rarity, castingYear) {
-  // Stage 1: Built-in DB — instant, no API quota used
-  var dbHit = dbLookup(carName)
-  if (dbHit) return dbHit
-  // Stage 2: Real-time API
-  // Real-Time 3-Source Pricing: web search + community + AI synthesis
-  try {
-    var ctrl = new AbortController()
-    var t = setTimeout(function(){ ctrl.abort() }, 6000)
-    // /api/prices now requires a signed-in caller: it fires two Groq
-    // completions per request and sometimes a billed Apify run, and previously
-    // had no auth, no rate limit and no budget cap at all.
-    var res = await fetch('/api/prices', {
-      method: 'POST', signal: ctrl.signal,
-      headers: await sessionHeaders(),
-      body: JSON.stringify({carName:carName, rarity:rarity, castingYear:castingYear})
-    })
-    clearTimeout(t)
-    if (res && res.ok) {
-      var d = await res.json()
-      if (d && d.india_collector_inr) {
-        var R = function(v){ return v?(String(v).startsWith('₹')?v:'₹'+v):v }
-        return {
-          india_retail_inr: R(d.india_retail_inr), india_collector_inr: R(d.india_collector_inr),
-          us_retail_usd: d.us_retail_usd, us_collector_usd: d.us_collector_usd,
-          price_trend: d.price_trend||'Stable', price_trend_reason: d.price_trend_reason||'',
-          india_insight: d.india_insight||'', sell_platforms: d.sell_platforms||['OLX India','Instagram','Maido'],
-          buy_tip: d.buy_tip||'', data_quality: d.data_quality||'Estimated',
-          community_avg_inr: d.community_avg_inr||null, community_count: d.community_count||0,
-          web_sources: Array.isArray(d.web_sources) ? d.web_sources.slice(0, 3) : []
+// Price a car. Sources, strongest first:
+//   1. /api/prices — live Indian listings and community reports (signed-in only)
+//   2. the built-in reference table, matched by name AND rarity
+//   3. the typical range for the rarity
+// The reference table used to be consulted first and by name alone, so a modern
+// ₹169 Twin Mill or Deora was priced as a 1969 Redline at ₹7,000-20,000 and the
+// live lookup never ran. The live call was also abandoned after 6 seconds, less
+// than a web search takes, so in practice nearly every scan fell through to a
+// model repeating the fallback band back.
+async function searchPrices(car) {
+  var name = car.name, rarity = car.rarity
+  var live = null
+  if (state.currentUser && state._sb && navigator.onLine !== false) {
+    try {
+      var ctrl = new AbortController()
+      var t = setTimeout(function(){ ctrl.abort() }, 28000)
+      var res = await fetch('/api/prices', {
+        method: 'POST', signal: ctrl.signal,
+        headers: await sessionHeaders(),
+        body: JSON.stringify({ carName: name, rarity: rarity, castingYear: car.casting_year, wheelType: car.wheel_type, series: car.series })
+      })
+      clearTimeout(t)
+      if (res && res.ok) {
+        var d = await res.json()
+        if (d && d.india_collector_inr) {
+          live = {
+            india_retail_inr: d.india_retail_inr, india_collector_inr: d.india_collector_inr,
+            us_retail_usd: d.us_retail_usd, us_collector_usd: d.us_collector_usd,
+            price_trend: d.price_trend || 'Stable', price_trend_reason: d.price_trend_reason || '',
+            india_insight: d.india_insight || '', buy_tip: d.buy_tip || '',
+            data_quality: d.data_quality || 'Typical range for this rarity',
+            community_avg_inr: d.community_avg_inr || null, community_count: d.community_count || 0,
+            web_sources: Array.isArray(d.web_sources) ? d.web_sources.slice(0, 3) : []
+          }
         }
       }
-    }
-  } catch(e) { console.warn('Pricing API unavailable, using fallback:', e.message) }
-  return await _fallbackPrices(carName, rarity, castingYear)
+    } catch(e) { console.warn('Live pricing unavailable:', e.message) }
+  }
+  // Real evidence wins outright.
+  if (live && /^(Live|Community)/.test(live.data_quality)) return live
+  var ref = dbLookup(name, rarity)
+  if (ref) return Object.assign({}, live || {}, ref)
+  return live || typicalPrices(car)
 }
 
-async function _fallbackPrices(carName, rarity, castingYear) {
-  var rp = {
-    'Common':{r:'150-200',c:'200-350',ur:'1.49',uc:'2-5'},'Uncommon':{r:'200-350',c:'350-600',ur:'1.49',uc:'3-8'},
-    'Rare':{r:'300-500',c:'600-1500',ur:'1.99',uc:'5-15'},'Premium':{r:'800-1500',c:'1500-3500',ur:'4.99',uc:'10-25'},
-    'Treasure Hunt':{r:'500-800',c:'1200-3500',ur:'1.99',uc:'10-30'},'Super Treasure Hunt':{r:'700-1000',c:'4000-15000',ur:'1.99',uc:'30-100'},
-    'Vintage':{r:'500-2000',c:'1000-8000',ur:'5-20',uc:'10-50'},'Error Car':{r:'1000-3000',c:'5000-30000',ur:'10+',uc:'50-500'}
+// No evidence at all: say what cars of this rarity usually go for, and claim
+// nothing more. This used to be an extra model call that was handed the band
+// and asked to return it, along with an invented trend and "insight".
+function typicalPrices(car) {
+  var b = bandFor(car.rarity)
+  return {
+    india_retail_inr: retailFor(car.rarity),
+    india_collector_inr: typicalCollector(car.rarity, car.name),
+    us_retail_usd: b.ur, us_collector_usd: b.uc,
+    price_trend: 'Stable', price_trend_reason: '',
+    data_quality: 'Typical range for this rarity'
   }
-  var p = rp[rarity]||rp['Common']
-  var n=(carName||'').toLowerCase()
-  var hi=['skyline','supra','rx-7','nsx','camaro','mustang','charger','ferrari','lamborghini','porsche','bone shaker','twin mill','deora','beach bomb','corvette','mclaren','bugatti','formula 1','f1','lamborghini countach','ferrari'].some(function(k){return n.includes(k)})
-  var prompt='India Hot Wheels price analyst for "'+carName+'" ('+rarity+')\nBands: India retail ₹'+p.r+' | Collector ₹'+p.c+' | US $'+p.ur+'/'+p.uc+'\nHigh India demand: '+hi+'\nReturn ONLY JSON: {"india_retail_inr":"'+p.r+'","india_collector_inr":"'+p.c+'","us_retail_usd":"'+p.ur+'","us_collector_usd":"'+p.uc+'","price_trend":"Stable","price_trend_reason":"Based on rarity and India collector demand","india_insight":"Indian collectors seek this through OLX and Instagram groups.","sell_platforms":["OLX India","Instagram #hotwheelsindia","Maido"],"buy_tip":"Check OLX India and local collector groups","data_quality":"Estimated"}'
-  try { return await groqJSON(prompt, HAIKU_MODEL) } catch(e) { return null }
 }
 
 
@@ -213,7 +234,7 @@ async function _fallbackPrices(carName, rarity, castingYear) {
 // and a prompt change kept serving results produced under the old rules (e.g.
 // the removed Photo-mode authenticity field). Bump SCAN_CACHE_VERSION whenever
 // the prompt or result semantics change.
-var SCAN_CACHE_VERSION = 'v2'
+var SCAN_CACHE_VERSION = 'v3'
 function scanCacheKey(img) {
   var h1 = 0x811c9dc5, h2 = 0x01000193
   for (var i = 0; i < img.length; i++) {
@@ -287,13 +308,12 @@ export async function analyzePhoto() {
       window.setStep(1, 'done'); window.setStep(2, 'active')
       document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Found ' + multiResult.cars.length + ' cars — fetching prices...')
       var pricePromises = multiResult.cars.map(function(car) {
-        car = applyKnownPremiumOverrides(car); return searchPrices(car.name, car.rarity, car.casting_year)
+        return searchPrices(prepareCar(car))
       })
       var prices = await Promise.all(pricePromises)
       var allCars = multiResult.cars.map(function(car, i) {
         car._sourceImage = state.imgThumb
-        var merged = Object.assign({}, car, prices[i] || {})
-        return applyKnownPremiumOverrides(merged)
+        return finalizeCar(prepareCar(car), prices[i])
       })
       window.setStep(2, 'done'); window.setStep(3, 'done')
       window.stopTimer()
@@ -309,10 +329,11 @@ export async function analyzePhoto() {
 
     window.setStep(1, 'done'); window.setStep(2, 'active')
     document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Fetching Indian prices...')
-    var priceData = await searchPrices(carData.name, carData.rarity, carData.casting_year)
+    carData = prepareCar(carData)
+    var priceData = await searchPrices(carData)
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()
-    var result = applyKnownPremiumOverrides(Object.assign({}, carData, priceData || {}))
+    var result = finalizeCar(carData, priceData)
     state.lastResult = result
     window.incScans()
     window.saveToHist(result)
@@ -329,16 +350,6 @@ export async function analyzePhoto() {
       localStorage.setItem('hs_scan_cache', JSON.stringify(_cache2))
     } catch(e) {}
     window.updateScanCounter()
-    if (!window.isPro()) {
-      var rem = window.FREE_SCANS - window.getTodayScans()
-      if (rem <= 2 && rem > 0) {
-        setTimeout(function() {
-          var el = document.getElementById('err-box')
-          el.textContent = rem + ' free scan' + (rem===1?'':'s') + ' remaining today. Tap your profile to upgrade.'
-          el.style.cssText = 'display:block;background:#1a1500;border:1px solid rgba(255,214,10,.3);color:var(--gold)'
-        }, 2000)
-      }
-    }
   } catch(err) {
     window.stopTimer(); window.setStep(1, 'err')
     var isRateLimit = err.message && (err.message.includes('rate-limit') || err.message.includes('Rate limit') || err.message.includes('Too many') || err.message.includes('rate limit'))
@@ -405,8 +416,10 @@ export async function analyzeDeal() {
   var prompt = [
     'You are an India Hot Wheels deal checker. Give realistic, honest advice.',
     '⚠️ RULES: Only use real Indian market price knowledge. Do not inflate or deflate prices.',
-    '  Common mainline = ₹150-250 India retail, ₹200-400 collector.',
-    '  Treasure Hunt = ₹500-2500. Super Treasure Hunt = ₹4000-15000.',
+    '  A mainline car costs ₹' + MAINLINE_MRP + ' at Indian retail and resells for ₹' + BANDS['Common'].c + ' (popular licensed castings up to about ₹800).',
+    '  Treasure Hunt resale = ₹' + BANDS['Treasure Hunt'].c + '. Super Treasure Hunt resale = ₹' + BANDS['Super Treasure Hunt'].c + ', more for Ferrari, Porsche and JDM castings.',
+    '  Premium (rubber tyres, Car Culture and similar) = ₹' + BANDS['Premium'].r + ' retail, ₹' + BANDS['Premium'].c + ' resale.',
+    '  These are for mint carded cars. A loose car is worth roughly 60% of that, a played-with one about 30%.',
     '  If the car name is vague or you are unsure, say so in verdict_reason.',
     '',
     communityPriceContext,
@@ -417,7 +430,7 @@ export async function analyzeDeal() {
     '"fair_india_price":"realistic INR range e.g. 300-500",',
     '"verdict_reason":"1-2 sentences explaining why at this price",',
     '"suggestion":"specific actionable advice e.g. offer ₹X or walk away",',
-    '"market_retail":"India store price e.g. 150-200 mainline or 800-1500 Premium",',
+    '"market_retail":"India store price",',
     '"market_collector":"India resale price e.g. 350-600",',
     '"savings_or_overpay":"saving ₹X or overpaying ₹X",',
     '"confidence":"High|Medium|Low — how sure you are about this car\'s India price"}'
@@ -687,11 +700,18 @@ export async function scanBarcode() {
     if (d.confidence && d.confidence < 40) {
       throw new Error('Low confidence match (' + d.confidence + '%). Try a more specific name.')
     }
+    // A name lookup has no photo, so nothing about wheels or card was seen.
+    // Price it through the same pipeline as a scan rather than trusting the
+    // figures the language model wrote alongside the name.
+    d.confidence = null
+    d = prepareCar(d)
+    d = finalizeCar(d, await searchPrices(d))
     state.lastResult = d
+    window.saveToHist && window.saveToHist(d)
     window.showResult(d)
   } catch(err) {
     window.stopTimer()
-    document.getElementById('err-box').textContent = '⚠️ ' + err.message
+    document.getElementById('err-box').textContent = err.message
     document.getElementById('err-box').style.display = 'block'
   }
 }
@@ -773,23 +793,21 @@ export async function identifyMultipleCars(imageData) {
     '- Vintage Redline: MUST see red stripe on tires',
     '- Default to Common unless evidence is clear',
     '',
-    'RARITY FROM CAR ITSELF — no packaging needed:',
-    '- Plastic wheels + enamel paint = Common mainline 150-200 retail',
-    '- Real Riders rubber tires (soft treaded) = Premium minimum 800-1500 retail',
-    '- Real Riders + Spectraflame + TH logo = Super Treasure Hunt 4000-15000 collector',
-    '- Real Riders + TH logo only = Treasure Hunt 1200-3500 collector',
-    '- Red stripe on tire sidewall = Vintage Redline 2000-20000 collector',
+    'RARITY FROM THE CAR ITSELF — no packaging needed:',
+    '- Plastic wheels + enamel paint = Common mainline, whatever the brand',
+    '- Rubber Real Riders tyres (soft, treaded), no TH logo = Premium',
+    '- Real Riders + Spectraflame + TH logo = Super Treasure Hunt',
+    '- Flame-in-circle logo on the car, ordinary paint and plastic wheels = Treasure Hunt',
+    '- Red stripe on the tyre sidewall = Vintage Redline',
     '',
-    'KNOWN PREMIUM CASTINGS always Premium even loose unboxed:',
-    'McLaren F1, Bugatti Chiron, any Ferrari, any Porsche, any Lamborghini,',
-    'any Formula 1 car, Koenigsegg, Pagani, Aston Martin, Maserati, any NASCAR',
+    'THE BRAND IS NOT THE LINE: Porsche, Ferrari, Lamborghini, McLaren, Bugatti and Formula 1',
+    'castings are sold as ordinary plastic-wheel mainline cars far more often than as Premium.',
+    'Never mark a car Premium because of its badge.',
     '',
-    'PRICE BANDS:',
-    'Common: india_retail_inr=150-200 india_collector_inr=200-400',
-    'Premium: india_retail_inr=800-1500 india_collector_inr=1500-3500',
-    'TH: india_retail_inr=500-800 india_collector_inr=1200-3500',
-    'STH: india_retail_inr=700-1000 india_collector_inr=4000-15000',
-    'Vintage: india_retail_inr=500-3000 india_collector_inr=2000-20000'
+    'CONDITION: "Mint on Card" only if the blister card is visible in the photo. A car with no',
+    'card is loose: use "Loose" if it looks clean, "Good" if there are chips or wear.',
+    '',
+    'Do not estimate prices. Prices are looked up separately.'
   ].concat(multi ? [
     '',
     'MULTIPLE PHOTOS — the user sent ' + images.length + ' separate photos, labelled PHOTO 1 through PHOTO ' + images.length + '.',
@@ -823,8 +841,6 @@ export async function identifyMultipleCars(imageData) {
     '"condition":"Mint on Card|Near Mint|Very Good|Good",',
     '"investment":"Low|Medium|High|Very High",',
     '"investment_reason":"why",',
-    '"india_retail_inr":"150-1500 depending on line — mainline 150-200, Premium 800-1500",',
-    '"india_collector_inr":"300-3500 depending on rarity — mainline 300-600, Premium 1500-3500",',
     '"us_retail_usd":"1.49",',
     '"us_collector_usd":"5-12",',
     '"confidence":80,',
@@ -1028,13 +1044,9 @@ export async function analyzeMultiPhoto() {
     if (!allCars.length && rejectedCount && !failedCount) throw new Error(_batchParts.rejected[0].reason)
     window.setStep(2, 'active')
     document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml('Fetching prices for ' + allCars.length + ' cars...')
-    allCars = allCars.map(function(car){ return applyKnownPremiumOverrides(car) })
-    var pricePromises = allCars.map(function(car) {
-      return searchPrices(car.name, car.rarity, car.casting_year)
-    })
-    var prices = await Promise.all(pricePromises)
-    prices.forEach(function(p, i) { if (p) allCars[i] = Object.assign({}, allCars[i], p) })
-    allCars = allCars.map(function(car){ return applyKnownPremiumOverrides(car) })
+    allCars = allCars.map(prepareCar)
+    var prices = await Promise.all(allCars.map(searchPrices))
+    allCars = allCars.map(function(car, i){ return finalizeCar(car, prices[i]) })
 
     window.setStep(2, 'done'); window.setStep(3, 'done')
     window.stopTimer()

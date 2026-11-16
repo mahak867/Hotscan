@@ -2,6 +2,7 @@ import { state } from './state.js'
 import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
 import { escHtml, fmtINR, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException, isProActive } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
+import { CONDITIONS, applyCondition, conditionFromScan } from '../shared/pricing.js'
 
 // ── Pro helpers ──
 export function getTodayScans() {
@@ -92,21 +93,48 @@ export function updateScanCounter() {
 // ── Navigation ──
 // Sub-pages have no tab of their own; they light up the tab they are reached from.
 var _navParent = { guide: 'more', hunt: 'more', alerts: 'more', profile: 'more' }
+// Slides the dock's highlight under the active tab. The Scan button has its
+// own raised treatment, so the highlight hides while Scan is current.
+export function moveDockIndicator() {
+  var ind = document.getElementById('dock-ind')
+  var active = document.querySelector('.dock .nav-item.active')
+  if (!ind) return
+  if (!active || active.id === 'nav-scan') { ind.classList.remove('on'); return }
+  var w = Math.min(active.offsetWidth - 8, 72)
+  ind.style.width = w + 'px'
+  ind.style.transform = 'translateX(' + (active.offsetLeft + (active.offsetWidth - w) / 2) + 'px)'
+  ind.classList.add('on')
+}
+if (typeof window !== 'undefined') window.addEventListener('resize', moveDockIndicator)
+
 export function goPage(id, fromHash) {
   var pg = document.getElementById('page-' + id)
   if (!pg) return
+  // Cross-fade between pages where the browser supports it; otherwise switch at once.
+  var reduce = false
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch (e) {}
+  if (document.startViewTransition && !reduce && !pg.classList.contains('active')) {
+    // A second navigation before the first finishes skips the first transition,
+    // which rejects its promises. That is expected, not an error.
+    var vt = document.startViewTransition(function () { _showPage(id, pg, fromHash) })
+    ;[vt.ready, vt.finished, vt.updateCallbackDone].forEach(function (pr) { if (pr && pr.catch) pr.catch(function () {}) })
+  } else _showPage(id, pg, fromHash)
+}
+
+function _showPage(id, pg, fromHash) {
   document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active') })
-  document.querySelectorAll('.nav-item, .hs-sidebar-item').forEach(function (n) {
+  document.querySelectorAll('.nav-item').forEach(function (n) {
     n.classList.remove('active'); n.removeAttribute('aria-current')
   })
   pg.classList.add('active')
-  ;[document.getElementById('sb-' + id), document.getElementById('nav-' + (document.getElementById('nav-' + id) ? id : _navParent[id]))].forEach(function (el) {
+  ;[document.getElementById('nav-' + (document.getElementById('nav-' + id) ? id : _navParent[id]))].forEach(function (el) {
     if (el) { el.classList.add('active'); el.setAttribute('aria-current', 'page') }
   })
+  moveDockIndicator()
   var dd = document.getElementById('profile-dd-menu'); if (dd) dd.classList.remove('open')
   if (id === 'profile') renderProfilePage()
   if (id === 'marketplace') window.loadAndRenderListings()
-  if (id === 'collection') renderWantList()
+  if (id === 'collection') { window._colStagger = true; renderCol(); renderWantList() }
   if (id === 'scan') updateScanCounter()
   // Keep the URL in step so back/forward and shared links work. Skipped when
   // the navigation itself came from the hash, and never touches an auth hash.
@@ -313,6 +341,7 @@ export function startTimer(lbl) {
   // is almost certainly what looked like a 100+ second hang.
   if (state.timerInt) clearInterval(state.timerInt)
   state.timerSec = 0
+  document.querySelectorAll('.scan-area').forEach(function (a) { a.classList.add('scanning') })
   document.getElementById('timer-wrap').style.display = 'block'
   document.getElementById('timer-lbl').innerHTML = '<span class="hs-loader" style="margin-right:8px"><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span><span class="hs-loader-dot"></span></span>' + escHtml(lbl)
   document.getElementById('timer-cnt').textContent = '0s'
@@ -329,6 +358,7 @@ export function startTimer(lbl) {
 }
 export function stopTimer() {
   clearInterval(state.timerInt)
+  document.querySelectorAll('.scan-area').forEach(function (a) { a.classList.remove('scanning') })
   var fill = document.getElementById('timer-fill')
   fill.classList.remove('timer-stuck')
   fill.style.width = '100%'
@@ -452,45 +482,78 @@ export function showResult(d) {
   // The older #r-low-conf-warning / #r-verify-warning banners repeated the two
   // warnings above word for word, so a doubtful scan showed four boxes.
   document.getElementById('p1').textContent = fmtINR(d.india_retail_inr) || '—'
+  var _p1t = document.getElementById('p1'); if (_p1t && _p1t.parentElement) _p1t.parentElement.style.display = d.india_retail_inr ? '' : 'none'
   document.getElementById('p2').textContent = fmtINR(d.india_collector_inr) || '—'
   document.getElementById('p3').textContent = d.us_retail_usd ? '$' + d.us_retail_usd : '—'
   document.getElementById('p4').textContent = d.us_collector_usd ? '$' + d.us_collector_usd : '—'
+  // Where the number came from, in plain words. A price is only called live
+  // when a listing or report actually stands behind it.
   var _dqEl = document.getElementById('live-upd')
-  if (!d.data_quality || d.data_quality === 'Estimated') {
-    _dqEl.textContent = 'AI estimate. Check current OLX listings before paying.'
-    _dqEl.style.color = 'var(--gold)'
-  } else if (d.data_quality.indexOf('Reference') === 0 || d.data_quality === 'Database') {
-    _dqEl.textContent = 'Reference price from the built-in catalogue, not live. Check OLX for current listings.'
-    _dqEl.style.color = 'var(--gold)'
-  } else if (d.data_quality.indexOf('Community') === 0 || d.data_quality.indexOf('Verified Sale') === 0) {
-    // 'Verified Sale' / 'Community Verified' can still arrive from cached scans
-    // made before those labels were withdrawn; show them as reports.
-    if (d.data_quality.indexOf('Community reports') !== 0) d.data_quality = 'Community reports (unverified)'
-    _dqEl.textContent = d.data_quality
-    _dqEl.style.color = 'var(--blue)'
+  var _dq = d.data_quality || ''
+  var _src = ''
+  if (Array.isArray(d.web_sources) && d.web_sources.length) {
+    try { _src = ' Source: ' + (d.web_sources[0].title || new URL(d.web_sources[0].url).hostname).replace(/^www\./, '') + '.' } catch (e) {}
+  }
+  if (_dq.indexOf('Community') === 0 || _dq.indexOf('Verified Sale') === 0) {
+    _dqEl.textContent = 'From ' + (d.community_count || 'several') + ' prices reported by collectors. Unverified.'
+  } else if (_dq.indexOf('Live') === 0) {
+    _dqEl.textContent = (_dq.indexOf('adjusted') > -1 ? 'Based on current Indian listings, pulled back to the usual range for this rarity.' : 'Based on current Indian listings.') + _src
+  } else if (_dq.indexOf('Reference') === 0 || _dq === 'Database') {
+    _dqEl.textContent = 'Reference price for this casting, not a live quote. Check OLX before paying.'
   } else {
-    // Name where the live price came from, so "Live" is checkable.
-    var _src = ''
-    if (Array.isArray(d.web_sources) && d.web_sources.length) {
-      try { _src = ' · via ' + (d.web_sources[0].title || new URL(d.web_sources[0].url).hostname).replace(/^www\./, '') } catch (e) {}
+    _dqEl.textContent = 'Typical range for ' + (/^[aeiou]/i.test(d.rarity || '') ? 'an ' : 'a ') + (d.rarity || 'Common') + ' car, not a quote for this exact one.' +
+      (state.currentUser ? '' : ' Sign in for live Indian listings.')
+  }
+  _dqEl.style.color = ''
+
+  // Condition changes the price more than anything else, and a photo cannot
+  // judge it reliably, so it is the collector's call. The carded-mint range is
+  // kept on the result and re-priced whenever a different condition is chosen.
+  var condEl = document.getElementById('r-cond')
+  if (condEl) {
+    if (!d._carded_inr) d._carded_inr = d.india_collector_inr
+    if (!d._condition) d._condition = conditionFromScan(d.condition)
+    var paintCond = function () {
+      condEl.innerHTML = ''
+      CONDITIONS.forEach(function (c) {
+        var b = document.createElement('button')
+        b.type = 'button'
+        b.className = 'chip' + (c.id === d._condition ? ' active' : '')
+        b.textContent = c.label
+        b.setAttribute('aria-pressed', c.id === d._condition ? 'true' : 'false')
+        b.onclick = function () {
+          d._condition = c.id
+          d.condition = c.label
+          d.india_collector_inr = applyCondition(d._carded_inr, c.id)
+          document.getElementById('p2').textContent = fmtINR(d.india_collector_inr) || '—'
+          paintCond(); paintMult()
+        }
+        condEl.appendChild(b)
+      })
     }
-    _dqEl.textContent = 'Updated just now · ' + d.data_quality + _src
-    _dqEl.style.color = ''
+    d.india_collector_inr = applyCondition(d._carded_inr, d._condition)
+    paintCond()
+    document.getElementById('p2').textContent = fmtINR(d.india_collector_inr) || '—'
   }
   // How far above shelf price the collector market sits. Indian resale is
   // usually quoted as a multiple of MRP, so say it in those terms.
-  var multEl = document.getElementById('r-mult')
-  if (multEl) {
+  function paintMult() {
+    var multEl = document.getElementById('r-mult')
+    if (!multEl) return
     var _ret = parseINR(d.india_retail_inr), _col = parseINR(d.india_collector_inr)
     var _x = _ret > 0 ? _col / _ret : 0
-    multEl.textContent = _x >= 1.5 ? 'About ' + (_x >= 10 ? Math.round(_x) : _x.toFixed(1).replace(/\.0$/, '')) + '× retail' : ''
+    multEl.textContent = _x >= 1.5 ? 'About ' + (_x >= 10 ? Math.round(_x) : _x.toFixed(1).replace(/\.0$/, '')) + '× shelf price' : ''
   }
+  paintMult()
   // #4 — pop animation on price tiles
   document.querySelectorAll('.ptile').forEach(function(tile, i) {
     tile.classList.remove('pop')
     setTimeout(function(){ tile.classList.add('pop') }, i * 60)
     tile.addEventListener('animationend', function(){ tile.classList.remove('pop') }, {once:true})
   })
+  // A trend is only shown when a source gave a reason for it. A bare "Stable"
+  // with nothing behind it is filler.
+  var _trendRow = document.getElementById('r-trend'); if (_trendRow) _trendRow.style.display = d.price_trend_reason ? '' : 'none'
   var trend = d.price_trend || 'Stable'
   if (trend !== 'Rising' && trend !== 'Falling' && trend !== 'Stable') trend = 'Stable'
     document.getElementById('trend-txt').innerHTML = '<span class="' + (trend==='Rising'?'tup':trend==='Falling'?'tdn':'tst') + '">' + escHtml(trend) + '</span>' + (d.price_trend_reason ? ' — ' + escHtml(d.price_trend_reason) : '')
