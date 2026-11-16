@@ -7,19 +7,12 @@ export const config = { runtime: 'nodejs', maxDuration: 60 }
 import { MODELS } from './_models.js'
 import { callGemini, hasGeminiKey } from './_gemini.js'
 import { captureServerException } from './_sentry.js'
+import { BANDS, MAINLINE_MRP, bandFor, reconcile, settleRarity, summarizeReports, reportsFitRarity, listingMatchesCar, formatRange, isHighDemand } from '../shared/pricing.js'
 
 const ALLOWED_ORIGINS = ['https://hotscan.in','https://www.hotscan.in','https://hotscan-theta.vercel.app']
 
-const BANDS = {
-  'Common':              {r:'150-200',  c:'200-350',    ur:'1.49', uc:'2-5'   },
-  'Uncommon':            {r:'200-350',  c:'350-600',    ur:'1.49', uc:'3-8'   },
-  'Rare':                {r:'300-500',  c:'600-1500',   ur:'1.99', uc:'5-15'  },
-  'Premium':             {r:'450-800',  c:'700-1500',   ur:'4.99', uc:'8-20'  },
-  'Treasure Hunt':       {r:'500-800',  c:'1200-3500',  ur:'1.99', uc:'10-30' },
-  'Super Treasure Hunt': {r:'700-1000', c:'4000-15000', ur:'1.99', uc:'30-100'},
-  'Vintage':             {r:'500-2000', c:'1000-8000',  ur:'5-20', uc:'10-50' },
-  'Error Car':           {r:'1000-3000',c:'5000-30000', ur:'10+',  uc:'50-500'},
-}
+// Price bands, MRP and every clamp now live in shared/pricing.js so the browser
+// and this endpoint cannot disagree.
 
 const HIGH_VALUE_RARITIES = ['Rare','Premium','Treasure Hunt','Super Treasure Hunt','Vintage','Error Car']
 
@@ -57,7 +50,10 @@ async function apifyBootstrap(carName, url, key) {
 
     var inserts = listings
       .map(function(l) { return { title: l.title||'', price: parseInt(String(l.price||'').replace(/[₹,\s]/g,'')) } })
-      .filter(function(l) { return l.price > 50 && l.price < 200000 && l.title.toLowerCase().includes('hot wheel') })
+      // A scraped OLX price is only kept when the title describes one example of
+      // this casting. 'Hot Wheels lot of 20 cars ₹4000' used to be stored as a
+      // ₹4,000 data point for whatever car was being scanned.
+      .filter(function(l) { return l.price > 50 && l.price < 200000 && listingMatchesCar(l.title, carName) })
       .slice(0, 8)
       .map(function(l) { return { car_name: carName, price_inr: l.price, platform: 'OLX India (Auto-fetched)', user_id: null, user_name: 'Apify (OLX India)' } })
     if (!inserts.length) return
@@ -71,49 +67,7 @@ async function apifyBootstrap(carName, url, key) {
     captureServerException(e, {tags:{function:'apifyBootstrap'}})
   }
 }
-const HIGH_DEMAND = [
-  'skyline','supra','rx-7','nsx','civic','ae86','evo','impreza',
-  'camaro','mustang','charger','challenger','cuda','corvette',
-  'ferrari','lamborghini','porsche','mclaren','pagani','koenigsegg',
-  'aston','lotus','alpine','bugatti','veyron','huayra',
-  'bone shaker','twin mill','deora','beach bomb',
-  'f1','formula 1','formula one','gt40','ford gt',
-  'dodge viper','acura nsx','lancia','alfa romeo',
-  'car culture','boulevard','retro entertainment','fast furious',
-  'hw exotics','id car','screen time','mario kart',
-  'super treasure hunt','treasure hunt'
-]
-
-function getDemand(n) {
-  n = (n||'').toLowerCase()
-  return HIGH_DEMAND.some(k=>n.includes(k)) ? 'high' : 'medium'
-}
-
-// Parses "200-350", "₹1,200", "150" etc into [low, high] numbers.
-function parseRange(s) {
-  if (!s) return null
-  var nums = String(s).replace(/[₹,\s]/g,'').match(/\d+(\.\d+)?/g)
-  if (!nums || !nums.length) return null
-  var vals = nums.map(Number)
-  return [Math.min.apply(null,vals), Math.max.apply(null,vals)]
-}
-
-// The AI is deliberately told not to cap prices below real market data — but
-// nothing was stopping it from returning a wildly hallucinated number if its
-// web search picked up one irrelevant listing. This clamps the result to a
-// generous multiple of the rarity band (allows genuine premium pricing
-// through, catches outright hallucination) rather than trusting it blindly.
-// Returns the original string if it doesn't even parse as a number.
-function sanityClamp(aiStr, bandStr, minMult, maxMult) {
-  var ai = parseRange(aiStr), band = parseRange(bandStr)
-  if (!ai) return bandStr
-  if (!band) return aiStr
-  var floor = band[0] * minMult, ceiling = band[1] * maxMult
-  var lo = Math.max(ai[0], floor * 0.3) // still allow real dips below band, just not near-zero
-  var hi = Math.min(Math.max(ai[1], lo), ceiling)
-  lo = Math.min(lo, hi)
-  return Math.round(lo) === Math.round(hi) ? String(Math.round(lo)) : Math.round(lo) + '-' + Math.round(hi)
-}
+function getDemand(n) { return isHighDemand(n) ? 'high' : 'medium' }
 
 function buildPool() {
   var pool = []
@@ -172,7 +126,9 @@ async function webSearch(carName, rarity, pool) {
     'Flipkart Hot Wheels listings, Instagram #hotwheelsindia #hotwheelsindiasale posts.\n' +
     'This is a small ~7cm die-cast toy car made by Mattel, NOT the real vehicle.\n' +
     'India collector demand level for this casting: ' + demand + '\n\n' +
-    'Return ONLY valid JSON (no markdown): {"india_retail_inr":"range e.g. 150-200","india_collector_inr":"range e.g. 200-350","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences about Indian collector demand for this specific casting","buy_tip":"actionable India buying advice"}'
+    'Report only prices you actually found for ONE single car of this exact casting and rarity. Ignore lots, multipacks, track sets, customs and listings for other variants. Prefer sold or currently listed prices from Indian sellers over converted US prices. If you find nothing for this exact car, set india_collector_inr to "" rather than guessing.\n' +
+    'For reference, a basic mainline car costs ₹' + MAINLINE_MRP + ' at Indian retail; Treasure Hunts and Super Treasure Hunts have the same shelf price.\n\n' +
+    'Return ONLY valid JSON (no markdown): {"india_retail_inr":"range","india_collector_inr":"range, or empty string if not found","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences about Indian collector demand for this specific casting","buy_tip":"actionable India buying advice"}'
 
   // Live search used to be groq/compound, which Groq retired in October 2026
   // (404 model_not_found, Sentry HOTSCAN-INDIA-11). Since then every price was
@@ -201,53 +157,46 @@ async function communityPrices(carName) {
   var key=process.env.VITE_SUPA_KEY||process.env.SUPA_KEY
   if (!url||!key) return null
   try {
-    var q=encodeURIComponent(carName.split(' ').slice(0,3).join(' '))
-    var res=await fetch(url+'/rest/v1/community_prices?car_name=ilike.*'+q+'*&order=created_at.desc&limit=20',
+    // Match the whole casting name. This used to match on the first three words,
+    // so "Nissan Skyline GT-R (R34)" pulled in reports for every Skyline ever
+    // priced, R32s and premium releases included.
+    var q=encodeURIComponent(carName.replace(/[*%,()]/g,' ').replace(/\s+/g,' ').trim())
+    var res=await fetch(url+'/rest/v1/community_prices?car_name=ilike.*'+q+'*&order=created_at.desc&limit=40',
       {headers:{'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json'}})
     if (!res.ok) return null
     var rows=await res.json()
     if (!rows||!rows.length) return null
-    // Every community row is self-reported and weighted equally.
-    //
-    // Rows whose platform text said "Verified Sale" used to count 3x, and a
-    // single one could replace the price estimate. But platform is free text
-    // any signed-in user can insert, and even the genuine path (seller taps
-    // "Mark as Sold" and types a number) proves no payment happened. Until a
-    // buyer-confirmed transaction record exists, nothing here is verified.
-    var weighted = []
-    rows.forEach(function(r) {
-      var p = parseInt((r.price_inr||'0').toString().replace(/[₹,\s]/g,''))
-      if (!(p>50 && p<200000)) return
-      weighted.push(p)
-    })
-    var prices = weighted.sort((a,b)=>a-b)
-    if (!prices.length) return null
+    var sum = summarizeReports(rows.map(function(r){ return parseInt((r.price_inr||'0').toString().replace(/[₹,\s]/g,'')) }))
+    if (!sum || !sum.count) return null
     return {
-      community_avg_inr: Math.round(prices.reduce((a,b)=>a+b,0)/prices.length),
-      community_median_inr: prices[Math.floor(prices.length/2)],
-      community_min_inr: prices[0], community_max_inr: prices[prices.length-1],
-      community_count: prices.length,
-      community_range_inr: prices[0]+'-'+prices[prices.length-1]
+      community_avg_inr: sum.median,
+      community_median_inr: sum.median,
+      community_min_inr: sum.min, community_max_inr: sum.max,
+      community_count: sum.count,
+      community_range_inr: sum.low+'-'+sum.high,
+      _summary: sum
     }
   } catch { return null }
 }
 
 async function synthesize(carName, rarity, web, community, pool) {
-  var band=BANDS[rarity]||BANDS['Common']
+  var band=bandFor(rarity)
   var ctx='Car: "'+carName+'" | Rarity: '+rarity+'\n'+
     (web?'✅ Live web search prices found:\n'+JSON.stringify(web)+'\n':'❌ No web data available\n')+
     (community?'✅ Real Indian collector community prices:\n'+JSON.stringify(community)+'\n':'❌ No community data\n')+
-    'Fallback bands (use ONLY if no web/community data): India retail ₹'+band.r+' | Collector ₹'+band.c+' | US $'+band.ur+' / $'+band.uc+'\n\n'+
+    'Typical range for this rarity in India: retail ₹'+(band.r||'n/a')+' | collector resale ₹'+band.c+' | US $'+band.ur+' / $'+band.uc+'\n\n'+
     'RULES:\n'+
-    '1. If web data exists, use it as the PRIMARY source for pricing.\n'+
-    '2. If community data exists, use it to validate/adjust collector price.\n'+
-    '3. Use fallback bands ONLY as a minimum floor — real market prices may be higher.\n'+
-    '4. Do NOT artificially cap prices — if web shows ₹800 for a "Common" car, return ₹800.\n'+
-    '5. Prioritize accuracy over conservatism.\n\n'+
+    '1. Price ONE mint, carded example of this exact casting and rarity. Never a lot, a set or a different variant.\n'+
+    '2. If web data is present and is clearly about this exact car, base the collector price on it.\n'+
+    '3. If community data is present, use its range to check the collector price.\n'+
+    '4. If the sources disagree by more than 3x, or look like they describe a different car, trust the typical range instead and say so in price_trend_reason.\n'+
+    '5. With no web or community data, return the typical range unchanged. Do not invent a trend: use "Stable" and an empty price_trend_reason.\n'+
+    '6. Give a range no wider than 2x from low to high. Do not round up, and do not inflate because the casting is popular.\n'+
+    '7. india_retail_inr is the Indian shelf price. Treasure Hunts and Super Treasure Hunts are sold at mainline price.\n\n'+
     'Return ONLY JSON: {"india_retail_inr":"range","india_collector_inr":"range","us_retail_usd":"price","us_collector_usd":"range","price_trend":"Rising|Stable|Falling","price_trend_reason":"1 sentence","india_insight":"2 sentences","buy_tip":"actionable advice","data_quality":"Live+Community|Live Only|Community Only|Estimated"}'
 
   var content=await callGroq({model:MODELS.CODEX,messages:[
-    {role:'system',content:'You are an India Hot Wheels die-cast toy price analyst. Return accurate evidence-based JSON pricing. Never artificially cap prices that are supported by real data.'},
+    {role:'system',content:'You are an India Hot Wheels die-cast toy price analyst. Return evidence-based JSON pricing for a single car. When the evidence is thin, say so and stay with the typical range; a confident wrong price costs a collector real money.'},
     {role:'user',content:ctx}
   ],max_tokens:600,temperature:0,response_format:{type:'json_object'}},pool)
   if (!content) return null
@@ -400,44 +349,51 @@ async function handleRequest(req) {
   ])
   var webSources = web && web._sources
   if (web) delete web._sources
-  var final=await synthesize(carName,rarity||'Common',web,community,pool)
-  var band=BANDS[rarity]||BANDS['Common']
+  // The rarity the scanner sent is settled by the same evidence rules the app
+  // uses; the request may also carry the wheel type and series for that.
+  var car = { name: carName, rarity: rarity||'Common', wheel_type: body.wheelType||'', series: body.series||'' }
+  rarity = settleRarity(car)
+  car.rarity = rarity
+  var band=bandFor(rarity)
+  if (community) { var comSummary = community._summary; delete community._summary }
+  var webHasPrice = !!(web && web.india_collector_inr)
+  var final=await synthesize(carName,rarity,webHasPrice?web:null,community,pool)
+
+  // Which evidence actually stands behind the collector price, strongest first.
+  var source = 'Estimated', raw = null
+  if (reportsFitRarity(comSummary, rarity)) {
+    raw = { india_collector_inr: formatRange(comSummary.low, comSummary.high) }
+    source = 'Community reports (' + comSummary.count + ', unverified)'
+  } else if (webHasPrice && final && final.india_collector_inr) {
+    raw = { india_collector_inr: final.india_collector_inr, india_retail_inr: final.india_retail_inr }
+    source = 'Live listings'
+  } else if (webHasPrice) {
+    raw = { india_collector_inr: web.india_collector_inr, india_retail_inr: web.india_retail_inr }
+    source = 'Live listings'
+  }
+  var fit = reconcile(car, raw || {})
+  // A live figure that had to be pulled back inside the rarity's limits was
+  // probably about a different car; do not keep calling it live.
+  if (fit.estimated) source = 'Typical range for this rarity'
+  else if (fit.clamped && source === 'Live listings') source = 'Live listings, adjusted to the usual range for this rarity'
 
   var result={
-    // Multipliers were 6x retail and 8x collector, which made the clamp
-    // meaningless: Common's collector band is 200-350, so 8x allowed the model
-    // to price a Common car up to 2,800. A real scan came back "Common ·
-    // 600-1800" — contradicting the app's own Rarity Guide, which states
-    // 200-350 for Common, on a car whose actual Indian price was around 300.
-    //
-    // 2.5x still lets a genuinely sought-after casting price above its band (a
-    // mint '94 Supra really does carry a premium over a typical mainline) while
-    // keeping the number recognisably in the same conversation as the tier the
-    // app just assigned it.
-    india_retail_inr:    sanityClamp((final&&final.india_retail_inr)||band.r, band.r, 1, 2.5),
-    india_collector_inr: sanityClamp((final&&final.india_collector_inr)||band.c, band.c, 1, 2.5),
-    us_retail_usd:       (final&&final.us_retail_usd)||band.ur,
+    india_retail_inr:    fit.india_retail_inr,
+    india_collector_inr: fit.india_collector_inr,
+    us_retail_usd:       band.ur,
     us_collector_usd:    (final&&final.us_collector_usd)||band.uc,
-    price_trend:         (final&&final.price_trend)||'Stable',
-    price_trend_reason:  (final&&final.price_trend_reason)||'',
+    price_trend:         (raw&&final&&final.price_trend)||'Stable',
+    price_trend_reason:  (raw&&final&&final.price_trend_reason)||'',
     india_insight:       (final&&final.india_insight)||'',
-    buy_tip:             (final&&final.buy_tip)||'Check OLX India and local collector groups',
-    // Derived from which sources actually returned data, not from the model's
-    // own claim: synthesis could say "Live+Community" with no live data at all.
-    data_quality:        web&&community ? 'Live+Community' : web ? 'Live Only' : community ? 'Community Only' : 'Estimated',
+    buy_tip:             (final&&final.buy_tip)||'',
+    data_quality:        source,
+    priced_rarity:       rarity,
     community_avg_inr:   community?community.community_avg_inr:null,
     community_median_inr:community?community.community_median_inr:null,
     community_count:     community?community.community_count:0,
-    sources:{web_search:!!web,community:!!community,synthesized:!!final},
-    web_sources:         webSources || [],
+    sources:{web_search:webHasPrice,community:!!community,synthesized:!!final},
+    web_sources:         source.indexOf('Live') === 0 ? (webSources || []) : [],
     car_name:carName, rarity:rarity
-  }
-  // Self-reported prices need 3+ valid reports before they replace the
-  // synthesized estimate, and are labelled as reports, not verification.
-  if (community && community.community_median_inr && community.community_count >= 3) {
-    var med = community.community_median_inr
-    result.india_collector_inr = Math.round(med*0.85) + '-' + Math.round(med*1.15)
-    result.data_quality = 'Community reports (' + community.community_count + ', unverified)'
   }
   return new Response(JSON.stringify(result),{status:200,headers:{...cors,'Content-Type':'application/json'}})
 }

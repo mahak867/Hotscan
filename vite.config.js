@@ -6,6 +6,17 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     chunkSizeWarningLimit: 1000,
+    // Every HTML page that must exist in production is listed here. Anything
+    // else in the repo root is NOT copied to dist — static assets (manifest,
+    // service worker, icons, robots.txt) live in public/ for that reason.
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        privacy: 'privacy.html',
+        terms: 'terms.html',
+        reset: 'reset-password.html',
+      },
+    },
     sourcemap: true, // required for Sentry to map minified stack traces back to source
   },
   define: {

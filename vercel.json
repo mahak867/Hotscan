@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!src/|api/|sw\\.js$|manifest\\.json$|icon-|logo\\.|og-image|robots|landing|privacy|terms|sign-in|reset-password).*)",
+      "source": "/((?!src/|api/|sw\\.js$|manifest\\.json$|icon-|logo\\.|og-image|favicon|robots|sitemap|privacy|terms|reset-password).*)",
       "destination": "/index.html"
     }
   ],
@@ -46,27 +46,54 @@
     {
       "source": "/manifest.json",
       "headers": [
-        { "key": "Content-Type", "value": "application/manifest+json" }
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
       ]
     },
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Service-Worker-Allowed", "value": "/" },
-        { "key": "Cache-Control", "value": "no-cache" }
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
       ]
     },
     {
       "source": "/src/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     },
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/sign-in.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/landing.html",
+      "destination": "/",
+      "permanent": false
     }
   ]
 }

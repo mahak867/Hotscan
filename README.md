@@ -17,35 +17,64 @@ flag likely fakes before money changes hands.
 | Feature | Description |
 |---|---|
 | **Photo scan** | Identify casting, series, year, rarity, colour and wheel type from one photo |
-| **Batch scan** | Up to five photos in one pass, each car attributed to its source image |
 | **Indian pricing** | Retail and collector ranges in INR rather than converted USD comparables |
 | **Fake detector** | Authenticity check driven by base markings, with an explicit no-verdict path |
 | **Deal check** | Enter an asking price and get a verdict on whether it is fair |
-| **Collection** | Cloud-synced, with live valuation, rarity breakdown and value history |
+| **Collection** | Cloud-synced, with valuation, gain/loss against what you paid, duplicate markers and group-by-casting |
+| **Wishlist** | Cars you are hunting; one tap moves a found car into the collection, or share it as an ISO list |
+| **Sale list** | Mark cars for sale and share a WhatsApp-formatted list with condition and asking price |
+| **Spend tracking** | Price paid and source per car, total and monthly spend, gain or loss |
+| **Spotter's guide** | TH vs STH tells, an interactive fake-spotting checklist, condition grades |
 | **Marketplace** | Listings with seller reputation, ratings and gated contact details |
 
 ## Stack
 
 - **Frontend** — vanilla JavaScript (ES modules) built with Vite. No framework and no
-  runtime dependency beyond Sentry; ships as a single ~207 KB gzipped bundle.
+  runtime dependency beyond Sentry. Fonts (Bricolage Grotesque, Schibsted Grotesk) are
+  self-hosted through the bundle because the CSP allows no font CDN.
+- **Static files** — anything that must exist at a fixed URL (`manifest.json`, `sw.js`,
+  icons, `robots.txt`) lives in `public/`. Extra HTML pages are listed in
+  `vite.config.js`. Files left in the repo root are not deployed.
 - **Backend** — Vercel serverless functions in `api/`. Groq is proxied server-side so
   keys never reach the client. The proxy round-robins a key pool, enforces per-IP
   limits, and records scans for quota enforcement.
 - **Data** — Supabase (Postgres, Auth, Storage) with row-level security throughout.
-- **Vision** — Groq, `qwen/qwen3.6-27b`.
+- **Vision** — Groq, `qwen/qwen3.8-27b`.
 - **Native** — Capacitor wraps the same build for Android and iOS.
 - **Monitoring** — Sentry for errors, Plausible for analytics.
+
+## How a scan is priced
+
+All pricing rules live in `shared/pricing.js`, imported by both the app and `api/prices.js`
+and covered by `tests/pricing.spec.js`.
+
+1. The vision model identifies the car. It is not asked for prices.
+2. Rarity is settled from evidence: Premium needs rubber Real Riders or a premium series
+   card. The brand never decides it.
+3. Price sources, strongest first: community reports that fit the rarity (3 or more,
+   outliers dropped), live Indian listings from a grounded web search, the built-in
+   reference table (matched on name and rarity), then the typical range for the rarity.
+4. `reconcile()` makes the result coherent: shelf price follows the MRP rules (Treasure
+   Hunts sell at mainline MRP), and a collector price outside the rarity's limits is
+   pulled back and labelled as adjusted.
+5. The result card states which source was used and lets the collector set condition,
+   which re-prices from the carded-mint figure.
+
+Update `MAINLINE_MRP` and `BANDS` in that file when Mattel India revises prices.
 
 ## Repository layout
 
 ```
 api/                      Serverless functions (Groq proxy, prices, Razorpay webhook)
+shared/pricing.js         Pricing rules used by both the app and the price endpoint
 src/
   scanner.js              Vision calls; all four scan modes
   collection.js           Collection state, cloud sync, valuation
   marketplace.js          Listings and seller reputation
   auth.js                 Supabase auth, profiles, avatars
   ui.js                   Page rendering and navigation
+  guide.js                Spotter's guide checklist
+  style.css               Design system (tokens, components, layout)
 android/  ios/            Capacitor native shells
 extension/                Chrome extension (separate from the web build)
 tests/                    Playwright smoke and model-health tests

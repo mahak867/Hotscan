@@ -152,7 +152,27 @@ const ALIASES = {
 }
 
 // Look up a car name in DB — returns price object or null
-export function dbLookup(carName) {
+// Which rows may answer for which scanned rarity. The table is keyed by casting
+// name, and many names are shared across eras and lines: "Twin Mill" is both a
+// 1969 Redline and a current mainline car.
+var VINTAGE_ROWS = Object.keys(DB).slice(0, Object.keys(DB).indexOf('Bone Shaker'))
+var PREMIUM_ROWS = ['Toyota Land Cruiser 80', 'Renault Alpine A110', 'Lancia Stratos', 'BMW 2002', 'Honda City Turbo II', 'Datsun Bluebird 510']
+function rowAllowed(key, rarity) {
+  var vintage = VINTAGE_ROWS.indexOf(key) > -1, premium = PREMIUM_ROWS.indexOf(key) > -1
+  if (rarity === 'Vintage') return vintage
+  if (rarity === 'Premium') return premium
+  if (rarity === 'Common' || rarity === 'Uncommon' || rarity === 'Rare' || !rarity) return !vintage && !premium
+  return false // Treasure Hunts, Supers and error cars are never priced from a mainline row
+}
+
+// Look up a car in the reference table. Returns a price object, or null when
+// there is no row that applies to this casting at this rarity.
+export function dbLookup(carName, rarity) {
+  var hit = _lookup(carName)
+  return hit && rowAllowed(hit._dbKey, rarity) ? hit : null
+}
+
+function _lookup(carName) {
   if (!carName) return null
   var n = carName.trim()
   var lower = n.toLowerCase()
@@ -203,23 +223,13 @@ function _fmt(row, key) {
     india_collector_inr: row[1],
     us_retail_usd:       row[2],
     us_collector_usd:    row[3],
-    price_trend:         row[4],
+    price_trend:         'Stable',
     demand:              demand,
     _dbHit:              true,
     _dbKey:              key,
     // Undated reference figures, not a live market read — say so.
     data_quality:        'Reference (built-in catalog, not live)',
-    price_trend_reason:  row[4] === 'Rising'  ? 'Growing collector demand in India' :
-                         row[4] === 'Falling' ? 'Market softening' :
-                         'Consistent demand from Indian collectors',
-    india_insight: demand === 'high'
-      ? 'High demand among Indian collectors, especially in metro cities. Expect import premium on OLX.'
-      : demand === 'medium'
-      ? 'Moderate interest from Indian collectors. Available through OLX India and Facebook groups.'
-      : 'Low demand — easy to find at retail stores across India.',
-    buy_tip: demand === 'high'
-      ? 'Act fast on OLX listings — high-demand cars sell within hours. Join #hotwheelsindia on Instagram.'
-      : 'Check OLX India weekly and join Hot Wheels India Facebook groups for fair deals.',
+    price_trend_reason:  '',
   }
 }
 

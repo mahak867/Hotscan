@@ -3,6 +3,14 @@ export function cleanINR(v) { return v ? String(v).replace(/^₹+/, '') : '' }
 // Parse the lower bound of a price range stored in india_collector_inr, safely ignoring ₹ prefix
 export function parseINR(v, fallback) { var n = parseFloat(cleanINR(v||String(fallback||0)).replace(/,/g,'').split('-')[0]); return isNaN(n) ? (fallback||0) : n }
 
+// Display form of a stored price or range: "6000-9000" → "₹6,000–9,000".
+export function fmtINR(v) {
+  var c = cleanINR(v).replace(/,/g, '').trim()
+  if (!c) return ''
+  var parts = c.split(/\s*[-–]\s*/).map(function (x) { var n = Number(x); return isFinite(n) && x !== '' ? n.toLocaleString('en-IN') : x })
+  return '₹' + parts.join('–')
+}
+
 export function escHtml(str) {
   if (str === null || str === undefined) return ''
   return String(str)
@@ -46,9 +54,11 @@ export function compressThumb(dataUrl) {
     img.onload = function() {
       try {
         var c = document.createElement('canvas'), s = Math.min(img.width, img.height)
-        c.width = 120; c.height = 120
-        c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 120, 120)
-        resolve(c.toDataURL('image/jpeg', 0.7))
+        // 240px: sharp in the collection grid and on high-density phone screens.
+        // (It was 120px, which is visibly soft at any size above a list thumbnail.)
+        c.width = 240; c.height = 240
+        c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 240, 240)
+        resolve(c.toDataURL('image/jpeg', 0.72))
       } catch(e) { resolve(dataUrl) }
     }
     img.onerror = function() { resolve(dataUrl) }
@@ -56,57 +66,27 @@ export function compressThumb(dataUrl) {
   })
 }
 
-var _toastQueue = []
-var _toastRunning = false
-function _runToastQueue() {
-  if (_toastRunning || !_toastQueue.length) return
-  _toastRunning = true
-  var item = _toastQueue.shift()
+// One toast at a time: a new message replaces the current one rather than
+// queueing behind it, so feedback always matches the tap that caused it.
+var _toastTimer = null
+export function showToast(msg, type, duration) {
+  type = type || 'info'
   var el = document.getElementById('hs-toast')
-  if (!el) { _toastRunning = false; _runToastQueue(); return }
-  el.textContent = item.msg
-  el.className = 'toast-show toast-' + (item.type || 'info')
-  el.style.display = 'block'
-  setTimeout(function() {
-    el.style.display = 'none'
-    _toastRunning = false
-    _runToastQueue()
-  }, item.duration || 2800)
-}
-export function showToast(msg, type, duration){
-  type = type || 'info'; duration = duration || 2800
-  var existing = document.getElementById('hs-toast')
-  if(existing) existing.remove()
-  // #20 — icon prefix per type
-  var iconMap = {success:'✅ ', error:'❌ ', info:'ℹ️ '}
-  var icon = iconMap[type] || ''
-  var toast = document.createElement('div')
-  toast.id = 'hs-toast'
-  toast.className = 'hs-toast-' + type   // #20 — type-based left border via CSS
-  toast.textContent = icon + msg
-  toast.style.cssText = [
-    'position:fixed','bottom:80px','left:50%','transform:translateX(-50%) translateY(20px)',
-    'background:' + (type==='error' ? '#2a0a0a' : type==='success' ? '#0a1a0a' : '#0d0d1e'),
-    'color:' + (type==='error' ? '#ff8080' : type==='success' ? '#80ff90' : '#c0d0ff'),
-    'border:1px solid ' + (type==='error' ? 'rgba(255,80,80,.3)' : type==='success' ? 'rgba(80,255,90,.3)' : 'rgba(42,79,212,.3)'),
-    'padding:10px 18px','border-radius:20px','font-size:13px','font-weight:600',
-    'z-index:9000','max-width:80%','text-align:center',
-    'box-shadow:0 4px 20px rgba(0,0,0,.5)',
-    'transition:all .3s cubic-bezier(.4,0,.2,1)',
-    'pointer-events:none','white-space:normal',
-    'word-break:break-word',
-    'max-width:88vw',
-  ].join(';')
-  document.body.appendChild(toast)
-  requestAnimationFrame(function(){
-    toast.style.transform = 'translateX(-50%) translateY(0)'
-    toast.style.opacity = '1'
-  })
-  setTimeout(function(){
-    toast.style.transform = 'translateX(-50%) translateY(20px)'
-    toast.style.opacity = '0'
-    setTimeout(function(){ if(toast.parentNode) toast.remove() }, 300)
-  }, duration)
+  if (!el) {
+    el = document.createElement('div')
+    el.id = 'hs-toast'
+    el.setAttribute('role', 'status')
+    el.setAttribute('aria-live', 'polite')
+    document.body.appendChild(el)
+  }
+  // Callers historically prefixed their own emoji; the coloured dot carries
+  // the status now, so strip a leading one instead of showing both.
+  el.textContent = String(msg == null ? '' : msg).replace(/^[\u2600-\u27BF\uFE0F\u{1F000}-\u{1FAFF}\s]+/u, '')
+  el.className = 'toast toast-' + type
+  void el.offsetWidth
+  el.classList.add('show')
+  clearTimeout(_toastTimer)
+  _toastTimer = setTimeout(function () { el.classList.remove('show') }, duration || 2800)
 }
 
 export function ol(url) { if (url && url !== '#') window.open(url, '_blank') }
@@ -130,10 +110,8 @@ export function hsConfirm(title, message, okLabel, icon) {
     if (msgEl)   msgEl.textContent   = message || ''
     if (okBtn)   okBtn.textContent   = okLabel || 'Confirm'
     if (iconEl)  iconEl.textContent  = icon || '⚠️'
-    // Red for destructive, gold for neutral
-    var isDestructive = (okLabel || '').toLowerCase().includes('delete') || (okLabel || '').toLowerCase().includes('remove') || (okLabel || '').toLowerCase().includes('clear')
-    if (okBtn) okBtn.style.background = isDestructive ? '#e63946' : '#ffd60a'
-    if (okBtn) okBtn.style.color = isDestructive ? '#fff' : '#000'
+    var isDestructive = /delete|remove|clear|reset/i.test(okLabel || '')
+    if (okBtn) okBtn.className = 'btn btn-block ' + (isDestructive ? 'btn-danger' : 'btn-primary')
     overlay.style.display = 'flex'
     window._confirmResolve = function() { overlay.style.display = 'none'; resolve(true) }
     window._confirmReject  = function() { overlay.style.display = 'none'; resolve(false) }
@@ -176,7 +154,7 @@ export function captureException(e) {
 
 // Achievement tracking system
 export function checkAndEarnAchievements(result) {
-  if (!result || !window.state) return
+  if (!result || !window.state) return []
   var earned = []
   var ach = window.state.achievements || []
   
@@ -225,7 +203,7 @@ export function checkAndEarnAchievements(result) {
   if (earned.length > 0) {
     earned.forEach(function(a, i) {
       setTimeout(function() {
-        showToast('🏆 ' + a.label + ' — ' + a.desc, 'success', 3000)
+        showToast('Achievement: ' + a.label.replace(/^\S+\s/, '') + '. ' + a.desc, 'success', 3200)
       }, i * 500)
     })
   }

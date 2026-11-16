@@ -1,7 +1,6 @@
 import { state } from './state.js'
+import { paintChip } from './carart.js'
 import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, hsPromptPrice, compress, captureException } from './utils.js'
-import { groqText, groqJSON } from './groq.js'
-import { HAIKU_MODEL } from './config.js'
 
 var _mpFilter = 'all'
 var _mpListings = null
@@ -137,10 +136,10 @@ export function renderListings(arr) {
     // #14 — improved empty buy state
     wrap.innerHTML = [
       '<div class="card" style="text-align:center;padding:24px 18px">',
-      '  <div style="font-size:36px;margin-bottom:10px">🏪</div>',
+      '  <div class="empty-glyph"><svg class="ic"><use href="#i-store"/></svg></div>',
       '  <div style="font-size:15px;font-weight:700;margin-bottom:5px">No listings yet</div>',
       '  <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Be the first collector to list a Hot Wheels for sale!</div>',
-      '  <button class="btn-red" style="padding:11px 22px;border-radius:12px" onclick="mpMode(\'sell\')">💸 List a Car for Sale →</button>',
+      '  <button class="btn-red" style="padding:11px 22px;border-radius:12px" onclick="mpMode(\'sell\')">List a car for sale</button>',
       '</div>'
     ].join('')
     return
@@ -166,7 +165,7 @@ export function renderListings(arr) {
     var rv = (l.rarity || 'common').toLowerCase()
     card.style.borderLeft = '3px solid ' + (rarityStripe[rv] || 'var(--border)')
     var thumb = document.createElement('div'); thumb.className = 'listing-thumb'
-    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.textContent = '🚗'
+    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.innerHTML = paintChip({ name: l.name, color: l.notes || '' })
     var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
     var nm = document.createElement('div'); nm.className = 'listing-name'; nm.textContent = l.name
     var meta = document.createElement('div'); meta.className = 'listing-meta'; meta.textContent = (l.rarity||'Common') + ' · ' + (l.condition||'N/A') + ' · ' + l.city + ' · ' + ago
@@ -674,46 +673,4 @@ export function slPhotoSelected(input) {
     if (label) label.style.display = 'none'
   }
   reader.readAsDataURL(file)
-}
-
-export async function checkOLX() {
-  var inp = document.getElementById('olx-inp').value.trim()
-  if (!inp) { showToast('Paste a listing title first', 'error'); return }
-  var btn = document.querySelector('[onclick="checkOLX()"]')
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Analysing...' }
-  var prompt = [
-    'You are an Indian Hot Wheels market expert. Analyse this OLX listing title: "' + inp + '".',
-    '⚠️ RULES:',
-    '1. Only comment on Hot Wheels. If this is not a Hot Wheels listing, say so in car_name.',
-    '2. Use REALISTIC Indian prices — Common: ₹150-350, TH: ₹500-2500, STH: ₹4000-15000.',
-    '3. Extract the listing price from the title if present, else set listing_price_inr to null.',
-    '4. verdict must be one of: Steal, Fair, Slightly High, Overpriced',
-    '',
-    'Return ONLY valid JSON:',
-    '{"car_name":"exact car name or Not a Hot Wheels listing","rarity":"Common|Uncommon|Rare|Treasure Hunt|Super Treasure Hunt","fair_price_inr":"300-600","listing_price_inr":400,"verdict":"Steal|Fair|Slightly High|Overpriced","verdict_reason":"specific 1-2 sentence reason","buyer_advice":"specific actionable advice","red_flags":"specific concerns or empty string","confidence":"High|Medium|Low"}'
-  ].join('\n')
-  try {
-    var d = await groqJSON(prompt, HAIKU_MODEL)
-    if (!d) throw new Error('Could not analyse listing')
-    document.getElementById('olx-fair-px').textContent = 'Fair: ₹' + (d.fair_price_inr || '?')
-    var verdictIcon = {Steal:'🤑', Fair:'👍', 'Slightly High':'🤔', Overpriced:'❌'}[d.verdict] || '❓'
-    document.getElementById('olx-verdict-txt').textContent = verdictIcon + ' ' + (d.verdict || '') + ' — ' + (d.verdict_reason || '')
-    var rows = [
-      ['Car', d.car_name],
-      ['Rarity', d.rarity],
-      ['Listed price', d.listing_price_inr ? '₹' + d.listing_price_inr : 'Not in title'],
-      ['Fair India price', '₹' + (d.fair_price_inr || '?')],
-      ['Confidence', d.confidence || 'Medium']
-    ]
-    document.getElementById('olx-rows').innerHTML = rows.filter(function(r){ return r[1] }).map(function(r) {
-      return '<div class="deal-row"><span class="deal-k">' + escHtml(String(r[0])) + '</span><span class="deal-v">' + escHtml(String(r[1])) + '</span></div>'
-    }).join('')
-    var tip = ''
-    if (d.buyer_advice) tip += d.buyer_advice
-    if (d.red_flags) tip += (tip ? ' ⚠️ ' : '') + d.red_flags
-    document.getElementById('olx-tip').textContent = tip ? '💡 ' + tip : ''
-    document.getElementById('olx-result-box').style.display = 'block'
-    document.getElementById('olx-result-box').scrollIntoView({ behavior: 'smooth', block: 'start' })
-  } catch(e) { showToast('Error: ' + e.message, 'error') }
-  finally { if (btn) { btn.disabled = false; btn.textContent = '🔍 Analyse Listing' } }
 }
