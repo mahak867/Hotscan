@@ -1,5 +1,5 @@
 import { state } from './state.js'
-import { carArt } from './carart.js'
+import { paintChip } from './carart.js'
 import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, hsPromptPrice, compress, captureException } from './utils.js'
 
 var _mpFilter = 'all'
@@ -165,7 +165,7 @@ export function renderListings(arr) {
     var rv = (l.rarity || 'common').toLowerCase()
     card.style.borderLeft = '3px solid ' + (rarityStripe[rv] || 'var(--border)')
     var thumb = document.createElement('div'); thumb.className = 'listing-thumb'
-    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.innerHTML = carArt({ name: l.name, color: l.notes || '', rarity: l.rarity })
+    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.innerHTML = paintChip({ name: l.name, color: l.notes || '' })
     var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
     var nm = document.createElement('div'); nm.className = 'listing-name'; nm.textContent = l.name
     var meta = document.createElement('div'); meta.className = 'listing-meta'; meta.textContent = (l.rarity||'Common') + ' · ' + (l.condition||'N/A') + ' · ' + l.city + ' · ' + ago

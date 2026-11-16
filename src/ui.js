@@ -3,7 +3,7 @@ import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
 import { escHtml, fmtINR, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException, isProActive } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
 import { CONDITIONS, applyCondition, conditionFromScan } from '../shared/pricing.js'
-import { carArt, carMedia } from './carart.js'
+import { paintChip, carMedia } from './carart.js'
 
 // ── Pro helpers ──
 export function getTodayScans() {
@@ -414,12 +414,12 @@ function _playReveal(rarity) {
 }
 
 export function showResult(d) {
-  // The photo that was scanned, at full size; or the car's illustration when
-  // the result came from a name lookup and there is no photo.
+  // The photo that was scanned, at full size. A name lookup has no photo, so
+  // the card simply starts at the name.
   var media = document.getElementById('r-thumb')
   var photo = state.currentMode === 'photo' ? (state.img64 || state.imgThumb) : null
-  media.innerHTML = carMedia(d, photo)
-  media.classList.toggle('is-art', !photo)
+  media.innerHTML = photo ? carMedia(d, photo) : ''
+  media.hidden = !photo
   // "Do I already have this?" is the first question on a peg hunt, and the
   // answer used to arrive only as a dialog after tapping Add.
   var ownedEl = document.getElementById('r-owned')
@@ -826,7 +826,7 @@ function _ago(iso) {
 }
 function _histRows(n) {
   return state.scanHistory.slice(0, n).map(function (h) {
-    return '<div class="li-row"><div class="li-thumb">' + carArt(h) + '</div><div class="li-body"><div class="li-t">' + escHtml(h.name || 'Unknown') + '</div>' +
+    return '<div class="li-row"><div class="li-thumb">' + paintChip(h) + '</div><div class="li-body"><div class="li-t">' + escHtml(h.name || 'Unknown') + '</div>' +
       '<div class="li-s">' + escHtml(h.rarity || 'Common') + ' · ' + _ago(h.scanned) + '</div></div>' +
       '<div class="li-v">' + escHtml(fmtINR(h.india_collector_inr)) + '</div></div>'
   }).join('')
@@ -855,8 +855,8 @@ export function showShare() {
   document.getElementById('sc-usd').textContent = r.us_collector_usd ? '$' + r.us_collector_usd : '—'
   var sci = document.getElementById('sc-img')
   var _sp = state.currentMode === 'photo' ? (state.img64 || state.imgThumb) : null
-  sci.innerHTML = carMedia(state.lastResult, _sp)
-  sci.classList.toggle('is-art', !_sp)
+  sci.innerHTML = _sp ? carMedia(state.lastResult, _sp) : ''
+  sci.hidden = !_sp
   document.getElementById('share-modal').classList.add('open')
   document.body.style.overflow = 'hidden'
 }

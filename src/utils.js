@@ -54,9 +54,11 @@ export function compressThumb(dataUrl) {
     img.onload = function() {
       try {
         var c = document.createElement('canvas'), s = Math.min(img.width, img.height)
-        c.width = 120; c.height = 120
-        c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 120, 120)
-        resolve(c.toDataURL('image/jpeg', 0.7))
+        // 240px: sharp in the collection grid and on high-density phone screens.
+        // (It was 120px, which is visibly soft at any size above a list thumbnail.)
+        c.width = 240; c.height = 240
+        c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 240, 240)
+        resolve(c.toDataURL('image/jpeg', 0.72))
       } catch(e) { resolve(dataUrl) }
     }
     img.onerror = function() { resolve(dataUrl) }

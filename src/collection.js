@@ -3,7 +3,7 @@ import { state } from './state.js'
 // car already in the collection threw ReferenceError instead of offering to add
 // a second copy — the duplicate flow was dead for every user.
 import { carMedia } from './carart.js'
-import { cleanINR, parseINR, fmtINR, escHtml, showToast, rcls, hsConfirm, captureException } from './utils.js'
+import { compressThumb, cleanINR, parseINR, fmtINR, escHtml, showToast, rcls, hsConfirm, captureException } from './utils.js'
 
 // Prevents concurrent fullCloudSync() calls racing against Supabase.
 // Both onAuthStateChange(INITIAL_SESSION) and getSession() fire on page load,
@@ -164,9 +164,28 @@ export function editColItem(id) {
   var facts = [['Series', item.series], ['Colour', item.color], ['Casting year', item.casting_year], ['Wheels', item.wheel_type], ['Tampo', item.tampo], ['India retail', item.india_retail_inr ? '₹' + cleanINR(item.india_retail_inr) : '']]
     .filter(function (f) { return f[1] })
   document.getElementById('col-edit-facts').innerHTML =
-    '<div class="sheet-media' + (item.image ? '' : ' is-art') + '">' + carMedia(item) + '</div>' +
+    '<div class="sheet-media' + (item.image ? '' : ' is-empty') + '">' + (item.image ? carMedia(item) : '') +
+      '<label class="sheet-photo-btn"><svg class="ic"><use href="#i-camera"/></svg>' + (item.image ? 'Replace photo' : 'Add a photo of this car') +
+      '<input type="file" accept="image/*" hidden id="col-edit-photo"></label></div>' +
     facts.map(function (f) { return '<div class="det" style="padding:8px 0"><span class="det-k">' + f[0] + '</span><span class="det-v">' + escHtml(String(f[1])) + '</span></div>' }).join('') +
     (item.fun_fact ? '<p class="hint">' + escHtml(item.fun_fact) + '</p>' : '')
+  // A car's picture is the owner's own photo. Lookups and wishlist finds arrive
+  // without one, so it can be added (or replaced) here at any time.
+  var pin = document.getElementById('col-edit-photo')
+  if (pin) pin.onchange = function () {
+    var file = pin.files && pin.files[0]
+    if (!file) return
+    var rd = new FileReader()
+    rd.onload = async function (e) {
+      item.image = await compressThumb(e.target.result)
+      persistCollection()
+      renderCol()
+      if (state._sb && state.currentUser && typeof item.id === 'string' && item.id.includes('-')) { try { await saveToCloud(item) } catch (err) { captureException(err) } }
+      editColItem(item.id)
+      showToast('Photo saved', 'success')
+    }
+    rd.readAsDataURL(file)
+  }
   modal.classList.add('open')
   document.body.style.overflow = 'hidden'
 }

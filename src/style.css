@@ -57,7 +57,7 @@ input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent2);outline-offset:2px;border-radius:6px}
 ::selection{background:rgba(255,138,31,.35)}
 .sprite{position:absolute;width:0;height:0;overflow:hidden}
-.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.ic{width:20px;height:20px;flex:none;fill:currentColor}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 [hidden]{display:none}
 
@@ -132,9 +132,6 @@ textarea.inp{resize:vertical;min-height:84px}
   border-bottom:1px solid var(--border);
 }
 .brand{display:flex;align-items:center;gap:10px}
-.brand-mark{border-radius:8px}
-.brand-word{font-family:var(--display);font-size:21px;font-weight:800;letter-spacing:-.03em}
-.brand-word b{color:var(--accent);font-weight:800}
 .app-header-right{display:flex;align-items:center;gap:10px}
 .streak-chip{display:none;align-items:center;font-size:12px;font-weight:700;color:var(--accent2);background:rgba(255,138,31,.12);border:1px solid rgba(255,138,31,.25);padding:4px 10px;border-radius:99px}
 .app-user-btn{cursor:pointer}
@@ -185,7 +182,7 @@ textarea.inp{resize:vertical;min-height:84px}
 .nav-scan-fab{width:54px;height:54px;margin-top:-26px;border-radius:19px;display:flex;align-items:center;justify-content:center;
   background:var(--accent);color:var(--on-accent);box-shadow:0 10px 26px rgba(255,90,31,.42),0 0 0 5px var(--bg);
   transition:transform .3s var(--spring)}
-.nav-scan-fab .ic{width:26px;height:26px;stroke-width:2;color:var(--on-accent)!important}
+.nav-scan-fab .ic{width:26px;height:26px;color:var(--on-accent)!important}
 .nav-scan-btn:active .nav-scan-fab{transform:scale(.9)}
 .nav-scan-fab{position:relative}
 @media (min-width:768px){
@@ -327,20 +324,11 @@ textarea.inp{resize:vertical;min-height:84px}
 .r-media{position:relative;aspect-ratio:16/10;max-height:300px;width:100%;background:#000;overflow:hidden}
 .r-media img{width:100%;height:100%;object-fit:cover}
 .r-media::after{content:"";position:absolute;inset:auto 0 0 0;height:34%;background:linear-gradient(to top,var(--surface),transparent);pointer-events:none}
-.r-media.is-art,.sheet-media.is-art,.sc-img.is-art{background:radial-gradient(80% 90% at 50% 100%,rgba(255,255,255,.09),transparent 70%),var(--surface2);display:grid;place-items:center}
-.r-media.is-art{aspect-ratio:16/8}
-.r-media.is-art .car-art{width:min(78%,340px);height:auto}
-.car-art{display:block;width:100%;height:100%}
-.car-thumb .car-art,.li-thumb .car-art,.listing-thumb .car-art,.multi-car-thumb .car-art{width:88%;height:auto}
-.col-gcard-img .car-art{width:80%;height:auto}
-.sheet-media{border-radius:14px;overflow:hidden;margin-bottom:12px;aspect-ratio:16/9;background:#000}
 .sheet-media img{width:100%;height:100%;object-fit:cover}
-.sheet-media .car-art,.sc-img .car-art{width:70%;height:auto}
-.sc-img.is-art{aspect-ratio:16/9}
+
+.sheet-media{border-radius:14px;overflow:hidden;margin-bottom:12px;aspect-ratio:16/9;background:#000}
 .empty-glyph{width:52px;height:52px;margin:0 auto 12px;border-radius:15px;display:grid;place-items:center;background:var(--surface2);border:1px solid var(--border2);color:var(--text2)}
 .empty-glyph .ic{width:24px;height:24px}
-svg.brand-mark{width:30px;height:30px;border-radius:9px;flex:none}
-.sc-logo svg.brand-mark,.auth-brand svg.brand-mark{width:24px;height:24px}
 .r-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px}
 .owned-chip{display:none;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;background:rgba(52,209,124,.13);color:var(--green)}
 .owned-chip.show{display:inline-flex}
@@ -642,7 +630,6 @@ svg.brand-mark{width:30px;height:30px;border-radius:9px;flex:none}
 .pro-kicker{font-size:12px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
 .share-card{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:18px;margin:8px 0 14px}
 .sc-logo{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.sc-logo img{border-radius:6px}
 .sc-url{font-size:12px;color:var(--text3);font-weight:600}
 .sc-img{border-radius:14px;overflow:hidden;background:var(--surface3);margin-bottom:12px;min-height:8px}
 .sc-img img{width:100%;max-height:220px;object-fit:cover}
@@ -657,8 +644,6 @@ svg.brand-mark{width:30px;height:30px;border-radius:9px;flex:none}
 
 /* Auth */
 .auth-brand{display:flex;align-items:center;gap:9px;margin-bottom:18px}
-.auth-brand img{border-radius:7px}
-.auth-brand-name{font-weight:750;font-size:14px;letter-spacing:-.01em}
 .auth-headline{font-size:26px;font-weight:800;letter-spacing:-.04em}
 .auth-subline{color:var(--text2);font-size:14.5px;margin:4px 0 20px}
 .auth-social-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;border-radius:14px;background:#fff;color:#111;font-weight:650;font-size:15px}
@@ -754,9 +739,7 @@ svg.brand-mark{width:30px;height:30px;border-radius:9px;flex:none}
 
 /* ── Scanner visual and motion ── */
 .scan-viz{position:relative;width:216px;height:124px;margin:2px auto 24px;--sweep:112px}
-.scan-viz-car{position:absolute;inset:14px 18px 10px;display:grid;place-items:center}
-.scan-viz-car .car-art{width:100%;height:100%}
-.scan-viz i{position:absolute;width:22px;height:22px;border:2.5px solid var(--accent)}
+.scan-viz-car .scan-viz i{position:absolute;width:22px;height:22px;border:2.5px solid var(--accent)}
 .scan-viz i:nth-of-type(1){left:0;top:0;border-right:0;border-bottom:0;border-radius:9px 0 0 0}
 .scan-viz i:nth-of-type(2){right:0;top:0;border-left:0;border-bottom:0;border-radius:0 9px 0 0}
 .scan-viz i:nth-of-type(3){left:0;bottom:0;border-right:0;border-top:0;border-radius:0 0 0 9px}
@@ -841,4 +824,37 @@ button,.chip,.seg-btn,.nav-item,.more-item,.car-row,.col-gcard,.tag,.check-item,
 .btn,.analyze-btn,.auth-continue-btn,.icon-btn{transition:transform .14s var(--ease),background-color .15s,border-color .15s,filter .15s}
 .icon-btn:active,.auth-continue-btn:active,.auth-social-btn:active{transform:scale(.97)}
 html{overscroll-behavior:none}
-.car-thumb{width:78px;height:56px}.car-thumb .car-art{width:92%}.li-thumb{width:56px}
+
+/* ── Brand ── Outlined lettering (Barlow Condensed Black Italic), so the mark
+   renders identically everywhere and needs no font of its own. */
+.wordmark{display:block;height:19px;width:auto;overflow:visible}
+.wordmark .wm-a{fill:var(--text)}
+.wordmark .wm-b{fill:var(--accent)}
+.brand{display:inline-flex;align-items:center;padding:6px 2px}
+.auth-brand .wordmark{height:17px}
+.sc-logo .wordmark{height:14px}
+.doc-wrap .brand .wordmark,.reset-card .brand .wordmark{height:20px}
+
+/* Dock: outline icon at rest, filled when its page is open. */
+.nav-item .ic-f{display:none}
+.nav-item.active .ic-o{display:none}
+.nav-item.active .ic-f{display:block}
+
+/* Scanner hero: a car silhouette in a viewfinder. */
+.scan-viz .scan-viz-car{position:absolute;left:50%;top:50%;width:132px;height:132px;transform:translate(-50%,-52%);color:var(--text3)}
+
+/* A car with no photo yet: its paint colour and initials, like a swatch on a box label. */
+.paint-chip{position:relative;display:grid;place-items:center;width:100%;height:100%;
+  background:var(--paint);color:#fff;font:800 italic 15px/1 var(--display);letter-spacing:-.02em;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),inset 0 -14px 22px rgba(0,0,0,.22)}
+.paint-chip.is-light{color:#1a1c20;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08),inset 0 -14px 22px rgba(0,0,0,.08)}
+.paint-chip::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.22),transparent 42%);pointer-events:none}
+.col-gcard-img .paint-chip{font-size:40px}
+.car-thumb{width:58px;height:58px}
+
+/* Car detail sheet: photo, or a prompt to add one. */
+.sheet-media{position:relative}
+.sheet-media.is-empty{aspect-ratio:auto;background:none;border:1.5px dashed var(--border2);display:grid;place-items:center;padding:22px 12px}
+.sheet-photo-btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:650;cursor:pointer;
+  background:var(--surface2);border:1px solid var(--border2);color:var(--text)}
+.sheet-media:not(.is-empty) .sheet-photo-btn{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.6);border-color:rgba(255,255,255,.2);backdrop-filter:blur(8px);min-height:34px;font-size:13px}
