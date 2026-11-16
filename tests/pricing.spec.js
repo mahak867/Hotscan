@@ -84,3 +84,20 @@ test.describe('pricing rules', () => {
     expect(dbLookup('Bone Shaker', 'Super Treasure Hunt')).toBeNull()
   })
 })
+
+import { carStyle, carPaint, carArt } from '../src/carart.js'
+test.describe('car artwork', () => {
+  test('body style follows the casting name', () => {
+    expect(carStyle("'69 Camaro")).toBe('muscle')
+    expect(carStyle('Porsche 911 GT3 RS')).toBe('super')
+    expect(carStyle('Ford F-150 Raptor')).toBe('truck')
+    expect(carStyle('Volkswagen Kombi')).toBe('van')
+    expect(carStyle('Bone Shaker')).toBe('rod')
+    expect(carStyle('Honda Civic Type R')).toBe('coupe')
+  })
+  test('paint follows the recorded colour, and is stable without one', () => {
+    expect(carPaint({ color: 'Spectraflame Blue' })).toBe('#2f6fe4')
+    expect(carPaint({ name: 'Rod Squad' })).toBe(carPaint({ name: 'Rod Squad' }))
+    expect(carArt({ name: 'Twin Mill', color: 'red', rarity: 'Vintage' })).toContain('<svg')
+  })
+})

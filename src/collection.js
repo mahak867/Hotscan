@@ -2,6 +2,7 @@ import { state } from './state.js'
 // hsConfirm was used in addToCol() without ever being imported, so scanning a
 // car already in the collection threw ReferenceError instead of offering to add
 // a second copy — the duplicate flow was dead for every user.
+import { carMedia } from './carart.js'
 import { cleanINR, parseINR, fmtINR, escHtml, showToast, rcls, hsConfirm, captureException } from './utils.js'
 
 // Prevents concurrent fullCloudSync() calls racing against Supabase.
@@ -163,7 +164,7 @@ export function editColItem(id) {
   var facts = [['Series', item.series], ['Colour', item.color], ['Casting year', item.casting_year], ['Wheels', item.wheel_type], ['Tampo', item.tampo], ['India retail', item.india_retail_inr ? '₹' + cleanINR(item.india_retail_inr) : '']]
     .filter(function (f) { return f[1] })
   document.getElementById('col-edit-facts').innerHTML =
-    (item.image ? '<img src="' + escHtml(item.image) + '" alt="" style="width:100%;max-height:200px;object-fit:cover;border-radius:14px;margin-bottom:12px">' : '') +
+    '<div class="sheet-media' + (item.image ? '' : ' is-art') + '">' + carMedia(item) + '</div>' +
     facts.map(function (f) { return '<div class="det" style="padding:8px 0"><span class="det-k">' + f[0] + '</span><span class="det-v">' + escHtml(String(f[1])) + '</span></div>' }).join('') +
     (item.fun_fact ? '<p class="hint">' + escHtml(item.fun_fact) + '</p>' : '')
   modal.classList.add('open')
@@ -347,7 +348,6 @@ var TIER_COLOR = {
   'premium': '#5cc8f5', 'rare': '#5cc8f5', 'uncommon': '#34d17c', 'common': 'transparent'
 }
 var CHASE = ['super treasure hunt', 'treasure hunt', 'error car', 'vintage']
-var CAR_ICON = '<svg class="ic"><use href="#i-garage"/></svg>'
 function _inr(n) { return '₹' + Math.round(n).toLocaleString('en-IN') }
 function _plHtml(c) {
   if (c.paid == null) return ''
@@ -483,7 +483,7 @@ export function renderCol() {
   all.forEach(function (c) { var k = (c.name || '').toLowerCase(); copies[k] = (copies[k] || 0) + 1 })
 
   function tierOf(c) { return (c.rarity || 'Common').toLowerCase() }
-  function thumb(c) { return c.image ? '<img src="' + escHtml(c.image) + '" alt="" loading="lazy">' : CAR_ICON }
+  function thumb(c) { return carMedia(c) }
   function meta(c) { return [c.series, c.color, c.casting_year].filter(Boolean).map(function (x) { return escHtml(String(x)) }).join(' · ') }
 
   function makeRow(c) {

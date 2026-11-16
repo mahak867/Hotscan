@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -74,7 +74,7 @@
 
 <header class="app-header">
   <button type="button" class="brand" onclick="goPage('scan')" aria-label="HotScan home">
-    <img src="/icon-192.png" alt="" class="brand-mark" width="30" height="30">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#ff5a1f"/><path d="M8 12.500V10a2 2 0 0 1 2-2h2.500M19.500 8H22a2 2 0 0 1 2 2v2.500M24 19.500V22a2 2 0 0 1-2 2h-2.500M12.500 24H10a2 2 0 0 1-2-2v-2.500" fill="none" stroke="#1b0a02" stroke-width="2.400" stroke-linecap="round"/><circle cx="16" cy="16" r="4.600" fill="none" stroke="#1b0a02" stroke-width="2.400"/><circle cx="16" cy="16" r="1.300" fill="#1b0a02"/></svg>
     <span class="brand-word">Hot<b>Scan</b></span>
   </button>
   <div class="app-header-right">
@@ -119,7 +119,7 @@
   <div id="mode-photo" role="tabpanel">
     <div class="scan-area" id="scan-area">
       <div class="scan-ph" id="scan-ph">
-        <div class="scan-viz" aria-hidden="true"><span class="scan-viz-car"><svg class="ic"><use href="#i-garage"/></svg></span><i></i><i></i><i></i><i></i><b></b></div>
+        <div class="scan-viz" aria-hidden="true"><span class="scan-viz-car" id="scan-viz-car"></span><i></i><i></i><i></i><i></i><b></b></div>
         <div class="scan-title">Point, shoot, priced</div>
         <div class="scan-sub">Casting, series, rarity and a rupee price range from one photo.</div>
         <div class="scan-btns">
@@ -215,15 +215,13 @@
 
   <!-- Scan result -->
   <article class="result" id="result">
+    <div class="r-media" id="r-thumb"></div>
     <div class="r-hero">
-      <div class="r-thumb" id="r-thumb"></div>
-      <div class="r-hero-body">
-        <div class="r-badges"><span class="rar rc" id="r-rar">—</span><button type="button" class="owned-chip" id="r-owned" onclick="goPage('collection')"></button></div>
-        <h2 class="r-name" id="r-name">—</h2>
-        <div class="r-series" id="r-series">—</div>
-        <div class="auth-badge" id="r-auth" hidden></div>
-        <div class="conf"><span>AI confidence</span><div class="conf-bar"><div class="conf-fill" id="r-conf"></div></div></div>
-      </div>
+      <div class="r-badges"><span class="rar rc" id="r-rar">—</span><button type="button" class="owned-chip" id="r-owned" onclick="goPage('collection')"></button></div>
+      <h2 class="r-name" id="r-name">—</h2>
+      <div class="r-series" id="r-series">—</div>
+      <div class="auth-badge" id="r-auth" hidden></div>
+      <div class="conf"><span>AI confidence</span><div class="conf-bar"><div class="conf-fill" id="r-conf"></div></div></div>
     </div>
 
     <div class="r-primary">
@@ -721,7 +719,7 @@
   <div class="sheet sheet-narrow">
     <button class="icon-btn sheet-x" onclick="closeShare()" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
     <div class="share-card">
-      <div class="sc-logo"><img id="sc-logo-img" src="/icon-192.png" alt="" width="22" height="22"><span class="sc-url">hotscan.in</span></div>
+      <div class="sc-logo"><svg class="brand-mark" id="sc-logo-img" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#ff5a1f"/><path d="M8 12.500V10a2 2 0 0 1 2-2h2.500M19.500 8H22a2 2 0 0 1 2 2v2.500M24 19.500V22a2 2 0 0 1-2 2h-2.500M12.500 24H10a2 2 0 0 1-2-2v-2.500" fill="none" stroke="#1b0a02" stroke-width="2.400" stroke-linecap="round"/><circle cx="16" cy="16" r="4.600" fill="none" stroke="#1b0a02" stroke-width="2.400"/><circle cx="16" cy="16" r="1.300" fill="#1b0a02"/></svg><span class="sc-url">hotscan.in</span></div>
       <div class="sc-img" id="sc-img"></div>
       <div class="sc-name" id="sc-name">—</div>
       <div class="sc-series" id="sc-series">—</div>
@@ -746,7 +744,7 @@
 <div class="auth-modal" id="auth-modal" onclick="if(event.target===this)closeAuth()">
   <div class="auth-sheet">
     <button class="icon-btn auth-close" onclick="closeAuth()" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
-    <div class="auth-brand"><img src="/icon-192.png" alt="" width="26" height="26"><span class="auth-brand-name">HotScan India</span></div>
+    <div class="auth-brand"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#ff5a1f"/><path d="M8 12.500V10a2 2 0 0 1 2-2h2.500M19.500 8H22a2 2 0 0 1 2 2v2.500M24 19.500V22a2 2 0 0 1-2 2h-2.500M12.500 24H10a2 2 0 0 1-2-2v-2.500" fill="none" stroke="#1b0a02" stroke-width="2.400" stroke-linecap="round"/><circle cx="16" cy="16" r="4.600" fill="none" stroke="#1b0a02" stroke-width="2.400"/><circle cx="16" cy="16" r="1.300" fill="#1b0a02"/></svg><span class="auth-brand-name">HotScan India</span></div>
     <h2 class="auth-headline">Sign in</h2>
     <p class="auth-subline">Save your collection. Sync across devices.</p>
     <!-- Google shows the Supabase project domain on its consent screen until a custom auth

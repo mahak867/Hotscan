@@ -1,4 +1,5 @@
 import { state } from './state.js'
+import { carArt } from './carart.js'
 import { escHtml, cleanINR, parseINR, showToast, rcls, hsConfirm, hsPromptPrice, compress, captureException } from './utils.js'
 
 var _mpFilter = 'all'
@@ -135,10 +136,10 @@ export function renderListings(arr) {
     // #14 — improved empty buy state
     wrap.innerHTML = [
       '<div class="card" style="text-align:center;padding:24px 18px">',
-      '  <div style="font-size:36px;margin-bottom:10px">🏪</div>',
+      '  <div class="empty-glyph"><svg class="ic"><use href="#i-store"/></svg></div>',
       '  <div style="font-size:15px;font-weight:700;margin-bottom:5px">No listings yet</div>',
       '  <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Be the first collector to list a Hot Wheels for sale!</div>',
-      '  <button class="btn-red" style="padding:11px 22px;border-radius:12px" onclick="mpMode(\'sell\')">💸 List a Car for Sale →</button>',
+      '  <button class="btn-red" style="padding:11px 22px;border-radius:12px" onclick="mpMode(\'sell\')">List a car for sale</button>',
       '</div>'
     ].join('')
     return
@@ -164,7 +165,7 @@ export function renderListings(arr) {
     var rv = (l.rarity || 'common').toLowerCase()
     card.style.borderLeft = '3px solid ' + (rarityStripe[rv] || 'var(--border)')
     var thumb = document.createElement('div'); thumb.className = 'listing-thumb'
-    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.textContent = '🚗'
+    if (l.image_thumb) { var img = document.createElement('img'); img.src = l.image_thumb; img.alt = ''; thumb.appendChild(img) } else thumb.innerHTML = carArt({ name: l.name, color: l.notes || '', rarity: l.rarity })
     var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0'
     var nm = document.createElement('div'); nm.className = 'listing-name'; nm.textContent = l.name
     var meta = document.createElement('div'); meta.className = 'listing-meta'; meta.textContent = (l.rarity||'Common') + ' · ' + (l.condition||'N/A') + ' · ' + l.city + ' · ' + ago

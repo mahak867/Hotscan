@@ -3,6 +3,7 @@ import { FREE_SCANS, WA_COMMUNITY, WA_SUPPORT, HUNT_DATA } from './config.js'
 import { escHtml, fmtINR, cleanINR, parseINR, compress, compressThumb, showToast, rcls, ol, sanitize, hsConfirm, captureException, isProActive } from './utils.js'
 import { renderCol, addCarToCollection, fullCloudSync } from './collection.js'
 import { CONDITIONS, applyCondition, conditionFromScan } from '../shared/pricing.js'
+import { carArt, carMedia } from './carart.js'
 
 // ── Pro helpers ──
 export function getTodayScans() {
@@ -100,20 +101,20 @@ export function moveDockIndicator() {
   var active = document.querySelector('.dock .nav-item.active')
   if (!ind) return
   if (!active || active.id === 'nav-scan') { ind.classList.remove('on'); return }
-  var w = Math.min(active.offsetWidth - 8, 72)
-  ind.style.width = w + 'px'
+  var w = ind.offsetWidth || 64
   ind.style.transform = 'translateX(' + (active.offsetLeft + (active.offsetWidth - w) / 2) + 'px)'
   ind.classList.add('on')
 }
 if (typeof window !== 'undefined') window.addEventListener('resize', moveDockIndicator)
 
-export function goPage(id, fromHash) {
+export function goPage(id, fromHash, instant) {
   var pg = document.getElementById('page-' + id)
   if (!pg) return
   // Cross-fade between pages where the browser supports it; otherwise switch at once.
   var reduce = false
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch (e) {}
-  if (document.startViewTransition && !reduce && !pg.classList.contains('active')) {
+  // Keyboard shortcuts switch instantly: an animation on a key press only adds delay.
+  if (document.startViewTransition && !reduce && !instant && !pg.classList.contains('active')) {
     // A second navigation before the first finishes skips the first transition,
     // which rejects its promises. That is expected, not an error.
     var vt = document.startViewTransition(function () { _showPage(id, pg, fromHash) })
@@ -413,7 +414,12 @@ function _playReveal(rarity) {
 }
 
 export function showResult(d) {
-  document.getElementById('r-thumb').innerHTML = state.imgThumb ? '<img src="' + state.imgThumb + '" alt="">' : ''
+  // The photo that was scanned, at full size; or the car's illustration when
+  // the result came from a name lookup and there is no photo.
+  var media = document.getElementById('r-thumb')
+  var photo = state.currentMode === 'photo' ? (state.img64 || state.imgThumb) : null
+  media.innerHTML = carMedia(d, photo)
+  media.classList.toggle('is-art', !photo)
   // "Do I already have this?" is the first question on a peg hunt, and the
   // answer used to arrive only as a dialog after tapping Add.
   var ownedEl = document.getElementById('r-owned')
@@ -751,7 +757,7 @@ export function renderWantList() {
   el.innerHTML = '<div class="card">' + wl.map(function (w) {
     var price = cleanINR(w.india_collector_inr || w.india_retail_inr)
     return '<div class="li-row">' +
-      '<div class="li-thumb">' + (w.image ? '<img src="' + escHtml(w.image) + '" alt="">' : '') + '</div>' +
+      '<div class="li-thumb">' + carMedia(w) + '</div>' +
       '<div class="li-body"><div class="li-t">' + escHtml(w.name) + '</div>' +
       '<div class="li-s">' + escHtml(w.rarity || 'Common') + (price ? ' · ' + escHtml(fmtINR(price)) : '') + '</div></div>' +
       '<button class="btn btn-sm btn-ghost" onclick="moveWantToCollection(' + Number(w.id) + ')">Found it</button>' +
@@ -807,7 +813,7 @@ export function renderAlerts() {
 
 // ── History ──
 export function saveToHist(d) {
-  var entry = {id:Date.now(), name:d.name, series:d.series, rarity:d.rarity, india_collector_inr:d.india_collector_inr, scanned:new Date().toISOString()}
+  var entry = {id:Date.now(), name:d.name, series:d.series, rarity:d.rarity, color:d.color, india_collector_inr:d.india_collector_inr, scanned:new Date().toISOString()}
   state.scanHistory.unshift(entry)
   if (state.scanHistory.length > 50) state.scanHistory = state.scanHistory.slice(0, 50)
   try { localStorage.setItem('hs_hist', JSON.stringify(state.scanHistory)) } catch(e) { try { localStorage.removeItem('hs_hist'); localStorage.setItem('hs_hist', JSON.stringify([entry])) } catch(e2) {} }
@@ -820,7 +826,7 @@ function _ago(iso) {
 }
 function _histRows(n) {
   return state.scanHistory.slice(0, n).map(function (h) {
-    return '<div class="li-row"><div class="li-body"><div class="li-t">' + escHtml(h.name || 'Unknown') + '</div>' +
+    return '<div class="li-row"><div class="li-thumb">' + carArt(h) + '</div><div class="li-body"><div class="li-t">' + escHtml(h.name || 'Unknown') + '</div>' +
       '<div class="li-s">' + escHtml(h.rarity || 'Common') + ' · ' + _ago(h.scanned) + '</div></div>' +
       '<div class="li-v">' + escHtml(fmtINR(h.india_collector_inr)) + '</div></div>'
   }).join('')
@@ -847,12 +853,10 @@ export function showShare() {
   document.getElementById('sc-inv').textContent = trendArrow + ' ' + trend + ' · ' + invest + ' Investment'
   document.getElementById('sc-inr').textContent = r.india_collector_inr ? '₹' + cleanINR(r.india_collector_inr) : '—'
   document.getElementById('sc-usd').textContent = r.us_collector_usd ? '$' + r.us_collector_usd : '—'
-  var logoEl = document.getElementById('sc-logo-img')
-  if (logoEl) logoEl.src = '/logo.png'
   var sci = document.getElementById('sc-img')
-  sci.innerHTML = state.imgThumb
-    ? '<img src="' + state.imgThumb + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px">'
-    : '<span style="font-size:36px">🚗</span>'
+  var _sp = state.currentMode === 'photo' ? (state.img64 || state.imgThumb) : null
+  sci.innerHTML = carMedia(state.lastResult, _sp)
+  sci.classList.toggle('is-art', !_sp)
   document.getElementById('share-modal').classList.add('open')
   document.body.style.overflow = 'hidden'
 }
@@ -1020,7 +1024,7 @@ export async function renderTrends() {
 
   if (!cars.length) {
     wrap.innerHTML = '<div style="text-align:center;padding:18px 12px;color:var(--text3)">' +
-      '<div style="font-size:24px;margin-bottom:6px">📊</div>' +
+      '<div class="empty-glyph"><svg class="ic"><use href="#i-trend"/></svg></div>' +
       '<div style="font-size:12.5px;font-weight:600;margin-bottom:3px">Not enough data yet</div>' +
       '<div style="font-size:11.5px;line-height:1.6">Submit what you paid after a scan — the more collectors report real prices, the sharper this gets for everyone.</div>' +
       '</div>'
@@ -1071,7 +1075,7 @@ export async function renderEvents() {
   }
   if (!rows.length) {
     wrap.innerHTML = '<div style="text-align:center;padding:22px 16px;color:var(--text3)">' +
-      '<div style="font-size:26px;margin-bottom:8px">📍</div>' +
+      '<div class="empty-glyph"><svg class="ic"><use href="#i-calendar"/></svg></div>' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:4px">No upcoming meets listed</div>' +
       '<div style="font-size:11.5px;line-height:1.6">Know one? Submit it below and we\'ll list it for every collector.</div>' +
       '</div>'

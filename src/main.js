@@ -23,6 +23,7 @@ import {
   quickSell, slNotesCounter, slClearPriceHint, slSaveCity, slPhotoSelected
 } from './marketplace.js'
 import { renderFakeChecklist, resetFakeChecklist } from './guide.js'
+import { carArt } from './carart.js'
 import {
   goPage, saveKey, showKeySetup, setMode, resetScan,
   openCam, openGal, openFakeCam, openFakeGal, openMulti,
@@ -199,6 +200,9 @@ window.addEventListener('load', function () {
     }
   } catch (e) { Sentry.captureException(e) }
 
+  var viz = document.getElementById('scan-viz-car')
+  if (viz) viz.innerHTML = carArt({ name: 'Porsche 911', color: 'orange' })
+
   renderCol()
   renderWantList()
   renderAlerts()
@@ -264,7 +268,7 @@ document.addEventListener('keydown', function (e) {
   if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.metaKey || e.ctrlKey || e.altKey) return
   var map = { s: 'scan', c: 'collection', m: 'marketplace', t: 'market', g: 'guide', p: 'profile' }
   var page = map[(e.key || '').toLowerCase()]
-  if (page) { e.preventDefault(); goPage(page) }
+  if (page) { e.preventDefault(); goPage(page, false, true) }
 })
 
 window.showSkeleton = function (containerId, count) {
